@@ -1,0 +1,48 @@
+:root {
+  --primary-brown: #A0522D;       /* Main accent color */
+  --secondary-cream: #F5F5DC;     /* Background / soft tone */
+  --background-light: #F5F5DC;    /* Page background */
+  --card-bg: #ffffff;             /* Card background stays white for contrast */
+  --text-dark: #000000;           /* Default text color */
+  --border-soft: #A0522D;         /* Borders in brown for consistency */
+}
+
+body {
+  background-color: var(--background-light);
+  color: var(--text-dark);
+}
+
+/* Optional extras for buttons, inputs, and links */
+button {
+  background-color: var(--primary-brown);
+  color: #fff;
+  border: none;
+}
+
+button:hover {
+  background-color: #8B3E1F; /* darker brown hover */
+}
+
+input {
+  border: 1px solid var(--border-soft);
+}
+
+a {
+  color: var(--primary-brown);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+.dashboard-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+.text-brown { color: #A0522D; }
+.text-cream { color: #F5F5DC; }
+.bg-brown { background-color: #A0522D; }
