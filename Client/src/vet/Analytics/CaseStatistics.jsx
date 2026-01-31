@@ -1,6 +1,4 @@
 import DashboardSection from "../../components/dashboard/DashboardSection";
-
-
 import React from "react"
 import { Pie, Line } from "react-chartjs-2"
 import {
@@ -14,7 +12,6 @@ import {
   Legend,
   Title
 } from "chart.js"
-
 
 ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Title)
 
@@ -32,7 +29,6 @@ export default function CaseStatistics() {
     { id: 10, metric: "Overall Resolution Rate", value: "78%", status: "This Month" }
   ]
 
-  // Pie chart: case type distribution
   const pieData = {
     labels: ["Surgical", "Medication", "Nutrition", "Vaccination", "Emergency"],
     datasets: [
@@ -45,7 +41,6 @@ export default function CaseStatistics() {
     ]
   }
 
-  // Line chart: resolution rate trend
   const lineData = {
     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
     datasets: [

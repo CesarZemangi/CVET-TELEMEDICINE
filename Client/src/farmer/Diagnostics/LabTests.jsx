@@ -31,7 +31,6 @@ export default function LabTests() {
     { animal: "Cow #A20", test: "Urine Culture", result: "Bacterial growth", date: "22 Feb 2026" }
   ]
 
-  // Abnormal keywords
   const abnormalKeywords = ["Parasites", "High", "Positive", "Bacterial", "Elevated", "dermatitis"]
 
   const filteredTests = tests.filter(t => {
@@ -40,13 +39,11 @@ export default function LabTests() {
     return filter === "Abnormal" ? isAbnormal : !isAbnormal
   })
 
-  const getResultClass = (result) => {
-    return abnormalKeywords.some(k => result.toLowerCase().includes(k.toLowerCase()))
+  const getResultClass = (result) =>
+    abnormalKeywords.some(k => result.toLowerCase().includes(k.toLowerCase()))
       ? "text-danger fw-bold"
       : "text-success"
-  }
 
-  // Summary chart
   const pieData = {
     labels: ["Normal", "Abnormal"],
     datasets: [
@@ -62,7 +59,6 @@ export default function LabTests() {
     ]
   }
 
-  // Trend chart: abnormal results over time
   const lineData = {
     labels: tests.map(t => t.date),
     datasets: [
@@ -91,7 +87,6 @@ export default function LabTests() {
     <DashboardSection title="Lab Test Results (Zimbabwe)">
       <p>Diagnostic lab results for cattle, goats, and sheep.</p>
 
-      {/* Filter buttons */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Normal", "Abnormal"].map(f => (
           <button
@@ -104,7 +99,6 @@ export default function LabTests() {
         ))}
       </div>
 
-      {/* Results table */}
       <table className="table align-middle">
         <thead>
           <tr>
@@ -115,15 +109,14 @@ export default function LabTests() {
           </tr>
         </thead>
         <tbody>
-          {filteredTests.map((t, index) => (
-            <tr key={index}>
+          {filteredTests.length > 0 ? filteredTests.map((t, idx) => (
+            <tr key={idx}>
               <td>{t.animal}</td>
               <td>{t.test}</td>
               <td className={getResultClass(t.result)}>{t.result}</td>
               <td>{t.date}</td>
             </tr>
-          ))}
-          {filteredTests.length === 0 && (
+          )) : (
             <tr>
               <td colSpan="4" className="text-muted">No {filter.toLowerCase()} results found.</td>
             </tr>
@@ -131,13 +124,11 @@ export default function LabTests() {
         </tbody>
       </table>
 
-      {/* Summary chart */}
       <div className="mt-4" style={{ width: "300px", height: "250px" }}>
         <h6>Summary</h6>
         <Pie data={pieData} options={options} />
       </div>
 
-      {/* Trend chart */}
       <div className="mt-4" style={{ width: "500px", height: "300px" }}>
         <h6>Abnormal Results Trend</h6>
         <Line data={lineData} options={{ ...options, title: { text: "Abnormal Results Over Time" } }} />

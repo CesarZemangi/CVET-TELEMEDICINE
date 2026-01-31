@@ -37,7 +37,6 @@ export default function LabRequests() {
     return ""
   }
 
-  // Summary chart data
   const pieData = {
     labels: ["Pending", "In Progress", "Completed"],
     datasets: [
@@ -67,7 +66,6 @@ export default function LabRequests() {
       <h4>Lab Requests (Zimbabwe)</h4>
       <p>View and manage lab test requests for cattle, goats, and sheep.</p>
 
-      {/* Status filter */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Pending", "In Progress", "Completed"].map(status => (
           <button
@@ -80,27 +78,22 @@ export default function LabRequests() {
         ))}
       </div>
 
-      {/* Requests list */}
       <div className="row">
-        {filteredRequests.map(req => (
+        {filteredRequests.length > 0 ? filteredRequests.map(req => (
           <div key={req.id} className="col-md-6 mb-3">
             <div className="card shadow-sm">
               <div className="card-body">
                 <h6 className="card-title">{req.id} — {req.test}</h6>
-                <p className={`card-text ${getStatusClass(req.status)}`}>
-                  {req.status}
-                </p>
+                <p className={`card-text ${getStatusClass(req.status)}`}>{req.status}</p>
                 <small className="text-muted">{req.date}</small>
               </div>
             </div>
           </div>
-        ))}
-        {filteredRequests.length === 0 && (
+        )) : (
           <div className="col-12 text-muted">No lab requests found for {statusFilter}.</div>
         )}
       </div>
 
-      {/* Summary chart */}
       <div className="mt-4" style={{ width: "300px", height: "250px" }}>
         <h6>Summary</h6>
         <Pie data={pieData} options={options} />

@@ -1,4 +1,4 @@
-import React from "react"
+import { useState, useEffect } from "react"
 import { Bar, Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -13,25 +13,39 @@ import {
 } from "chart.js"
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 export default function HealthTrends() {
-  // Bar chart: improvements by category
+  const [barStats, setBarStats] = useState([])
+  const [lineStats, setLineStats] = useState([])
+  const [summaryRows, setSummaryRows] = useState([])
+
+  useEffect(() => {
+    fetch("/api/health/trends")
+      .then(res => res.json())
+      .then(data => {
+        setBarStats(data.byCategory)
+        setLineStats(data.weekly)
+        setSummaryRows(data.summary)
+      })
+      .catch(err => console.error(err))
+  }, [])
+
   const barData = {
-    labels: [
-      "Respiratory",
-      "Digestive",
-      "Vaccination",
-      "Weight Gain",
-      "Milk Yield",
-      "Mortality",
-      "Compliance",
-      "Stress"
-    ],
+    labels: barStats.map(item => item.category),
     datasets: [
       {
         label: "Improvement (%)",
-        data: [18, 15, 92, 12, 9, 98, 95, 70], // localized sample values
+        data: barStats.map(item => item.value),
         backgroundColor: [
           "#17a2b8",
           "#ffc107",
@@ -46,13 +60,12 @@ export default function HealthTrends() {
     ]
   }
 
-  // Line chart: weekly health trend (example data)
   const lineData = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+    labels: lineStats.map(item => item.week),
     datasets: [
       {
         label: "Overall Health Score",
-        data: [72, 75, 78, 82, 85, 88],
+        data: lineStats.map(item => item.score),
         borderColor: "#2E8B57",
         backgroundColor: "#98FB98",
         tension: 0.3,
@@ -71,31 +84,41 @@ export default function HealthTrends() {
 
   return (
     <DashboardSection title="Health Trends (Zimbabwe)">
-      <p className="mb-3">Key herd health improvements across Zimbabwean farms:</p>
+      <p className="mb-3">
+        Key herd health improvements across Zimbabwean farms
+      </p>
 
-      {/* Bar chart */}
       <div className="mb-3" style={{ width: "400px", height: "250px" }}>
         <h6>Health Improvements by Category</h6>
         <Bar data={barData} options={options} />
       </div>
 
-      {/* Line chart */}
       <div className="mb-3" style={{ width: "400px", height: "250px" }}>
         <h6>Weekly Overall Health Trend</h6>
         <Line data={lineData} options={options} />
       </div>
 
-      {/* Narrative summary */}
-      <ul className="mt-3">
-        <li>Respiratory issues in cattle decreased by 18% compared to last month.</li>
-        <li>Digestive disorders reduced by 15% after dietary adjustments using sorghum stover and maize silage.</li>
-        <li>Vaccination coverage reached 92% of livestock (PPR in goats, Newcastle in poultry).</li>
-        <li>Average weight gain improved by 12% across communal and commercial herds.</li>
-        <li>Milk yield in dairy cows increased steadily, up 9% this quarter in Midlands cooperatives.</li>
-        <li>Mortality rate dropped to 2%, lowest in 12 months, especially in goat flocks.</li>
-        <li>Farmer compliance with treatment plans rose to 95% with support from extension officers.</li>
-        <li>Stress indicators reduced in 70% of cases after improved kraal management and tick control.</li>
-      </ul>
+      <div className="mt-4">
+        <h6>Health Summary</h6>
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Result</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summaryRows.map(row => (
+              <tr key={row.id}>
+                <td>{row.category}</td>
+                <td>{row.result}</td>
+                <td>{row.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </DashboardSection>
   )
 }

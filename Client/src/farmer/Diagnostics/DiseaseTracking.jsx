@@ -29,7 +29,6 @@ export default function DiseaseTracking() {
   const [speciesFilter, setSpeciesFilter] = useState("All")
   const [regionFilter, setRegionFilter] = useState("All")
 
-  // Disease distribution by species
   const diseaseData = {
     All: [30, 25, 20, 15, 10],
     Cattle: [40, 30, 10, 10, 10],
@@ -50,7 +49,6 @@ export default function DiseaseTracking() {
     ]
   }
 
-  // Outbreak trend (demo data, could vary by region)
   const lineData = {
     labels: ["Aug", "Sep", "Oct", "Nov", "Dec", "Jan"],
     datasets: [
@@ -65,7 +63,6 @@ export default function DiseaseTracking() {
     ]
   }
 
-  // Recurrence frequency
   const barData = {
     labels: ["Foot-and-Mouth", "Mastitis", "Newcastle", "PPR", "Anthrax"],
     datasets: [
@@ -77,21 +74,13 @@ export default function DiseaseTracking() {
     ]
   }
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "right" },
-      title: { display: true }
-    }
-  }
+  const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right" }, title: { display: true } } }
 
   return (
     <div>
       <h4>Disease Tracking (Zimbabwe)</h4>
       <p>Track recurring diseases and outbreak history across communal and commercial farms.</p>
 
-      {/* Species filter */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Cattle", "Goats", "Poultry", "Sheep"].map(species => (
           <button
@@ -104,7 +93,6 @@ export default function DiseaseTracking() {
         ))}
       </div>
 
-      {/* Region filter */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Mashonaland", "Matabeleland", "Midlands", "Manicaland"].map(region => (
           <button

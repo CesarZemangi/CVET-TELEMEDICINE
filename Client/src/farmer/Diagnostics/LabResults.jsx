@@ -30,7 +30,6 @@ export default function LabResults() {
     { id: "LR-210", test: "PCR Test", result: "Negative", status: "Completed", date: "Jan 24, 2026" }
   ]
 
-  // Abnormal keywords
   const abnormalKeywords = ["High", "Parasites", "Positive", "Bacterial", "Elevated", "dermatitis"]
 
   const filteredResults = results.filter(res => {
@@ -39,13 +38,11 @@ export default function LabResults() {
     return filter === "Abnormal" ? isAbnormal : !isAbnormal
   })
 
-  const getResultClass = (result) => {
-    return abnormalKeywords.some(k => result.toLowerCase().includes(k.toLowerCase()))
+  const getResultClass = (result) =>
+    abnormalKeywords.some(k => result.toLowerCase().includes(k.toLowerCase()))
       ? "text-danger fw-bold"
       : "text-success"
-  }
 
-  // Pie chart summary
   const pieData = {
     labels: ["Normal", "Abnormal"],
     datasets: [
@@ -61,7 +58,6 @@ export default function LabResults() {
     ]
   }
 
-  // Line chart trend: abnormal results over time
   const lineData = {
     labels: results.map(r => r.date),
     datasets: [
@@ -91,7 +87,6 @@ export default function LabResults() {
       <h4>Lab Results (Zimbabwe)</h4>
       <p>View diagnostic lab results for cattle, goats, and sheep.</p>
 
-      {/* Filter buttons */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Normal", "Abnormal"].map(f => (
           <button
@@ -104,9 +99,8 @@ export default function LabResults() {
         ))}
       </div>
 
-      {/* Results list */}
       <div className="row">
-        {filteredResults.map(res => (
+        {filteredResults.length > 0 ? filteredResults.map(res => (
           <div key={res.id} className="col-md-6 mb-3">
             <div className="card shadow-sm">
               <div className="card-body">
@@ -116,19 +110,16 @@ export default function LabResults() {
               </div>
             </div>
           </div>
-        ))}
-        {filteredResults.length === 0 && (
+        )) : (
           <div className="col-12 text-muted">No {filter.toLowerCase()} results found.</div>
         )}
       </div>
 
-      {/* Summary chart */}
       <div className="mt-4" style={{ width: "300px", height: "250px" }}>
         <h6>Summary</h6>
         <Pie data={pieData} options={options} />
       </div>
 
-      {/* Trend chart */}
       <div className="mt-4" style={{ width: "500px", height: "300px" }}>
         <h6>Abnormal Results Trend</h6>
         <Line data={lineData} options={{ ...options, title: { text: "Abnormal Results Over Time" } }} />

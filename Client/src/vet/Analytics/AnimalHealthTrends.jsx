@@ -1,6 +1,4 @@
 import DashboardSection from "../../components/dashboard/DashboardSection";
-
-
 import React from "react"
 import { Line, Bar } from "react-chartjs-2"
 import {
@@ -14,7 +12,6 @@ import {
   Legend,
   Title
 } from "chart.js"
-
 
 ChartJS.register(LineElement, BarElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Title)
 
@@ -32,7 +29,6 @@ export default function AnimalHealthTrends() {
     { id: 10, metric: "Overall Herd Condition Score", value: "↑ 0.5 points", status: "Improving" }
   ]
 
-  // Line chart: herd health score trend
   const lineData = {
     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
     datasets: [
@@ -47,7 +43,6 @@ export default function AnimalHealthTrends() {
     ]
   }
 
-  // Bar chart: disease incidence reduction
   const barData = {
     labels: ["Jan", "Feb", "Mar", "Apr"],
     datasets: [
@@ -93,4 +88,3 @@ export default function AnimalHealthTrends() {
     </DashboardSection>
   )
 }
-

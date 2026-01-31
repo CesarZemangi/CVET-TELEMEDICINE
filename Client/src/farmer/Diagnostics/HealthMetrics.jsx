@@ -16,7 +16,6 @@ export default function HealthMetrics() {
     { label: "Recovery Index", value: "Strong", type: "status" }
   ]
 
-  // Conditional styling logic
   const getStyle = (metric) => {
     if (metric.type === "temperature") {
       const temp = parseFloat(metric.value)

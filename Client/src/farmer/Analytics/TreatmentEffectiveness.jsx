@@ -1,4 +1,4 @@
-import React from "react"
+import { useState, useEffect } from "react"
 import { Bar, Line } from "react-chartjs-2"
 import {
   Chart as ChartJS,
@@ -13,27 +13,39 @@ import {
 } from "chart.js"
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend
+)
 
 export default function TreatmentEffectiveness() {
-  // Bar chart: effectiveness metrics
+  const [barStats, setBarStats] = useState([])
+  const [lineStats, setLineStats] = useState([])
+  const [summaryRows, setSummaryRows] = useState([])
+
+  useEffect(() => {
+    fetch("/api/treatments/effectiveness")
+      .then(res => res.json())
+      .then(data => {
+        setBarStats(data.metrics)
+        setLineStats(data.quarterly)
+        setSummaryRows(data.summary)
+      })
+      .catch(err => console.error(err))
+  }, [])
+
   const barData = {
-    labels: [
-      "Recovery Rate",
-      "Recovery Time",
-      "Adherence",
-      "Recurrence Reduction",
-      "Vaccination",
-      "Complications",
-      "Follow-up",
-      "Nutrition Impact",
-      "Antibiotic Reduction",
-      "Satisfaction"
-    ],
+    labels: barStats.map(item => item.metric),
     datasets: [
       {
         label: "Effectiveness Metrics (%)",
-        data: [86, 22, 94, 18, 91, 97, 88, 15, 12, 93], // localized sample values
+        data: barStats.map(item => item.value),
         backgroundColor: [
           "#17a2b8",
           "#ffc107",
@@ -50,13 +62,12 @@ export default function TreatmentEffectiveness() {
     ]
   }
 
-  // Line chart: quarterly treatment success trend (example data)
   const lineData = {
-    labels: ["Q1", "Q2", "Q3", "Q4"],
+    labels: lineStats.map(item => item.period),
     datasets: [
       {
         label: "Treatment Success Score",
-        data: [72, 78, 84, 89],
+        data: lineStats.map(item => item.score),
         borderColor: "#2E8B57",
         backgroundColor: "#98FB98",
         tension: 0.3,
@@ -75,33 +86,41 @@ export default function TreatmentEffectiveness() {
 
   return (
     <DashboardSection title="Treatment Effectiveness (Zimbabwe)">
-      <p className="mb-3">Key treatment effectiveness indicators across Zimbabwean farms:</p>
+      <p className="mb-3">
+        Key treatment effectiveness indicators across Zimbabwean farms
+      </p>
 
-      {/* Bar chart */}
       <div className="mb-3" style={{ width: "450px", height: "250px" }}>
         <h6>Effectiveness Metrics by Category</h6>
         <Bar data={barData} options={options} />
       </div>
 
-      {/* Line chart */}
       <div className="mb-3" style={{ width: "450px", height: "250px" }}>
         <h6>Quarterly Treatment Success Trend</h6>
         <Line data={lineData} options={options} />
       </div>
 
-      {/* Narrative summary */}
-      <ul className="mt-3">
-        <li>Recovery success rate at 86% across treatments in Mashonaland and Matabeleland herds.</li>
-        <li>Average recovery time reduced by 22% compared to last quarter, especially in dairy cows treated for mastitis.</li>
-        <li>Medication adherence among communal farmers reached 94%, supported by district veterinary extension officers.</li>
-        <li>Preventive treatments lowered disease recurrence by 18%, notably in goat flocks affected by PPR.</li>
-        <li>Vaccination effectiveness recorded at 91% coverage, with strong uptake for Newcastle in poultry and rabies in cattle.</li>
-        <li>Complication rate dropped to 3%, the lowest in 12 months, especially in surgical cases like abscess drainage.</li>
-        <li>Follow-up compliance improved to 88% of scheduled visits, aided by mobile vet services in rural areas.</li>
-        <li>Nutrition-based interventions boosted recovery speed by 15%, using sorghum stover and maize silage as feed supplements.</li>
-        <li>Antibiotic usage reduced by 12% due to alternative therapies like herbal remedies and improved hygiene practices.</li>
-        <li>Farmer satisfaction with treatments at 93% positive feedback, based on surveys in Midlands and Manicaland districts.</li>
-      </ul>
+      <div className="mt-4">
+        <h6>Treatment Summary</h6>
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Result</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summaryRows.map(row => (
+              <tr key={row.id}>
+                <td>{row.metric}</td>
+                <td>{row.result}</td>
+                <td>{row.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </DashboardSection>
   )
 }

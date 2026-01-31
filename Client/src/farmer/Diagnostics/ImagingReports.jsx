@@ -30,13 +30,11 @@ export default function ImagingReports() {
     { id: 10, animal: "Cow #A20", species: "Cattle", type: "Ultrasound", finding: "Kidney stone", date: "20 Jan 2026" }
   ]
 
-  // Apply filters
   const filteredReports = reports.filter(r =>
     (typeFilter === "All" ? true : r.type === typeFilter) &&
     (speciesFilter === "All" ? true : r.species === speciesFilter)
   )
 
-  // Pie chart: distribution of imaging types
   const pieData = {
     labels: ["X-Ray", "Ultrasound", "CT Scan", "MRI"],
     datasets: [
@@ -54,7 +52,6 @@ export default function ImagingReports() {
     ]
   }
 
-  // Bar chart: imaging reports per week (demo data)
   const barData = {
     labels: ["Week 1", "Week 2", "Week 3"],
     datasets: [
@@ -75,7 +72,6 @@ export default function ImagingReports() {
     }
   }
 
-  // Conditional styling for findings
   const getFindingStyle = (finding) => {
     const normalKeywords = ["Normal", "pregnancy", "density"]
     return normalKeywords.some(k => finding.toLowerCase().includes(k.toLowerCase()))
@@ -88,7 +84,6 @@ export default function ImagingReports() {
       <h4>Imaging Reports (Zimbabwe)</h4>
       <p>Uploaded veterinary imaging reports (X-ray, ultrasound, CT, MRI) for cattle, goats, and sheep.</p>
 
-      {/* Filters */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "X-Ray", "Ultrasound", "CT Scan", "MRI"].map(type => (
           <button
@@ -113,9 +108,8 @@ export default function ImagingReports() {
         ))}
       </div>
 
-      {/* Reports */}
       <div className="row mb-3">
-        {filteredReports.map(r => (
+        {filteredReports.length > 0 ? filteredReports.map(r => (
           <div key={r.id} className="col-md-6 mb-3">
             <div className="card shadow-sm">
               <div className="card-body">
@@ -125,13 +119,11 @@ export default function ImagingReports() {
               </div>
             </div>
           </div>
-        ))}
-        {filteredReports.length === 0 && (
+        )) : (
           <div className="col-12 text-muted">No reports found for {typeFilter} in {speciesFilter}.</div>
         )}
       </div>
 
-      {/* Charts */}
       <div className="row">
         <div className="col-md-6 mb-3" style={{ height: "300px" }}>
           <h6>Imaging Type Distribution</h6>

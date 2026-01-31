@@ -30,26 +30,23 @@ export default function MedicationHistory() {
   const [filter, setFilter] = useState("All")
 
   const medicationTypes = ["Antibiotics", "Painkillers", "Vitamins", "Vaccines"]
-  const medicationData = [45, 25, 15, 15] // sample distribution
+  const medicationData = [45, 25, 15, 15]
 
-  // Calculate totals
   const total = medicationData.reduce((a, b) => a + b, 0)
   const antibioticsShare = (medicationData[0] / total) * 100
 
-  // Pie chart: medication types distribution
   const pieData = {
     labels: medicationTypes,
     datasets: [
       {
         data: medicationData,
-        backgroundColor: ["#FF4500", "#A0522D", "#CD853F", "#228B22"], // antibiotics red, vaccines green
+        backgroundColor: ["#FF4500", "#A0522D", "#CD853F", "#228B22"],
         borderColor: "#fff",
         borderWidth: 2
       }
     ]
   }
 
-  // Bar chart: treatments completed per month
   const barData = {
     labels: ["Sep", "Oct", "Nov", "Dec", "Jan"],
     datasets: [
@@ -61,7 +58,6 @@ export default function MedicationHistory() {
     ]
   }
 
-  // Line chart: medication usage trend
   const lineData = {
     labels: ["Sep", "Oct", "Nov", "Dec", "Jan"],
     datasets: [
@@ -97,14 +93,12 @@ export default function MedicationHistory() {
     <DashboardSection title="Medication History (Zimbabwe)">
       <p className="mb-3">Completed antibiotic and vaccine treatments last month for cattle, goats, and sheep.</p>
 
-      {/* Conditional alert */}
       {antibioticsShare > 50 && (
         <div className="alert alert-warning fw-bold">
           ⚠️ Antibiotics usage is {Math.round(antibioticsShare)}% of total — potential overuse risk!
         </div>
       )}
 
-      {/* Filter buttons */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", ...medicationTypes].map(f => (
           <button
@@ -117,7 +111,6 @@ export default function MedicationHistory() {
         ))}
       </div>
 
-      {/* Charts */}
       <div className="mb-3" style={{ width: "250px", height: "250px" }}>
         <h6>Medication Types</h6>
         <Pie data={pieData} options={options} />

@@ -27,7 +27,6 @@ ChartJS.register(
 export default function DiseaseHistory() {
   const [speciesFilter, setSpeciesFilter] = useState("All")
 
-  // Pie chart: distribution of diseases
   const diseaseData = {
     All: [35, 25, 15, 15, 10],
     Cattle: [40, 30, 10, 10, 10],
@@ -48,70 +47,23 @@ export default function DiseaseHistory() {
     ]
   }
 
-  // Multi-line chart: recovery trends by region
   const lineDataRegions = {
     labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
     datasets: [
-      {
-        label: "Mashonaland",
-        data: [42, 55, 65, 72, 80, 87],
-        borderColor: "#8B4513",
-        backgroundColor: "#CD853F",
-        tension: 0.3,
-        fill: false
-      },
-      {
-        label: "Matabeleland",
-        data: [38, 50, 60, 68, 75, 82],
-        borderColor: "#2E8B57",
-        backgroundColor: "#98FB98",
-        tension: 0.3,
-        fill: false
-      },
-      {
-        label: "Midlands",
-        data: [40, 52, 63, 70, 78, 85],
-        borderColor: "#4682B4",
-        backgroundColor: "#87CEFA",
-        tension: 0.3,
-        fill: false
-      },
-      {
-        label: "Manicaland",
-        data: [44, 57, 67, 74, 82, 88],
-        borderColor: "#6A5ACD",
-        backgroundColor: "#9370DB",
-        tension: 0.3,
-        fill: false
-      }
+      { label: "Mashonaland", data: [42, 55, 65, 72, 80, 87], borderColor: "#8B4513", backgroundColor: "#CD853F", tension: 0.3, fill: false },
+      { label: "Matabeleland", data: [38, 50, 60, 68, 75, 82], borderColor: "#2E8B57", backgroundColor: "#98FB98", tension: 0.3, fill: false },
+      { label: "Midlands", data: [40, 52, 63, 70, 78, 85], borderColor: "#4682B4", backgroundColor: "#87CEFA", tension: 0.3, fill: false },
+      { label: "Manicaland", data: [44, 57, 67, 74, 82, 88], borderColor: "#6A5ACD", backgroundColor: "#9370DB", tension: 0.3, fill: false }
     ]
   }
 
-  // Scatter chart: severity vs recovery time
   const scatterData = {
     datasets: [
-      {
-        label: "Cases",
-        data: [
-          { x: 2, y: 5 },
-          { x: 3, y: 7 },
-          { x: 4, y: 12 },
-          { x: 5, y: 15 },
-          { x: 6, y: 20 }
-        ],
-        backgroundColor: "#A0522D"
-      }
+      { label: "Cases", data: [{ x: 2, y: 5 }, { x: 3, y: 7 }, { x: 4, y: 12 }, { x: 5, y: 15 }, { x: 6, y: 20 }], backgroundColor: "#A0522D" }
     ]
   }
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "right" },
-      title: { display: true }
-    }
-  }
+  const options = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right" }, title: { display: true } } }
 
   return (
     <DashboardSection title="Disease History (Zimbabwe)">
@@ -119,7 +71,6 @@ export default function DiseaseHistory() {
         Diagnostic records filtered by species and region. Example: Goat #B07 treated for foot rot in Mashonaland.
       </p>
 
-      {/* Species filter */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
         {["All", "Cattle", "Goats", "Poultry", "Sheep"].map(species => (
           <button

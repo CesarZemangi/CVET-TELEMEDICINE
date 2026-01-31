@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getAnimals } from "../services/farmer.animals.service"
+import { getAnimals } from"./services/farmer.animals.service"
 
 export default function Animals() {
 const [animals, setAnimals] = useState([])

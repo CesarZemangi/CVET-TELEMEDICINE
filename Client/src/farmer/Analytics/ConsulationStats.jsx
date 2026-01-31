@@ -1,4 +1,5 @@
-import DashboardSection from "../../components/dashboard/DashboardSection";
+import { useState, useEffect } from "react"
+import DashboardSection from "../../components/dashboard/DashboardSection"
 
 import { Bar } from "react-chartjs-2"
 import {
@@ -14,21 +15,27 @@ import {
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 export default function ConsultationStats() {
+  const [stats, setStats] = useState([])
+  const [speciesStats, setSpeciesStats] = useState([])
+  const [tableData, setTableData] = useState([])
+
+  useEffect(() => {
+    fetch("/api/consultations/stats")
+      .then(res => res.json())
+      .then(data => {
+        setStats(data.overall)
+        setSpeciesStats(data.bySpecies)
+        setTableData(data.recent)
+      })
+      .catch(err => console.error(err))
+  }, [])
+
   const data = {
-    labels: [
-      "Completed",
-      "Pending Review",
-      "Cancelled",
-      "Upcoming",
-      "With Lab Tests",
-      "With Surgery",
-      "Avg Duration",
-      "Satisfaction"
-    ],
+    labels: stats.map(item => item.label),
     datasets: [
       {
         label: "Consultations (Zimbabwe)",
-        data: [22, 7, 2, 12, 6, 3, 50, 88], // localized sample values
+        data: stats.map(item => item.value),
         backgroundColor: [
           "#8B4513",
           "#A0522D",
@@ -44,11 +51,11 @@ export default function ConsultationStats() {
   }
 
   const speciesData = {
-    labels: ["Cattle", "Goats", "Poultry", "Sheep"],
+    labels: speciesStats.map(item => item.species),
     datasets: [
       {
         label: "Consultations by Species",
-        data: [15, 10, 8, 5], // sample localized values
+        data: speciesStats.map(item => item.count),
         backgroundColor: ["#17a2b8", "#ffc107", "#28a745", "#dc3545"]
       }
     ]
@@ -58,33 +65,48 @@ export default function ConsultationStats() {
     responsive: true,
     plugins: {
       legend: { display: false },
-      title: { display: true, text: "Zimbabwe Veterinary Consultation Statistics Overview" }
+      title: {
+        display: true,
+        text: "Zimbabwe Veterinary Consultation Statistics Overview"
+      }
     }
   }
 
   return (
     <DashboardSection title="Consultation Statistics (Zimbabwe)">
-      {/* Overall consultation stats */}
       <Bar data={data} options={options} />
 
-      {/* Species breakdown */}
       <div className="mt-4">
         <h6>Consultations by Species</h6>
-        <Bar data={speciesData} options={{ responsive: true, plugins: { legend: { display: false } } }} />
+        <Bar
+          data={speciesData}
+          options={{ responsive: true, plugins: { legend: { display: false } } }}
+        />
       </div>
 
-      <ul className="mt-3">
-        <li>22 consultations completed this month across Mashonaland and Matabeleland farms</li>
-        <li>7 consultations pending review by district veterinary officers</li>
-        <li>2 consultations cancelled due to farmer travel or resource constraints</li>
-        <li>12 consultations scheduled for next week (mostly cattle and goat herds)</li>
-        <li>Average duration: 50 minutes per consultation</li>
-        <li>Most common issue: Mastitis in dairy cows (9 cases)</li>
-        <li>6 consultations included lab tests (blood chemistry, fecal exams)</li>
-        <li>3 consultations required surgical follow-up (fracture fixation, abscess drainage)</li>
-        <li>Farmer satisfaction rating: 88% (based on Midlands and Manicaland feedback)</li>
-        <li>Species breakdown: 15 cattle, 10 goats, 8 poultry, 5 sheep consultations</li>
-      </ul>
+      <div className="mt-4">
+        <h6>Recent Consultations</h6>
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Species</th>
+              <th>Status</th>
+              <th>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableData.map(row => (
+              <tr key={row.id}>
+                <td>{row.date}</td>
+                <td>{row.species}</td>
+                <td>{row.status}</td>
+                <td>{row.duration} min</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </DashboardSection>
   )
 }
