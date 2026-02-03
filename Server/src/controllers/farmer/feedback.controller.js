@@ -1,11 +1,12 @@
-const Feedback = require('../models/feedback.model');
-const { success, error } = require('../utils/response');
+// Change 'require' to 'import'
+import Feedback from '../../models/feedback.model.js'; 
+import { success, error } from '../../utils/response.js';
 
-// Create feedback (farmer submits after consultation)
-exports.createFeedback = async (req, res) => {
+// Change 'exports.name' to 'export const name'
+export const createFeedback = async (req, res) => {
   try {
     const { consultation_id, rating, comments } = req.body;
-    const farmer_id = req.user.id; // from auth middleware
+    const farmer_id = req.user.id; 
 
     const feedback = await Feedback.create({
       consultation_id,
@@ -21,8 +22,7 @@ exports.createFeedback = async (req, res) => {
   }
 };
 
-// Get feedback for a consultation (vet/farmer can view)
-exports.getFeedbackByConsultation = async (req, res) => {
+export const getFeedbackByConsultation = async (req, res) => {
   try {
     const { consultationId } = req.params;
     const feedback = await Feedback.findAll({ where: { consultation_id: consultationId } });
@@ -33,8 +33,7 @@ exports.getFeedbackByConsultation = async (req, res) => {
   }
 };
 
-// Get all feedback by farmer
-exports.getFeedbackByFarmer = async (req, res) => {
+export const getFeedbackByFarmer = async (req, res) => {
   try {
     const farmer_id = req.user.id;
     const feedback = await Feedback.findAll({ where: { farmer_id } });

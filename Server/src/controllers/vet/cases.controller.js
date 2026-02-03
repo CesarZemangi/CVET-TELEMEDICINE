@@ -1,13 +1,13 @@
 import db from "../../config/db.js"
 
-export const getVetCases = async (req, res) => {
+// Change getVetCases to getCases
+export const getCases = async (req, res) => {
   const [rows] = await db.query(
     "SELECT * FROM cases WHERE vet_id = ?",
     [req.user.id]
-  )
-
-  res.json(rows)
-}
+  );
+  res.json(rows);
+};
 
 export const assignCase = async (req, res) => {
   await db.query(

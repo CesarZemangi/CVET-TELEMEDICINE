@@ -1,46 +1,55 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Card, CardContent } from "../components/ui/card"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+// Assuming you are using Shadcn/UI or similar component library
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Card, CardContent } from "../components/ui/card";
 
 export default function Register() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
     password: "",
-    role: "farmer"
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+    role: "farmer" // Default role
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const res = await fetch("/api/auth/register", {
+      // 1. Point to the full Backend URL
+      const res = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message)
-      alert("Registration successful! Please login.")
-      navigate("/")
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Capture the error message from our backend's error() helper
+        throw new Error(data.message || "Registration failed");
+      }
+
+      alert("Registration successful! Please login.");
+      navigate("/"); // Navigate to the login page
+      
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F5F5DC" }}>
@@ -50,20 +59,26 @@ export default function Register() {
             Create Account
           </h2>
 
-          {error && <p className="text-red-600 text-center">{error}</p>}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm text-center">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <Input name="name" placeholder="Full Name" value={form.name} onChange={handleChange} style={{ borderColor: "#A0522D" }} />
-            <Input name="email" placeholder="Email" value={form.email} onChange={handleChange} style={{ borderColor: "#A0522D" }} />
+            <Input name="name" placeholder="Full Name" value={form.name} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
+            <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
             <Input name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} style={{ borderColor: "#A0522D" }} />
-            <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} style={{ borderColor: "#A0522D" }} />
+            <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
 
-            <div className="flex justify-between mt-2">
-              <label>
-                <input type="radio" name="role" value="farmer" checked={form.role === "farmer"} onChange={handleChange} /> Farmer
+            <div className="flex justify-around p-2 bg-slate-50 rounded-lg border border-dashed border-stone-300">
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="role" value="farmer" checked={form.role === "farmer"} onChange={handleChange} className="accent-[#A0522D]" />
+                <span className="text-sm font-medium">Farmer</span>
               </label>
-              <label>
-                <input type="radio" name="role" value="vet" checked={form.role === "vet"} onChange={handleChange} /> Vet
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="role" value="vet" checked={form.role === "vet"} onChange={handleChange} className="accent-[#A0522D]" />
+                <span className="text-sm font-medium">Vet</span>
               </label>
             </div>
 
@@ -71,8 +86,14 @@ export default function Register() {
               {loading ? "Registering..." : "Create Account"}
             </Button>
           </form>
+
+          <div className="text-center mt-2">
+             <button onClick={() => navigate("/")} className="text-xs text-stone-500 hover:underline">
+               Already have an account? Log in
+             </button>
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

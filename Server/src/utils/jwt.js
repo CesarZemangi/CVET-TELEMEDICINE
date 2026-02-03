@@ -1,13 +1,24 @@
-import jsonwebtoken from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET || "your_default_secret"
+const SECRET = process.env.JWT_SECRET;
 
-// Generate a JWT token
+// Safety check: Stop the server if the secret is missing in production
+if (!SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+}
+
+const FINAL_SECRET = SECRET || "dev_secret_only";
+
 export const generateToken = (payload) => {
-  return jsonwebtoken.sign(payload, SECRET, { expiresIn: "1d" })
-}
+  return jwt.sign(payload, FINAL_SECRET, { expiresIn: "1d" });
+};
 
-// Verify a JWT token
 export const verifyToken = (token) => {
-  return jsonwebtoken.verify(token, SECRET)
-}
+  try {
+    return jwt.verify(token, FINAL_SECRET);
+  } catch (error) {
+    // Re-throwing allows your middleware to catch it, 
+    // but you could log the specific error here for debugging
+    throw error;
+  }
+};

@@ -1,3 +1,5 @@
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js'; // Ensure this points to your database config
 const Consultation = sequelize.define('Consultation', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   case_id: { type: DataTypes.INTEGER },
@@ -9,4 +11,4 @@ const Consultation = sequelize.define('Consultation', {
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, { tableName: 'consultations', timestamps: false });
 
-module.exports = Consultation;
+export default  Consultation;

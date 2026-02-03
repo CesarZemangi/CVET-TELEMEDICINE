@@ -1,11 +1,16 @@
-const Notification = require('../models/notification.model');
-const { success, error } = require('../utils/response');
+// 1. Convert require to import and add .js extensions
+import Notification from '../../models/notification.model.js';
+import { success, error } from '../../utils/response.js';
 
+// 2. Use 'export const' for named exports
 // Get all notifications for logged-in user
-exports.getNotifications = async (req, res) => {
+export const getNotifications = async (req, res) => {
   try {
     const user_id = req.user.id;
-    const notifications = await Notification.findAll({ where: { user_id }, order: [['created_at', 'DESC']] });
+    const notifications = await Notification.findAll({ 
+      where: { user_id }, 
+      order: [['created_at', 'DESC']] 
+    });
 
     success(res, notifications, 'Notifications retrieved successfully');
   } catch (err) {
@@ -14,7 +19,7 @@ exports.getNotifications = async (req, res) => {
 };
 
 // Mark notification as seen
-exports.markAsSeen = async (req, res) => {
+export const markAsSeen = async (req, res) => {
   try {
     const { id } = req.params;
     const notification = await Notification.findByPk(id);
@@ -31,7 +36,7 @@ exports.markAsSeen = async (req, res) => {
 };
 
 // Create notification (system or admin trigger)
-exports.createNotification = async (req, res) => {
+export const createNotification = async (req, res) => {
   try {
     const { user_id, title, message } = req.body;
 

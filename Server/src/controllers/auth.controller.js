@@ -1,73 +1,72 @@
-import db from "../config/db.js"
-import bcrypt from "bcryptjs"
+import bcrypt from 'bcryptjs';
+import User from '../models/user.model.js';
+import { generateToken } from '../utils/jwt.js';
+import { success, error } from '../utils/response.js';
 
-// REGISTER
-export const register = async (req, res) => {
-  const { name, email, password, role, phone } = req.body
-
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ message: "All required fields must be filled" })
-  }
-
-  try {
-    const [existing] = await db.query("SELECT * FROM users WHERE email = ?", [email])
-    if (existing.length > 0) {
-      return res.status(409).json({ message: "Email already registered" })
-    }
-
-    const password_hash = await bcrypt.hash(password, 10)
-
-    await db.query(
-      "INSERT INTO users (name, email, password_hash, role, phone) VALUES (?, ?, ?, ?, ?)",
-      [name, email, password_hash, role, phone || null]
-    )
-
-    return res.status(201).json({ message: "Registration successful" })
-  } catch (err) {
-    console.error("Register error:", err)
-    return res.status(500).json({ message: "Server error" })
-  }
-}
-
-// LOGIN
 export const login = async (req, res) => {
-  const { email, password } = req.body
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Email and password required" })
-  }
-
   try {
-    const [rows] = await db.query(
-      "SELECT id, name, email, password_hash, role, phone FROM users WHERE email = ?",
-      [email]
-    )
+    const { email, password } = req.body;
 
-    if (rows.length === 0) {
-      return res.status(401).json({ message: "Invalid email or password" })
+    // 1. Find the user in the 'users' table
+    const user = await User.findOne({ where: { email } });
+
+    // 2. If user doesn't exist
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    const user = rows[0]
-    const match = await bcrypt.compare(password, user.password_hash)
+    // 3. Compare the plain-text password with the hash in the DB
+    // Because of 'field: password_hash' in your model, user.password contains the hash
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!match) {
-      return res.status(401).json({ message: "Invalid email or password" })
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    return res.status(200).json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone
-    })
-  } catch (error) {
-    console.error("Login error:", error)
-    return res.status(500).json({ message: "Login failed" })
+    // 4. Generate the JWT token
+    const token = generateToken(user);
+
+    // 5. Send back exactly what your React frontend expects
+    // We include 'role' so navigate() knows where to go
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      role: user.role, 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    console.error("Login Error:", err);
+    error(res, "An internal server error occurred");
   }
-}
+};
+export const register = async (req, res) => {
+try {
+const { name, email, password, role } = req.body
+const hashedPassword = await bcrypt.hash(password, 10)
 
-// LOGOUT
-export const logout = (req, res) => {
-  return res.status(200).json({ message: "Logout successful" })
+const user = await User.create({
+  name,
+  email: email.trim().toLowerCase(),
+  password: hashedPassword,
+  role
+})
+
+res.status(201).json({
+  message: "User registered",
+  user: {
+    id: user.id,
+    email: user.email,
+    role: user.role
+  }
+})
+} catch (err) {
+console.error(err)
+error(res, "Registration failed")
 }
+}
+ 

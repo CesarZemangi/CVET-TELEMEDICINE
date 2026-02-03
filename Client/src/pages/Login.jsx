@@ -1,50 +1,58 @@
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password })
-      })
+        body: JSON.stringify({ email, password }),
+      });
+
+      // Parse JSON immediately so we can read error messages from the backend
+      const result = await res.json();
 
       if (!res.ok) {
-        const text = await res.text()
-        throw new Error(text || "Login failed")
+        // If the backend sent a specific message (e.g., "Invalid password"), use it
+        throw new Error(result.message || "Login failed");
       }
 
-      const data = await res.json()
+      // 1. Save the response to localStorage
+      localStorage.setItem("user", JSON.stringify(result));
 
-      localStorage.setItem("user", JSON.stringify(data))
+      // 2. Identify role (checking both flat structure and nested 'data' structure)
+      const userData = result.data || result;
+      const userRole = userData.role;
 
-      if (data.role === "farmer") {
-        navigate("/farmer")
+      // 3. Navigate based on role
+      if (userRole === "farmer") {
+        navigate("/farmer");
+      } else if (userRole === "vet") {
+        navigate("/vet");
+      } else {
+        setError("User role not recognized. Please contact support.");
       }
-
-      if (data.role === "vet") {
-        navigate("/vet")
-      }
+      
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="d-flex align-items-center justify-content-center vh-100" style={{ backgroundColor: "#F5F5DC" }}>
@@ -61,34 +69,49 @@ export default function Login() {
           CVET Login
         </h4>
 
-        {error && <p className="text-danger text-center">{error}</p>}
+        {error && (
+          <div className="alert alert-danger py-2 text-center" style={{ fontSize: "0.9rem" }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
-          <input
-            className="form-control mb-3"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ borderColor: "#A0522D" }}
-          />
+          <div className="mb-3">
+            <label className="form-label small fw-bold" style={{ color: "#A0522D" }}>Email Address</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={{ borderColor: "#A0522D" }}
+            />
+          </div>
 
-          <input
-            type="password"
-            className="form-control mb-3"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ borderColor: "#A0522D" }}
-          />
+          <div className="mb-3">
+            <label className="form-label small fw-bold" style={{ color: "#A0522D" }}>Password</label>
+            <input
+              type="password"
+              className="form-control"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ borderColor: "#A0522D" }}
+            />
+          </div>
 
           <button
-            className="btn w-100"
+            className="btn w-100 mt-2"
             style={{ backgroundColor: "#A0522D", color: "#fff", fontWeight: "bold" }}
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Log in"}
+            {loading ? (
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            ) : (
+              "Log in"
+            )}
           </button>
         </form>
 
@@ -105,5 +128,5 @@ export default function Login() {
         </div>
       </div>
     </div>
-  )
+  );
 }

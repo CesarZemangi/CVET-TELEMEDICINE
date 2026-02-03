@@ -1,3 +1,5 @@
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js'; // Ensure this points to your database config
 const TreatmentPlan = sequelize.define('TreatmentPlan', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   case_id: { type: DataTypes.INTEGER },
@@ -5,5 +7,4 @@ const TreatmentPlan = sequelize.define('TreatmentPlan', {
   start_date: { type: DataTypes.DATE },
   end_date: { type: DataTypes.DATE }
 }, { tableName: 'treatment_plans', timestamps: false });
-
-module.exports = TreatmentPlan;
+export default   TreatmentPlan;

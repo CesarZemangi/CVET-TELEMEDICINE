@@ -1,3 +1,6 @@
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js'; // Ensure this points to your database config file
+
 const Feedback = sequelize.define('Feedback', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   consultation_id: { type: DataTypes.INTEGER },
@@ -5,6 +8,9 @@ const Feedback = sequelize.define('Feedback', {
   rating: { type: DataTypes.INTEGER },
   comments: { type: DataTypes.TEXT },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, { tableName: 'feedback', timestamps: false });
+}, { 
+  tableName: 'feedback', 
+  timestamps: false 
+});
 
-module.exports = Feedback;
+export default Feedback;

@@ -1,3 +1,5 @@
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js'; // Ensure this points to your database config
 const Prescription = sequelize.define('Prescription', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   consultation_id: { type: DataTypes.INTEGER },
@@ -7,4 +9,4 @@ const Prescription = sequelize.define('Prescription', {
   instructions: { type: DataTypes.TEXT }
 }, { tableName: 'prescriptions', timestamps: false });
 
-module.exports = Prescription;
+export default Prescription;

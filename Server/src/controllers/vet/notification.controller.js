@@ -1,8 +1,10 @@
-const Notification = require('../models/notification.model');
-const { success, error } = require('../utils/response');
+// 1. Convert requires to imports and add .js extensions
+import Notification from '../../models/notification.model.js';
+import { success, error } from '../../utils/response.js';
 
+// 2. Change exports.method to export const method
 // Get all notifications for logged-in vet
-exports.getVetNotifications = async (req, res) => {
+export const getVetNotifications = async (req, res) => {
   try {
     const vet_id = req.user.id;
     const notifications = await Notification.findAll({
@@ -17,7 +19,7 @@ exports.getVetNotifications = async (req, res) => {
 };
 
 // Mark notification as seen (vet-specific)
-exports.markVetNotificationAsSeen = async (req, res) => {
+export const markVetNotificationAsSeen = async (req, res) => {
   try {
     const { id } = req.params;
     const notification = await Notification.findByPk(id);

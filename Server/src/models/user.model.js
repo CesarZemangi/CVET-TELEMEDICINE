@@ -1,15 +1,41 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/db');
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/db.js';
 
 const User = sequelize.define('User', {
-  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  name: { type: DataTypes.STRING },
-  email: { type: DataTypes.STRING, unique: true },
-  password: { type: DataTypes.STRING },
-  role: { type: DataTypes.ENUM('farmer', 'vet') },
-  phone: { type: DataTypes.STRING },
-  status: { type: DataTypes.STRING },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, { tableName: 'users', timestamps: false });
+  id: { 
+    type: DataTypes.INTEGER, 
+    primaryKey: true, 
+    autoIncrement: true 
+  },
+  name: { 
+    type: DataTypes.STRING 
+  },
+  email: { 
+    type: DataTypes.STRING, 
+    unique: true 
+  },
+  // Map 'password' in code to 'password_hash' in DB
+  password: { 
+    type: DataTypes.STRING,
+    field: 'password_hash' 
+  },
+  role: { 
+    type: DataTypes.ENUM('farmer', 'vet') 
+  },
+  phone: { 
+    type: DataTypes.STRING 
+  },
+  status: { 
+    type: DataTypes.STRING,
+    defaultValue: 'active'
+  },
+  created_at: { 
+    type: DataTypes.DATE, 
+    defaultValue: DataTypes.NOW 
+  }
+}, { 
+  tableName: 'users', // Ensure this matches your phpMyAdmin table name
+  timestamps: false 
+});
 
-module.exports = User;
+export default User;
