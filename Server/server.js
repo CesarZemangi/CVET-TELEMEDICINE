@@ -1,12 +1,19 @@
+import 'dotenv/config'; // This must be the first line
 import dotenv from "dotenv";
 import app from "./src/app.js";
 import sequelize from "./src/config/db.js";
+import authRoutes from "./src/routes/auth.routes.js";
+import farmerRoutes from "./src/routes/farmer.routes.js";
 
 // Load environment variables
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-
+// --- REGISTER YOUR ROUTES ---
+// This tells the server: "If a request starts with /api/farmer, look in farmerRoutes"
+app.use("/api/auth", authRoutes);
+app.use("/api/farmer", farmerRoutes);
+// ----------------------------
 /**
  * Start Server with Database Synchronization
  * sequelize.sync({ alter: true }) ensures your tables match your models 

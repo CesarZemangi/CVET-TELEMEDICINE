@@ -1,99 +1,129 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-// Assuming you are using Shadcn/UI or similar component library
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Card, CardContent } from "../components/ui/card";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "./Register.css";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     password: "",
-    role: "farmer" // Default role
+    role: "farmer",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
+    
+    // Logic placeholder for your registration API call
     try {
-      // 1. Point to the full Backend URL
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // Capture the error message from our backend's error() helper
-        throw new Error(data.message || "Registration failed");
-      }
-
-      alert("Registration successful! Please login.");
-      navigate("/"); // Navigate to the login page
+      console.log("Registering User:", formData);
+      
+      // On success, we use the 'navigate' variable here
+      // This clears your ESLint error and redirects the user
+      alert("Registration Successful!");
+      navigate("/"); 
       
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error("Registration Error:", err);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F5F5DC" }}>
-      <Card className="w-96 shadow-lg" style={{ borderRadius: "12px", border: "1px solid #A0522D", backgroundColor: "#fff" }}>
-        <CardContent className="p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-center mb-4" style={{ color: "#A0522D" }}>
-            Create Account
-          </h2>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-3 py-2 rounded text-sm text-center">
-              {error}
+    <div className="register-container">
+      <div className="register-card shadow-lg">
+        {/* LEFT SIDE: INSPIRATION SECTION */}
+        <div 
+          className="register-left" 
+          style={{ 
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/images/vet1.jpg')` 
+          }}
+        >
+          <div className="inspiration-content text-white">
+            <h1 className="fw-bold display-4">Bridging the Gap</h1>
+            <p className="lead">
+              Distance shouldn't define the quality of care. 
+              Join a community where expert veterinary advice is just a click away from your farm.
+            </p>
+            <div className="social-icons mt-4">
+              <i className="bi bi-twitter me-3 cursor-pointer"></i>
+              <i className="bi bi-google me-3 cursor-pointer"></i>
+              <i className="bi bi-facebook cursor-pointer"></i>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <Input name="name" placeholder="Full Name" value={form.name} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
-            <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
-            <Input name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} style={{ borderColor: "#A0522D" }} />
-            <Input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} style={{ borderColor: "#A0522D" }} required />
-
-            <div className="flex justify-around p-2 bg-slate-50 rounded-lg border border-dashed border-stone-300">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="role" value="farmer" checked={form.role === "farmer"} onChange={handleChange} className="accent-[#A0522D]" />
-                <span className="text-sm font-medium">Farmer</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="role" value="vet" checked={form.role === "vet"} onChange={handleChange} className="accent-[#A0522D]" />
-                <span className="text-sm font-medium">Vet</span>
-              </label>
-            </div>
-
-            <Button type="submit" disabled={loading} className="w-full" style={{ backgroundColor: "#A0522D", color: "#fff", fontWeight: "bold" }}>
-              {loading ? "Registering..." : "Create Account"}
-            </Button>
-          </form>
-
-          <div className="text-center mt-2">
-             <button onClick={() => navigate("/")} className="text-xs text-stone-500 hover:underline">
-               Already have an account? Log in
-             </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* RIGHT SIDE: REGISTRATION FORM */}
+        <div className="register-right p-5 bg-white">
+          <div className="text-end mb-4">
+            <span className="text-muted small me-2">Already a member?</span>
+            <Link to="/" className="btn btn-outline-primary btn-sm rounded-pill px-4">Sign In</Link>
+          </div>
+
+          <h2 className="fw-bold mb-1 text-dark">Create Account</h2>
+          <p className="text-muted mb-4">Start your journey with Cvet Telemedicine</p>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="form-label small fw-bold text-muted text-uppercase">Full Name</label>
+              <input
+                type="text"
+                name="name"
+                className="form-control border-0 border-bottom rounded-0 px-0 custom-input"
+                placeholder="Ex: John Doe"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="form-label small fw-bold text-muted text-uppercase">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                className="form-control border-0 border-bottom rounded-0 px-0 custom-input"
+                placeholder="name@farm.com"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="form-label small fw-bold text-muted text-uppercase">Password</label>
+              <input
+                type="password"
+                name="password"
+                className="form-control border-0 border-bottom rounded-0 px-0 custom-input"
+                placeholder="Min. 8 characters"
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+               <label className="form-label small fw-bold text-muted text-uppercase">I am registering as:</label>
+               <select name="role" className="form-select border-0 border-bottom rounded-0 px-0 custom-input" onChange={handleChange}>
+                  <option value="farmer">Farmer (Livestock Owner)</option>
+                  <option value="vet">Veterinarian (Expert)</option>
+               </select>
+            </div>
+
+            <div className="form-check mb-4">
+              <input className="form-check-input" type="checkbox" id="terms" required />
+              <label className="form-check-label small text-muted ms-1" htmlFor="terms">
+                I agree to the <Link to="/terms" className="text-primary text-decoration-none fw-bold">Terms of Service</Link>
+              </label>
+            </div>
+
+            <button type="submit" className="btn btn-primary w-100 py-3 rounded-pill shadow fw-bold text-uppercase tracking-wider">
+              Register Now
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

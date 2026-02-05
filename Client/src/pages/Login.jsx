@@ -23,25 +23,29 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      // Parse JSON immediately so we can read error messages from the backend
+      // 1. Parse JSON
       const result = await res.json();
 
       if (!res.ok) {
-        // If the backend sent a specific message (e.g., "Invalid password"), use it
         throw new Error(result.message || "Login failed");
       }
 
-      // 1. Save the response to localStorage
-      localStorage.setItem("user", JSON.stringify(result));
+      // 2. Save the Token and Role separately (this makes Protected Routes easier)
+   localStorage.setItem(
+"user",
+JSON.stringify({
+id: result.user.id,
+name: result.user.name,
+email: result.user.email,
+role: result.role,
+token: result.token
+})
+);
 
-      // 2. Identify role (checking both flat structure and nested 'data' structure)
-      const userData = result.data || result;
-      const userRole = userData.role;
-
-      // 3. Navigate based on role
-      if (userRole === "farmer") {
+      // 3. Navigate based on the role directly from the result
+      if (result.role === "farmer") {
         navigate("/farmer");
-      } else if (userRole === "vet") {
+      } else if (result.role === "vet") {
         navigate("/vet");
       } else {
         setError("User role not recognized. Please contact support.");

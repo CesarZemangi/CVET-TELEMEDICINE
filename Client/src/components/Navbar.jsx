@@ -1,13 +1,29 @@
-import { Button } from "./ui/button"
+import { useNavigate } from 'react-router-dom';
+import { handleLogout } from '../utils/auth';
 
-export default function Navbar({ dark, toggleDark }) {
+const Navbar = () => {
+  const navigate = useNavigate();
+
+  const onLogoutClick = () => {
+    // We pass navigate to the helper so it can move the user to /login
+    handleLogout(navigate);
+  };
+
   return (
-    <header className="h-14 bg-white dark:bg-gray-900 border-b flex items-center justify-between px-6">
-      <p className="font-semibold">CVET Telemedicine</p>
+    <nav className="navbar">
+      <div className="logo">CVET-Telemedicine</div>
+      <div className="nav-links">
+        {/* ... other links like Dashboard or Profile ... */}
+        <button 
+          onClick={onLogoutClick} 
+          className="btn-logout"
+          style={{ cursor: 'pointer', color: 'red', border: 'none', background: 'none' }}
+        >
+          Logout
+        </button>
+      </div>
+    </nav>
+  );
+};
 
-      <Button variant="outline" onClick={toggleDark}>
-        {dark ? "Light Mode" : "Dark Mode"}
-      </Button>
-    </header>
-  )
-}
+export default Navbar;

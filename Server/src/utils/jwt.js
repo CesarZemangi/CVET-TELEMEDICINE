@@ -9,7 +9,15 @@ if (!SECRET && process.env.NODE_ENV === "production") {
 
 const FINAL_SECRET = SECRET || "dev_secret_only";
 
-export const generateToken = (payload) => {
+export const generateToken = (user) => {
+  // FIX: Extract only the necessary data into a plain object
+  // jsonwebtoken cannot sign complex Sequelize model instances.
+  const payload = {
+    id: user.id,
+    email: user.email,
+    role: user.role
+  };
+
   return jwt.sign(payload, FINAL_SECRET, { expiresIn: "1d" });
 };
 
@@ -17,8 +25,6 @@ export const verifyToken = (token) => {
   try {
     return jwt.verify(token, FINAL_SECRET);
   } catch (error) {
-    // Re-throwing allows your middleware to catch it, 
-    // but you could log the specific error here for debugging
     throw error;
   }
 };

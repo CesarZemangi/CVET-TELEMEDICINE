@@ -15,6 +15,10 @@ import farmerNutriRoutes from "./routes/farmer/nutrition.routes.js";
 import farmerCommRoutes from "./routes/farmer/communication.routes.js";
 import farmerFeedbackRoutes from "./routes/farmer/feedback.routes.js";
 import farmerNotificationRoutes from "./routes/farmer/notification.routes.js";
+import farmerDashboardRoutes from "./routes/farmer/dashboard.routes.js";
+// Add this with the other farmer routes
+
+// ... inside the farmer routes section
 
 // Vet routes
 import vetCaseRoutes from "./routes/vet/cases.routes.js";
@@ -33,13 +37,11 @@ import { authorizeRole } from "./middleware/role.middleware.js";
 
 const app = express();
 
+// 2. Standard Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/farmer/dashboard", authenticate, authorizeRole("farmer"), farmerDashboardRoutes);
 // Core
-app.use("/api/auth", authRoutes);
-app.use("/api/users", authenticate, userRoutes); // example: protect users route
-
 // Farmer
 app.use("/api/farmer/animals", authenticate, authorizeRole("farmer"), farmerAnimalRoutes);
 app.use("/api/farmer/cases", authenticate, authorizeRole("farmer"), farmerCaseRoutes);

@@ -1,72 +1,81 @@
-import bcrypt from 'bcryptjs';
-import User from '../models/user.model.js';
-import { generateToken } from '../utils/jwt.js';
-import { success, error } from '../utils/response.js';
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log("LOGIN BODY", req.body);
 
-    // 1. Find the user in the 'users' table
-    const user = await User.findOne({ where: { email } });
+    const userInstance = await User.findOne({
+      where: { email: email.trim().toLowerCase() }
+    });
 
-    // 2. If user doesn't exist
-    if (!user) {
+    if (!userInstance) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 3. Compare the plain-text password with the hash in the DB
-    // Because of 'field: password_hash' in your model, user.password contains the hash
+    const user = userInstance.get({ plain: true });
+
+    // Note: user.password works if your model maps 'password_hash' to 'password'
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 4. Generate the JWT token
-    const token = generateToken(user);
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
-    // 5. Send back exactly what your React frontend expects
-    // We include 'role' so navigate() knows where to go
-    res.status(200).json({
+    return res.status(200).json({
       message: "Login successful",
       token,
-      role: user.role, 
+      role: user.role,
       user: {
         id: user.id,
         name: user.name,
         email: user.email
       }
     });
-
   } catch (err) {
-    console.error("Login Error:", err);
-    error(res, "An internal server error occurred");
+    console.error("LOGIN ERROR", err);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: err.message
+    });
+  }
+}; // Closed properly now
+
+export const logout = async (req, res) => {
+  return res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const register = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      role: role || 'farmer'
+    });
+
+    return res.status(201).json({
+      message: "User registered successfully",
+      user: { id: user.id, email: user.email, role: user.role }
+    });
+  } catch (err) {
+    console.error("REGISTER ERROR", err);
+    return res.status(500).json({
+      message: "Registration failed",
+      error: err.message
+    });
   }
 };
-export const register = async (req, res) => {
-try {
-const { name, email, password, role } = req.body
-const hashedPassword = await bcrypt.hash(password, 10)
-
-const user = await User.create({
-  name,
-  email: email.trim().toLowerCase(),
-  password: hashedPassword,
-  role
-})
-
-res.status(201).json({
-  message: "User registered",
-  user: {
-    id: user.id,
-    email: user.email,
-    role: user.role
-  }
-})
-} catch (err) {
-console.error(err)
-error(res, "Registration failed")
-}
-}
- 

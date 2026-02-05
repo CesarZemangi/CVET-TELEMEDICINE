@@ -8,6 +8,8 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js"
 import "bootstrap-icons/font/bootstrap-icons.css"
 
 import Login from "./pages/Login"
+import Register from "./pages/Register"
+
 
 /* Layouts */
 import FarmerLayout from "./components/layout/FarmerLayout"
@@ -109,7 +111,9 @@ function RequireAuth({ role, children }) {
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+  <Route path="/" element={<Login />} />
+  <Route path="/register" element={<Register />} />
+
 
       <Route
         path="/farmer/*"
