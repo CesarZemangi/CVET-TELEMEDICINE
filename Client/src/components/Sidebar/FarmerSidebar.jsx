@@ -1,169 +1,125 @@
-import { NavLink } from "react-router-dom"
-import { useState } from "react"
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 
 export default function FarmerSidebar() {
-  const [openDiagnostics, setOpenDiagnostics] = useState(false)
-  const [openMedications, setOpenMedications] = useState(false)
-  const [openAnalytics, setOpenAnalytics] = useState(false)
-  const [openCommunication, setOpenCommunication] = useState(false)
-  const [openNutrition, setOpenNutrition] = useState(false)
+  const [openSection, setOpenSection] = useState("");
 
+  const toggleSection = (sectionName) => {
+    setOpenSection(openSection === sectionName ? "" : sectionName);
+  };
+
+  // Consistent styling for the brown background
   const linkClass = ({ isActive }) =>
-    "nav-link px-3 py-2 rounded " +
-    (isActive ? "bg-brown text-cream" : "text-brown")
+    `nav-link d-flex align-items-center px-3 py-2 rounded mb-1 transition-all ${
+      isActive 
+        ? "bg-cream text-brown fw-bold shadow-sm" 
+        : "text-white opacity-75 hover-opacity-100"
+    }`;
 
-  const sectionTitle = "px-3 py-2 fw-semibold text-brown cursor-pointer"
+  const sectionHeaderClass = "px-3 py-2 fw-bold text-white cursor-pointer d-flex justify-content-between align-items-center mt-2 opacity-75 hover-opacity-100";
+  
+  const dropdownContainerClass = "ps-4 d-flex flex-column gap-1 mt-1 border-start border-white border-opacity-25 ms-3 mb-2";
 
   return (
-    <aside
-      className="p-3 d-flex flex-column"
-      style={{
-        width: "260px",
-        minHeight: "100vh",
-        backgroundColor: "#F5F5DC",
-        borderRight: "1px solid #A0522D"
-      }}
-    >
-      <div className="mb-4">
-        <h5 className="fw-bold text-brown mb-1">Farmer Panel</h5>
-        <small className="text-brown">My Farm</small>
-      </div>
+    <>
+      {/* Basic Management Links */}
+      <li>
+        <NavLink to="/farmer/animals" className={linkClass}>
+          <i className="bi bi-piggy-bank me-3"></i> My Livestock
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to="/farmer/cases" className={linkClass}>
+          <i className="bi bi-clipboard-pulse me-3"></i> Cases
+        </NavLink>
+      </li>
+      <li>
+        <NavLink to="/farmer/consultations" className={linkClass}>
+          <i className="bi bi-chat-dots me-3"></i> Consultations
+        </NavLink>
+      </li>
 
-      <ul className="nav flex-column gap-1">
-
-        <li>
-          <NavLink to="/farmer" end className={linkClass}>
-            Dashboard
-          </NavLink>
-        </li>
-
-        <li>
-          <NavLink to="/farmer/animals" className={linkClass}>
-            Livestock
-          </NavLink>
-        </li>
-
-        <li>
-          <NavLink to="/farmer/cases" className={linkClass}>
-            Cases
-          </NavLink>
-        </li>
-
-        <li>
-          <NavLink to="/farmer/consultations" className={linkClass}>
-            Consultations
-          </NavLink>
-        </li>
-
-        {/* Diagnostics */}
-        <li>
-          <div
-            className={sectionTitle}
-            onClick={() => setOpenDiagnostics(!openDiagnostics)}
-          >
-            Diagnostics {openDiagnostics ? "▾" : "▸"}
+      {/* Diagnostics Section */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("diagnostics")}>
+          <span><i className="bi bi-microscope me-3"></i> Diagnostics</span>
+          <small>{openSection === "diagnostics" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "diagnostics" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/farmer/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
+            <NavLink to="/farmer/diagnostics/lab-tests" className={linkClass}>Lab Tests</NavLink>
+            <NavLink to="/farmer/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
+            <NavLink to="/farmer/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
+            <NavLink to="/farmer/diagnostics/vaccinations" className={linkClass}>Vaccinations</NavLink>
           </div>
-          {openDiagnostics && (
-            <>
-              <NavLink to="/farmer/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
-              <NavLink to="/farmer/diagnostics/lab-tests" className={linkClass}>Lab Tests</NavLink>
-              <NavLink to="/farmer/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
-              <NavLink to="/farmer/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
-              <NavLink to="/farmer/diagnostics/vaccinations" className={linkClass}>Vaccinations</NavLink>
-              <NavLink to="/farmer/diagnostics/disease-history" className={linkClass}>Disease History</NavLink>
-              <NavLink to="/farmer/diagnostics/disease-tracking" className={linkClass}>Disease Tracking</NavLink>
-              <NavLink to="/farmer/diagnostics/health-metrics" className={linkClass}>Health Metrics</NavLink>
-              <NavLink to="/farmer/diagnostics/screenings" className={linkClass}>Screenings</NavLink>
-            </>
-          )}
-        </li>
+        )}
+      </li>
 
-        {/* Medications */}
-        <li>
-          <div
-            className={sectionTitle}
-            onClick={() => setOpenMedications(!openMedications)}
-          >
-            Medications {openMedications ? "▾" : "▸"}
+      {/* Medications Section */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("medications")}>
+          <span><i className="bi bi-capsule me-3"></i> Medications</span>
+          <small>{openSection === "medications" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "medications" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/farmer/medications/prescriptions" className={linkClass}>Prescriptions</NavLink>
+            <NavLink to="/farmer/medications/treatment-plans" className={linkClass}>Treatment Plans</NavLink>
+            <NavLink to="/farmer/medications/medication-history" className={linkClass}>History</NavLink>
           </div>
-          {openMedications && (
-            <>
-              <NavLink to="/farmer/medications/prescriptions" className={linkClass}>Prescriptions</NavLink>
-              <NavLink to="/farmer/medications/treatment-plans" className={linkClass}>Treatment Plans</NavLink>
-              <NavLink to="/farmer/medications/medication-history" className={linkClass}>Medication History</NavLink>
-              <NavLink to="/farmer/medications/medication-schedule" className={linkClass}>Medication Schedule</NavLink>
-              <NavLink to="/farmer/medications/pharmacy-orders" className={linkClass}>Pharmacy Orders</NavLink>
-              <NavLink to="/farmer/medications/follow-ups" className={linkClass}>Follow Ups</NavLink>
-              <NavLink to="/farmer/medications/surgical-cases" className={linkClass}>Surgical Cases</NavLink>
-            </>
-          )}
-        </li>
+        )}
+      </li>
 
-        {/* Analytics */}
-        <li>
-          <div
-            className={sectionTitle}
-            onClick={() => setOpenAnalytics(!openAnalytics)}
-          >
-            Analytics {openAnalytics ? "▾" : "▸"}
+      {/* Analytics Section */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("analytics")}>
+          <span><i className="bi bi-graph-up-arrow me-3"></i> Analytics</span>
+          <small>{openSection === "analytics" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "analytics" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/farmer/analytics/livestock-performance" className={linkClass}>Performance</NavLink>
+            <NavLink to="/farmer/analytics/reports" className={linkClass}>Reports</NavLink>
           </div>
-          {openAnalytics && (
-            <>
-              <NavLink to="/farmer/analytics/livestock-performance" className={linkClass}>Livestock Performance</NavLink>
-              <NavLink to="/farmer/analytics/treatment-effectiveness" className={linkClass}>Treatment Effectiveness</NavLink>
-              <NavLink to="/farmer/analytics/consultation-stats" className={linkClass}>Consultation Stats</NavLink>
-              <NavLink to="/farmer/analytics/health-trends" className={linkClass}>Health Trends</NavLink>
-              <NavLink to="/farmer/analytics/treatment-stats" className={linkClass}>Treatment Stats</NavLink>
-              <NavLink to="/farmer/analytics/reports" className={linkClass}>Reports</NavLink>
-            </>
-          )}
-        </li>
+        )}
+      </li>
 
-        {/* Communication */}
-        <li>
-          <div
-            className={sectionTitle}
-            onClick={() => setOpenCommunication(!openCommunication)}
-          >
-            Communication {openCommunication ? "▾" : "▸"}
+      {/* Communication Section */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("communication")}>
+          <span><i className="bi bi-chat-left-text me-3"></i> Communication</span>
+          <small>{openSection === "communication" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "communication" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/farmer/communication/messages" className={linkClass}>Messages</NavLink>
+            <NavLink to="/farmer/communication/notifications" className={linkClass}>Notifications</NavLink>
+            <NavLink to="/farmer/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
           </div>
-          {openCommunication && (
-            <>
-              <NavLink to="/farmer/communication/messages" className={linkClass}>Messages</NavLink>
-              <NavLink to="/farmer/communication/notifications" className={linkClass}>Notifications</NavLink>
-              <NavLink to="/farmer/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
-              <NavLink to="/farmer/communication/video-sessions" className={linkClass}>Video Sessions</NavLink>
-              <NavLink to="/farmer/communication/feedback" className={linkClass}>Feedback</NavLink>
-            </>
-          )}
-        </li>
+        )}
+      </li>
 
-        {/* Nutrition */}
-        <li>
-          <div
-            className={sectionTitle}
-            onClick={() => setOpenNutrition(!openNutrition)}
-          >
-            Nutrition {openNutrition ? "▾" : "▸"}
+      {/* Nutrition Section */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("nutrition")}>
+          <span><i className="bi bi-egg-fried me-3"></i> Nutrition</span>
+          <small>{openSection === "nutrition" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "nutrition" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/farmer/nutrition/dietary-needs" className={linkClass}>Dietary Needs</NavLink>
+            <NavLink to="/farmer/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
           </div>
-          {openNutrition && (
-            <>
-              <NavLink to="/farmer/nutrition/dietary-needs" className={linkClass}>Dietary Needs</NavLink>
-              <NavLink to="/farmer/nutrition/feeding-inventory" className={linkClass}>Feeding Inventory</NavLink>
-              <NavLink to="/farmer/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
-              <NavLink to="/farmer/nutrition/nutrition-reports" className={linkClass}>Nutrition Reports</NavLink>
-              <NavLink to="/farmer/nutrition/supplements" className={linkClass}>Supplements</NavLink>
-            </>
-          )}
-        </li>
+        )}
+      </li>
 
-        <li className="mt-auto">
-          <NavLink to="/farmer/settings" className={linkClass}>
-            Settings
-          </NavLink>
-        </li>
-
-      </ul>
-    </aside>
-  )
+      {/* Settings at Bottom */}
+      <li className="mt-auto pt-4">
+        <NavLink to="/farmer/settings" className={linkClass}>
+          <i className="bi bi-gear-fill me-3"></i> Settings
+        </NavLink>
+      </li>
+    </>
+  );
 }
