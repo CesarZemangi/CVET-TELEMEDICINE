@@ -40,6 +40,7 @@ const app = express();
 // 2. Standard Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 app.use("/api/farmer/dashboard", authenticate, authorizeRole("farmer"), farmerDashboardRoutes);
 // Core
 // Farmer

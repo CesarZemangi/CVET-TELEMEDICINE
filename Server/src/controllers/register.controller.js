@@ -1,16 +1,32 @@
+import bcrypt from "bcrypt"
+import User from "../models/User.js"
+
 export const register = async (req, res) => {
-const { name, email, password, role } = req.body
+  try {
+    const { name, email, password, role } = req.body
 
-const hashed = await bcrypt.hash(password, 10)
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: "Missing fields" })
+    }
 
-await User.create({
-name,
-email,
-password: hashed,
-role
-})
+    const existing = await User.findOne({ where: { email } })
+    if (existing) {
+      return res.status(400).json({ message: "Email already registered" })
+    }
 
-res.json({ message: "User created" })
+    const hashed = await bcrypt.hash(password, 10)
+
+    await User.create({
+      name,
+      email,
+      password_hash: hashed,
+      role,
+      status: "active"
+    })
+
+    res.status(201).json({ message: "User created" })
+  } catch (err) {
+    console.error("REGISTER ERROR:", err)
+    res.status(500).json({ message: "Registration failed" })
+  }
 }
-console.log("HASH TYPE:", typeof user.password)
-console.log("HASH VALUE:", user.password)

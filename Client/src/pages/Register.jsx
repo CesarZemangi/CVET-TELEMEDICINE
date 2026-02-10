@@ -16,21 +16,31 @@ export default function Register() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Logic placeholder for your registration API call
-    try {
-      console.log("Registering User:", formData);
-      
-      // On success, we use the 'navigate' variable here
-      // This clears your ESLint error and redirects the user
-      alert("Registration Successful!");
-      navigate("/"); 
-      
-    } catch (err) {
-      console.error("Registration Error:", err);
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.message || "Registration failed");
     }
-  };
+
+    alert("Registration successful. Please log in.");
+    navigate("/");
+
+  } catch (err) {
+    console.error("Registration Error:", err);
+    alert(err.message);
+  }
+};
 
   return (
     <div className="register-container">
