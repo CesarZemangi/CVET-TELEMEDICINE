@@ -17,40 +17,36 @@ export default function Login() {
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      // 1. Parse JSON
       const result = await res.json();
 
       if (!res.ok) {
         throw new Error(result.message || "Login failed");
       }
 
-      // 2. Save the Token and Role separately (this makes Protected Routes easier)
-   localStorage.setItem(
-"user",
-JSON.stringify({
-id: result.user.id,
-name: result.user.name,
-email: result.user.email,
-role: result.role,
-token: result.token
-})
-);
+      localStorage.clear();
 
-      // 3. Navigate based on the role directly from the result
-      if (result.role === "farmer") {
-        navigate("/farmer");
-      } else if (result.role === "vet") {
-        navigate("/vet");
+      const role = result.role.toLowerCase();
+
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          token: result.token,
+          role: role,
+          name: result.user?.name,
+        })
+      );
+
+      if (role === "farmer") {
+        navigate("/farmerdashboard");
+      } else if (role === "vet") {
+        navigate("/vetdashboard");
       } else {
-        setError("User role not recognized. Please contact support.");
+        throw new Error("Invalid user role");
       }
-      
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,56 +55,72 @@ token: result.token
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center vh-100" style={{ backgroundColor: "#F5F5DC" }}>
+    <div 
+      className="d-flex align-items-center justify-content-center vh-100" 
+      style={{ 
+        backgroundImage: `linear-gradient(rgba(0, 31, 63, 0.7), rgba(34, 139, 34, 0.5)), url('https://images.unsplash.com/photo-1516467508483-a7212febe31a?auto=format&fit=crop&q=80&w=2073')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
       <div
-        className="card p-4 shadow"
+        className="card p-4 shadow-lg border-0"
         style={{
-          width: 380,
-          borderRadius: "12px",
-          backgroundColor: "#fff",
-          border: "1px solid #A0522D"
+          width: 400,
+          borderRadius: "20px",
+          backgroundColor: "rgba(255, 255, 255, 0.95)",
+          backdropFilter: 'blur(10px)'
         }}
       >
-        <h4 className="text-center fw-bold mb-4" style={{ color: "#A0522D" }}>
-          CVET Login
-        </h4>
+        <div className="text-center mb-4">
+           <h3 className="fw-bold mb-1" style={{ color: "var(--text-dark)" }}>
+            CVET LOGIN
+          </h3>
+          <p className="text-muted small">Welcome back to CVet Telemedicine</p>
+        </div>
 
         {error && (
-          <div className="alert alert-danger py-2 text-center" style={{ fontSize: "0.9rem" }}>
+          <div className="alert alert-danger py-2 text-center border-0" style={{ fontSize: "0.85rem", borderRadius: '10px' }}>
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label small fw-bold" style={{ color: "#A0522D" }}>Email Address</label>
+            <label className="form-label small fw-bold text-uppercase tracking-wider" style={{ color: "var(--text-dark)", fontSize: '0.7rem' }}>Email Address</label>
             <input
               type="email"
-              className="form-control"
+              className="form-control py-2 px-3"
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              style={{ borderColor: "#A0522D" }}
+              style={{ borderRadius: '10px', border: '1px solid #e0e0e0' }}
             />
           </div>
 
-          <div className="mb-3">
-            <label className="form-label small fw-bold" style={{ color: "#A0522D" }}>Password</label>
+          <div className="mb-4">
+            <label className="form-label small fw-bold text-uppercase tracking-wider" style={{ color: "var(--text-dark)", fontSize: '0.7rem' }}>Password</label>
             <input
               type="password"
-              className="form-control"
+              className="form-control py-2 px-3"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ borderColor: "#A0522D" }}
+              style={{ borderRadius: '10px', border: '1px solid #e0e0e0' }}
             />
           </div>
 
           <button
-            className="btn w-100 mt-2"
-            style={{ backgroundColor: "#A0522D", color: "#fff", fontWeight: "bold" }}
+            className="btn w-100 py-2 border-0 shadow-sm text-white"
+            style={{ 
+              background: "linear-gradient(180deg, #228B22 0%, #1E90FF 100%)", 
+              fontWeight: "bold",
+              borderRadius: '10px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px'
+            }}
             disabled={loading}
           >
             {loading ? (
@@ -119,11 +131,11 @@ token: result.token
           </button>
         </form>
 
-        <div className="text-center mt-3">
+        <div className="text-center mt-4">
           <small className="text-muted">
             Don’t have an account?
             <span
-              style={{ color: "#A0522D", fontWeight: "500", cursor: "pointer", marginLeft: 5 }}
+              style={{ color: "var(--primary-blue)", fontWeight: "600", cursor: "pointer", marginLeft: 5 }}
               onClick={() => navigate("/register")}
             >
               Sign up

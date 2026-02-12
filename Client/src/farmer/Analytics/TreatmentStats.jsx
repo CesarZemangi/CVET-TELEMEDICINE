@@ -1,117 +1,91 @@
-import { useState, useEffect } from "react"
-import { Pie } from "react-chartjs-2"
+import React, { useState, useEffect } from "react";
+import { Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend
-} from "chart.js"
-import DashboardSection from "../../components/dashboard/DashboardSection"
+} from "chart.js";
+import api from "../../services/api";
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function TreatmentStats() {
-  const [speciesFilter, setSpeciesFilter] = useState("All")
-  const [regionFilter, setRegionFilter] = useState("All")
-  const [outcomes, setOutcomes] = useState({})
-  const [summary, setSummary] = useState([])
+  const [stats, setStats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(
-      `/api/treatments/stats?species=${speciesFilter}&region=${regionFilter}`
-    )
-      .then(res => res.json())
-      .then(data => {
-        setOutcomes(data.outcomes)
-        setSummary(data.summary)
+    api.get("/farmer/analytics/treatment-stats")
+      .then(res => {
+        setStats(res.data?.data || []);
       })
-      .catch(err => console.error(err))
-  }, [speciesFilter, regionFilter])
+      .catch(err => console.error("Treatment Stats Error:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const data = {
-    labels: [
-      "Successful Recoveries",
-      "Ongoing Treatments",
-      "Complications",
-      "Failed Treatments"
-    ],
-    datasets: [
-      {
-        label: `Treatment Outcomes (${speciesFilter}, ${regionFilter})`,
-        data: outcomes.data || [],
-        backgroundColor: [
-          "#17a2b8",
-          "#ffc107",
-          "#dc3545",
-          "#6A5ACD"
-        ],
-        borderColor: "#fff",
-        borderWidth: 2
-      }
-    ]
-  }
+  const total = stats.reduce((acc, curr) => acc + curr.count, 0);
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { position: "right" },
-      title: {
-        display: true,
-        text: `Zimbabwe Veterinary Treatment Outcomes (${speciesFilter}, ${regionFilter})`
-      }
-    }
-  }
+  const chartData = {
+    labels: stats.map(s => s.status.toUpperCase()),
+    datasets: [{
+      data: stats.map(s => s.count),
+      backgroundColor: ["#228B22", "#1E90FF", "#FFD700", "#DC3545", "#6c757d"],
+      borderWidth: 0
+    }]
+  };
 
   return (
-    <DashboardSection title="Treatment Statistics (Zimbabwe)">
-      <p>
-        View treatment outcomes and recovery data across communal and commercial
-        farms.
-      </p>
-
-      <div className="mb-3 d-flex gap-2">
-        {["All", "Cattle", "Goats", "Poultry", "Sheep"].map(species => (
-          <button
-            key={species}
-            className={`btn btn-sm ${
-              speciesFilter === species
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setSpeciesFilter(species)}
-          >
-            {species}
-          </button>
-        ))}
+    <div className="container-fluid py-2">
+      <div className="mb-4">
+        <h4 className="fw-bold">Treatment Analytics</h4>
+        <p className="text-muted small">Monitoring recovery rates and treatment statuses</p>
       </div>
 
-      <div className="mb-3 d-flex gap-2">
-        {["All", "Mashonaland", "Matabeleland", "Midlands", "Manicaland"].map(
-          region => (
-            <button
-              key={region}
-              className={`btn btn-sm ${
-                regionFilter === region
-                  ? "btn-brown"
-                  : "btn-outline-brown"
-              }`}
-              onClick={() => setRegionFilter(region)}
-            >
-              {region}
-            </button>
-          )
-        )}
+      <div className="row g-4">
+        <div className="col-md-5">
+          <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
+            <h6 className="fw-bold mb-4">Outcome Distribution</h6>
+            <div style={{ height: "250px" }}>
+              <Doughnut data={chartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            </div>
+            <div className="text-center mt-4">
+              <h2 className="fw-bold mb-0">{total}</h2>
+              <p className="text-muted small text-uppercase">Total Treatments</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-7">
+          <div className="row g-3">
+            {stats.map((s, idx) => (
+              <div key={idx} className="col-sm-6">
+                <div className="card border-0 shadow-sm p-3 h-100">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <p className="text-muted small mb-1 text-uppercase">{s.status}</p>
+                      <h4 className="fw-bold mb-0">{s.count}</h4>
+                    </div>
+                    <div className="text-primary opacity-25">
+                      <i className="bi bi-activity fs-2"></i>
+                    </div>
+                  </div>
+                  <div className="progress mt-3" style={{ height: "4px" }}>
+                    <div 
+                      className="progress-bar bg-primary" 
+                      style={{ width: `${(s.count/total)*100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {stats.length === 0 && (
+              <div className="col-12 text-center py-5 bg-white rounded shadow-sm">
+                <p className="text-muted">No treatment statistics available.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-
-      <Pie data={data} options={options} />
-
-      <ul className="mt-3">
-        {summary.map(row => (
-          <li key={row.label}>
-            {row.value}% {row.label}
-          </li>
-        ))}
-      </ul>
-    </DashboardSection>
-  )
+    </div>
+  );
 }

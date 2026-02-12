@@ -16,11 +16,11 @@ export const getAnimals = async (req, res) => {
 
 export const createAnimal = async (req, res) => {
   try {
-    const { name, species, age } = req.body
+    const { name, species, breed, age } = req.body
 
     await db.query(
-      "INSERT INTO animals (farmer_id, name, species, age) VALUES (?, ?, ?, ?)",
-      [req.user.id, name, species, age]
+      "INSERT INTO animals (farmer_id, tag_number, species, breed, age) VALUES (?, ?, ?, ?, ?)",
+      [req.user.id, name, species, breed, age]
     )
 
     success(res, null, "Animal added")

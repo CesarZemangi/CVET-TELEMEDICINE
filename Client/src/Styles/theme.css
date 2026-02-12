@@ -1,120 +1,48 @@
 :root {
-  /* Brand Theme Colors */
-  --primary-brown: #A0522D;       /* Sidebar background & Primary buttons */
-  --secondary-cream: #F5F5DC;     /* Soft tone for accents */
-  --background-light: #F5F5DC;    /* Overall page background */
+  /* Brand Theme Colors from Logo */
+  --primary-green: #228B22;
+  --primary-blue: #1E90FF;
+  --accent-white: #ffffff;
+  --text-dark: #001F3F;           /* Deep navy for best readability */
+  --text-muted: #576574;          /* Gray for secondary info */
+  --background-light: #f8faff;    /* Very light blue-gray background */
   
-  /* Architect Dashboard Colors */
-  --topbar-bg: #ffffff;           /* Clean white for topbar */
-  --topbar-border: #dee2e6;       /* Subtle border for separation */
-  --accent-blue: #00d2ff;         /* Vibrant blue for status/icons */
-  --accent-blue-dark: #3a7bd5;    /* Gradient blue for active states */
+  /* Gradient for Sidebar/Icons */
+  --logo-gradient: linear-gradient(180deg, var(--primary-green) 0%, var(--primary-blue) 100%);
   
-  /* Layout & Surface */
-  --card-bg: #ffffff;             /* White cards for data display */
-  --text-dark: #2d3436;           /* Primary text color */
-  --border-soft: #dee2e6;         /* Soft borders for cards */
-  --border-brown: #A0522D;        /* Thematic borders for inputs */
+  /* Status Colors */
+  --status-success: #2ecc71;
+  --status-warning: #f1c40f;
+  --status-danger: #e74c3c;
+  --status-info: #3498db;
 }
 
 body {
   background-color: var(--background-light);
   color: var(--text-dark);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* --- Layout Components --- */
-
-/* Sidebar Background Class (if not using inline styles) */
-.sidebar-bg {
-  background-color: var(--primary-brown);
-  color: #ffffff;
-}
-
-/* Topbar Specifics */
-.custom-topbar {
-  background-color: var(--topbar-bg);
-  border-bottom: 1px solid var(--topbar-border);
-  height: 70px;
-}
-
-/* Helper for Topbar Badge (Architect Blue) */
-.role-badge {
-  color: #0d6efd; 
-  font-weight: 800;
-  text-transform: uppercase;
-  font-size: 0.65rem;
-  letter-spacing: 0.5px;
-}
-
-/* --- Elements & Interactions --- */
-
-button {
-  background-color: var(--primary-brown);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #8B3E1F; /* Darker shade of sienna */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-input, select {
-  border: 1px solid var(--border-brown);
-  border-radius: 4px;
-  padding: 8px;
-  outline: none;
-  background-color: #ffffff;
-}
-
-input:focus {
-  border-color: var(--accent-blue-dark);
-  box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.2);
-}
-
-a {
-  color: var(--primary-brown);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
-}
-
-a:hover {
-  color: var(--accent-blue-dark);
-  text-decoration: underline;
-}
-
-/* --- Dashboard Specifics --- */
-
-.dashboard-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-soft);
+.card {
   border-radius: 12px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  padding: 20px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
 }
 
-.dashboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
-/* --- Utility Classes --- */
-.transition-all { transition: all 0.3s ease; }
-.text-brown { color: var(--primary-brown); }
-.text-cream { color: var(--secondary-cream); }
-.text-blue { color: var(--accent-blue); }
-.bg-brown { background-color: var(--primary-brown); }
-.bg-cream { background-color: var(--secondary-cream); }
+.text-white-80 { color: rgba(255, 255, 255, 0.8); }
+.fw-600 { font-weight: 600; }
 
-.hover-opacity-100:hover {
-  opacity: 1 !important;
-  background-color: rgba(255, 255, 255, 0.1);
+.status-badge {
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
 }

@@ -1,91 +1,131 @@
-import DashboardSection from "../../components/dashboard/DashboardSection";
-import React from "react"
-import { Pie, Line } from "react-chartjs-2"
+import React, { useState, useEffect } from "react";
+import { Pie, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
-  LineElement,
-  PointElement,
+  BarElement,
   CategoryScale,
   LinearScale,
   Tooltip,
   Legend,
   Title
-} from "chart.js"
+} from "chart.js";
+import api from "../../services/api";
 
-ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Title)
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend, Title);
 
 export default function CaseStatistics() {
-  const stats = [
-    { id: 1, metric: "Total Cases", value: "120", status: "Recorded" },
-    { id: 2, metric: "Resolved Cases", value: "94", status: "Resolved" },
-    { id: 3, metric: "Pending Cases", value: "26", status: "Pending" },
-    { id: 4, metric: "Emergency Cases", value: "15", status: "Critical" },
-    { id: 5, metric: "Surgical Cases", value: "10", status: "Completed" },
-    { id: 6, metric: "Follow-up Cases", value: "22", status: "Ongoing" },
-    { id: 7, metric: "Medication Cases", value: "35", status: "Resolved" },
-    { id: 8, metric: "Nutrition Cases", value: "18", status: "Improving" },
-    { id: 9, metric: "Vaccination Cases", value: "50", status: "Completed" },
-    { id: 10, metric: "Overall Resolution Rate", value: "78%", status: "This Month" }
-  ]
+  const [caseStats, setCaseStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/vet/analytics/case-statistics")
+      .then(res => {
+        setCaseStats(res.data || []);
+      })
+      .catch(err => console.error("Vet Case Stats Error:", err))
+      .finally(() => setLoading(false));
+  }, []);
 
   const pieData = {
-    labels: ["Surgical", "Medication", "Nutrition", "Vaccination", "Emergency"],
+    labels: caseStats.length > 0 ? caseStats.map(s => s.status.toUpperCase()) : ["No Data"],
     datasets: [
       {
-        data: [10, 35, 18, 50, 15],
-        backgroundColor: ["#8B4513", "#A0522D", "#CD853F", "#D2B48C", "#DEB887"],
+        data: caseStats.length > 0 ? caseStats.map(s => s.count) : [1],
+        backgroundColor: ["#1E90FF", "#228B22", "#FFD700", "#DC3545", "#6c757d"],
         borderColor: "#fff",
         borderWidth: 2
       }
     ]
-  }
+  };
 
-  const lineData = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+  const barData = {
+    labels: caseStats.length > 0 ? caseStats.map(s => s.status.toUpperCase()) : ["No Data"],
     datasets: [
       {
-        label: "Resolution Rate (%)",
-        data: [70, 75, 78, 80],
-        borderColor: "#2E8B57",
-        backgroundColor: "#98FB98",
-        tension: 0.3,
-        fill: true
+        label: "Case Count",
+        data: caseStats.length > 0 ? caseStats.map(s => s.count) : [0],
+        backgroundColor: "rgba(30, 144, 255, 0.7)",
+        borderRadius: 5
       }
     ]
-  }
+  };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "bottom" },
-      title: { display: false }
+      legend: { position: "bottom" }
     }
-  }
+  };
 
   return (
-    <DashboardSection title="Case Statistics">
-      <p className="mb-3">Veterinary case statistics for this month:</p>
-
-      <ul className="list-group mb-3">
-        {stats.map(s => (
-          <li key={s.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{s.metric} • {s.value}</span>
-            <small className="text-muted">{s.status}</small>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mb-3" style={{ width: "250px", height: "250px" }}>
-        <h6>Case Type Distribution</h6>
-        <Pie data={pieData} options={options} />
+    <div className="container-fluid py-2">
+      <div className="mb-4">
+        <h4 className="fw-bold">Case Analytics</h4>
+        <p className="text-muted small">Deep dive into clinical case distribution and outcomes</p>
       </div>
 
-      <div className="mb-3" style={{ width: "300px", height: "200px" }}>
-        <h6>Resolution Rate Trend</h6>
-        <Line data={lineData} options={options} />
+      <div className="row g-4">
+        <div className="col-md-5">
+          <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
+            <h6 className="fw-bold mb-4">Status Distribution</h6>
+            <div style={{ height: "300px" }}>
+              <Pie data={pieData} options={options} />
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-7">
+          <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
+            <h6 className="fw-bold mb-4">Volume by Status</h6>
+            <div style={{ height: "300px" }}>
+              <Bar data={barData} options={options} />
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 mt-4">
+          <div className="card border-0 shadow-sm overflow-hidden">
+            <div className="card-header bg-white py-3 border-0">
+              <h6 className="fw-bold mb-0">Metrics Overview</h6>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead className="bg-light">
+                  <tr>
+                    <th className="px-4 py-3 border-0 small text-uppercase">Status</th>
+                    <th className="px-4 py-3 border-0 small text-uppercase text-end">Case Count</th>
+                    <th className="px-4 py-3 border-0 small text-uppercase text-end">Percentage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {caseStats.length > 0 ? (
+                    (() => {
+                      const total = caseStats.reduce((sum, s) => sum + s.count, 0);
+                      return caseStats.map((row, idx) => (
+                        <tr key={idx}>
+                          <td className="px-4 py-3 fw-600">{row.status.toUpperCase()}</td>
+                          <td className="px-4 py-3 text-end fw-bold">{row.count}</td>
+                          <td className="px-4 py-3 text-end">
+                            <span className="badge bg-primary bg-opacity-10 text-primary">
+                              {((row.count / total) * 100).toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      ));
+                    })()
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="text-center py-5 text-muted">No case data available.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
-    </DashboardSection>
-  )
+    </div>
+  );
 }

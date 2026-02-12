@@ -37,11 +37,15 @@ export default function ProfileSettings() {
       // Use your specific Backend API URL here
       const res = await axios.put(`http://localhost:5000/api/users/profile/${user._id}`, data);
       
-      // 1. Update the Local State (This uses 'setUser', fixing the error)
-      setUser(res.data.user);
-      
-      // 2. Update LocalStorage so the Sidebar stays updated
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+
+const updatedUser = {
+...currentUser,
+...res.data.user
+};
+
+setUser(updatedUser);
+localStorage.setItem("user", JSON.stringify(updatedUser));
       
       alert("Profile updated successfully!");
       setPreview(null); // Clear preview once saved

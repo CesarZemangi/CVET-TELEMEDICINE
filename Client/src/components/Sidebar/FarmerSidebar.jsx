@@ -24,17 +24,17 @@ export default function FarmerSidebar() {
     <>
       {/* Basic Management Links */}
       <li>
-        <NavLink to="/farmer/animals" className={linkClass}>
+        <NavLink to="/farmerdashboard/animals" className={linkClass}>
           <i className="bi bi-piggy-bank me-3"></i> My Livestock
         </NavLink>
       </li>
       <li>
-        <NavLink to="/farmer/cases" className={linkClass}>
+        <NavLink to="/farmerdashboard/cases" className={linkClass}>
           <i className="bi bi-clipboard-pulse me-3"></i> Cases
         </NavLink>
       </li>
       <li>
-        <NavLink to="/farmer/consultations" className={linkClass}>
+        <NavLink to="/farmerdashboard/consultations" className={linkClass}>
           <i className="bi bi-chat-dots me-3"></i> Consultations
         </NavLink>
       </li>
@@ -47,11 +47,11 @@ export default function FarmerSidebar() {
         </div>
         {openSection === "diagnostics" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmer/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
-            <NavLink to="/farmer/diagnostics/lab-tests" className={linkClass}>Lab Tests</NavLink>
-            <NavLink to="/farmer/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
-            <NavLink to="/farmer/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
-            <NavLink to="/farmer/diagnostics/vaccinations" className={linkClass}>Vaccinations</NavLink>
+            <NavLink to="/farmerdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
+            <NavLink to="/farmerdashboard/diagnostics/lab-tests" className={linkClass}>Lab Tests</NavLink>
+            <NavLink to="/farmerdashboard/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
+            <NavLink to="/farmerdashboard/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
+            <NavLink to="/farmerdashboard/diagnostics/vaccinations" className={linkClass}>Vaccinations</NavLink>
           </div>
         )}
       </li>
@@ -64,9 +64,9 @@ export default function FarmerSidebar() {
         </div>
         {openSection === "medications" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmer/medications/prescriptions" className={linkClass}>Prescriptions</NavLink>
-            <NavLink to="/farmer/medications/treatment-plans" className={linkClass}>Treatment Plans</NavLink>
-            <NavLink to="/farmer/medications/medication-history" className={linkClass}>History</NavLink>
+            <NavLink to="/farmerdashboard/treatment/prescriptions" className={linkClass}>Prescriptions</NavLink>
+            <NavLink to="/farmerdashboard/treatment/plans" className={linkClass}>Treatment Plans</NavLink>
+            <NavLink to="/farmerdashboard/treatment/history" className={linkClass}>History</NavLink>
           </div>
         )}
       </li>
@@ -79,8 +79,8 @@ export default function FarmerSidebar() {
         </div>
         {openSection === "analytics" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmer/analytics/livestock-performance" className={linkClass}>Performance</NavLink>
-            <NavLink to="/farmer/analytics/reports" className={linkClass}>Reports</NavLink>
+            <NavLink to="/farmerdashboard/analytics/livestock-performance" className={linkClass}>Performance</NavLink>
+            <NavLink to="/farmerdashboard/analytics/reports" className={linkClass}>Reports</NavLink>
           </div>
         )}
       </li>
@@ -93,9 +93,9 @@ export default function FarmerSidebar() {
         </div>
         {openSection === "communication" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmer/communication/messages" className={linkClass}>Messages</NavLink>
-            <NavLink to="/farmer/communication/notifications" className={linkClass}>Notifications</NavLink>
-            <NavLink to="/farmer/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
+            <NavLink to="/farmerdashboard/communication/messages" className={linkClass}>Messages</NavLink>
+            <NavLink to="/farmerdashboard/communication/notifications" className={linkClass}>Notifications</NavLink>
+            <NavLink to="/farmerdashboard/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
           </div>
         )}
       </li>
@@ -108,15 +108,15 @@ export default function FarmerSidebar() {
         </div>
         {openSection === "nutrition" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmer/nutrition/dietary-needs" className={linkClass}>Dietary Needs</NavLink>
-            <NavLink to="/farmer/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
+            <NavLink to="/farmerdashboard/nutrition/dietary-needs" className={linkClass}>Dietary Needs</NavLink>
+            <NavLink to="/farmerdashboard/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
           </div>
         )}
       </li>
 
       {/* Settings at Bottom */}
       <li className="mt-auto pt-4">
-        <NavLink to="/farmer/settings" className={linkClass}>
+        <NavLink to="/farmerdashboard/settings" className={linkClass}>
           <i className="bi bi-gear-fill me-3"></i> Settings
         </NavLink>
       </li>
