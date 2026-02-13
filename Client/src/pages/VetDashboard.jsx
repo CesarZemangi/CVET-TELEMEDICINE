@@ -22,19 +22,8 @@ export default function VetDashboard() {
   useEffect(() => {
     const fetchVetData = async () => {
       try {
-        const [casesRes, apptsRes] = await Promise.all([
-          api.get("/vet/cases"),
-          api.get("/vet/appointments")
-        ]);
-
-        setMetrics({
-          incomingCases: casesRes.data?.length || 0,
-          appointmentsToday: apptsRes.data?.length || 0,
-          ongoingTreatments: 8,
-          reportsSubmitted: 15
-        });
-
-        // Dynamic chart data can be processed here
+        const res = await api.get("/vet/dashboard");
+        setMetrics(res.data);
       } catch (err) {
         console.error("Vet Dashboard Error:", err);
       }

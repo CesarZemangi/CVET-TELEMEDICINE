@@ -20,7 +20,7 @@ const User = sequelize.define('User', {
     field: 'password_hash' 
   },
   role: { 
-    type: DataTypes.ENUM('farmer', 'vet') 
+    type: DataTypes.ENUM('farmer', 'vet', 'admin') 
   },
   phone: { 
     type: DataTypes.STRING 

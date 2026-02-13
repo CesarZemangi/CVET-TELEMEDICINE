@@ -44,6 +44,8 @@ export default function Login() {
         navigate("/farmerdashboard");
       } else if (role === "vet") {
         navigate("/vetdashboard");
+      } else if (role === "admin") {
+        navigate("/admindashboard");
       } else {
         throw new Error("Invalid user role");
       }

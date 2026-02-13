@@ -29,17 +29,8 @@ export default function FarmerDashboard() {
     // Fetch real metrics from API
     const fetchDashboardData = async () => {
       try {
-        const [animalsRes, casesRes] = await Promise.all([
-          api.get("/farmer/animals"),
-          api.get("/farmer/cases")
-        ]);
-        
-        setMetrics({
-          totalAnimals: animalsRes.data?.length || 0,
-          activeCases: casesRes.data?.filter(c => c.status === 'active').length || 0,
-          pendingConsultations: 3, // Mocked for now
-          healthAlerts: 1
-        });
+        const res = await api.get("/farmer/dashboard");
+        setMetrics(res.data);
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
       }

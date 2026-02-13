@@ -13,10 +13,12 @@ import Register from "./pages/Register"
 /* Layouts */
 import FarmerLayout from "./components/layout/FarmerLayout"
 import VetLayout from "./components/layout/VetLayout"
+import AdminLayout from "./components/layout/AdminLayout"
 
 /* Dashboards */
 import FarmerDashboard from "./pages/FarmerDashboard"
 import VetDashboard from "./pages/VetDashboard"
+import AdminDashboard from "./pages/AdminDashboard"
 
 /* Farmer Core */
 import Animals from "./farmer/Animals"
@@ -114,7 +116,9 @@ return <Navigate to="/" replace />
 }
 
 if (!user.token) return <Navigate to="/" replace />
-if (user.role !== role) return <Navigate to="/" replace />
+
+// Allow specific role OR admin
+if (user.role !== role && user.role !== "admin") return <Navigate to="/" replace />
 
 return children
 }
@@ -214,6 +218,17 @@ return (
     <Route path="communication/chat-logs" element={<ChatLogs />} />
     <Route path="communication/video-sessions" element={<VideoSessions />} />
     <Route path="communication/feedback" element={<Feedback />} />
+  </Route>
+
+  <Route
+    path="/admindashboard/*"
+    element={
+      <RequireAuth role="admin">
+        <AdminLayout />
+      </RequireAuth>
+    }
+  >
+    <Route index element={<AdminDashboard />} />
   </Route>
 
   <Route path="*" element={<Navigate to="/" replace />} />

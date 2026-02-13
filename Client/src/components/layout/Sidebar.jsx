@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import FarmerSidebar from "../Sidebar/FarmerSidebar";
 import VetSidebar from "../Sidebar/VetSidebar";
+import AdminSidebar from "../Sidebar/AdminSidebar";
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -43,7 +44,13 @@ export default function Sidebar() {
         <ul className="nav flex-column">
           <li>
             <NavLink
-              to={role === "vet" ? "/vetdashboard" : "/farmerdashboard"}
+              to={
+                role === "vet"
+                  ? "/vetdashboard"
+                  : role === "admin"
+                  ? "/admindashboard"
+                  : "/farmerdashboard"
+              }
               end
               className={linkClass}
             >
@@ -54,12 +61,15 @@ export default function Sidebar() {
 
           {role === "farmer" && <FarmerSidebar />}
           {role === "vet" && <VetSidebar />}
+          {role === "admin" && <AdminSidebar />}
 
           <li className="mt-3">
             <NavLink
               to={
                 role === "vet"
                   ? "/vetdashboard/settings"
+                  : role === "admin"
+                  ? "/admindashboard/settings"
                   : "/farmerdashboard/settings"
               }
               className={linkClass}

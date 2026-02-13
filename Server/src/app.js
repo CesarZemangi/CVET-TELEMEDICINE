@@ -16,9 +16,10 @@ import farmerCommRoutes from "./routes/farmer/communication.routes.js";
 import farmerFeedbackRoutes from "./routes/farmer/feedback.routes.js";
 import farmerNotificationRoutes from "./routes/farmer/notification.routes.js";
 import farmerDashboardRoutes from "./routes/farmer/dashboard.routes.js";
-// Add this with the other farmer routes
 
-// ... inside the farmer routes section
+// Admin routes
+import adminRoutes from "./routes/admin.routes.js";
+import path from "path";
 
 // Vet routes
 import vetCaseRoutes from "./routes/vet/cases.routes.js";
@@ -29,6 +30,7 @@ import vetAnalyticsRoutes from "./routes/vet/analytics.routes.js";
 import vetCommRoutes from "./routes/vet/communication.routes.js";
 import vetFeedbackRoutes from "./routes/vet/feedback.routes.js";
 import vetNotificationRoutes from "./routes/vet/notification.routes.js";
+import vetDashboardRoutes from "./routes/vet/dashboard.routes.js";
 
 // Middleware
 import errorHandler from "./middleware/error.middleware.js";
@@ -40,7 +42,9 @@ const app = express();
 // 2. Standard Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/farmer/dashboard", authenticate, authorizeRole("farmer"), farmerDashboardRoutes);
 // Core
 // Farmer
@@ -55,6 +59,7 @@ app.use("/api/farmer/feedback", authenticate, authorizeRole("farmer"), farmerFee
 app.use("/api/farmer/notifications", authenticate, authorizeRole("farmer"), farmerNotificationRoutes);
 
 // Vet
+app.use("/api/vet/dashboard", authenticate, authorizeRole("vet"), vetDashboardRoutes);
 app.use("/api/vet/cases", authenticate, authorizeRole("vet"), vetCaseRoutes);
 app.use("/api/vet/appointments", authenticate, authorizeRole("vet"), vetAppointmentRoutes);
 app.use("/api/vet/diagnostics", authenticate, authorizeRole("vet"), vetDiagRoutes);

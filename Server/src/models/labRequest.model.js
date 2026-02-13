@@ -1,14 +1,12 @@
 import { DataTypes } from 'sequelize';
-import sequelize from '../config/db.js'; // Ensure this points to your database config
-const Consultation = sequelize.define('Consultation', {
+import sequelize from '../config/db.js';
+
+const LabRequest = sequelize.define('LabRequest', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   case_id: { type: DataTypes.INTEGER },
-  vet_id: { type: DataTypes.INTEGER },
-  farmer_id: { type: DataTypes.INTEGER },
-  mode: { type: DataTypes.ENUM('chat', 'video') },
-  notes: { type: DataTypes.TEXT },
-  scheduled_at: { type: DataTypes.DATE },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, { tableName: 'consultations', timestamps: false });
+  requested_by: { type: DataTypes.INTEGER }, // link to vets
+  test_type: { type: DataTypes.STRING },
+  status: { type: DataTypes.ENUM('pending', 'completed'), defaultValue: 'pending' }
+}, { tableName: 'lab_requests', timestamps: false });
 
-export default  Consultation;
+export default LabRequest;
