@@ -7,23 +7,12 @@ const Farmer = sequelize.define('Farmer', {
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: DataTypes.STRING,
+  user_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true
-    }
+    unique: true
   },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  phone: {
+  farm_name: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -31,14 +20,13 @@ const Farmer = sequelize.define('Farmer', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  profile_picture: {
-    type: DataTypes.STRING,
-    allowNull: true
+  livestock_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   tableName: 'farmers',
-  timestamps: true, // Automatically handles createdAt and updatedAt
-  underscored: true // Use snake_case for fields like created_at in the DB
+  timestamps: false
 });
 
 export default Farmer;

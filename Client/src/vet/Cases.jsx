@@ -1,4 +1,44 @@
+import React, { useState, useEffect } from "react"
+import { getCases, assignCase } from "./services/vet.cases.service"
+import CaseDetailsModal from "../components/dashboard/CaseDetailsModal";
+
 export default function VetCases() {
+  const [cases, setCases] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const fetchCases = async () => {
+    try {
+      setLoading(true)
+      const data = await getCases()
+      setCases(data)
+    } catch (error) {
+      console.error("Error fetching cases:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCases()
+  }, [])
+
+  const handleAssign = async (id) => {
+    try {
+      await assignCase(id)
+      alert("Case assigned successfully")
+      fetchCases()
+    } catch (error) {
+      alert("Failed to assign case")
+    }
+  }
+
+  const handleViewCase = (caseData) => {
+    setSelectedCase(caseData);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="container-fluid px-4 py-4">
 
@@ -12,93 +52,68 @@ export default function VetCases() {
       <div className="card border-0 shadow-sm">
         <div className="card-body">
 
-          <table className="table align-middle table-hover mb-0">
-            <thead className="table-light">
-              <tr>
-                <th>Animal</th>
-                <th>Symptoms</th>
-                <th>Farmer</th>
-                <th>Priority</th>
-                <th>Date</th>
-                <th className="text-end">Action</th>
-              </tr>
-            </thead>
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+            </div>
+          ) : (
+            <table className="table align-middle table-hover mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Animal</th>
+                  <th>Symptoms</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th className="text-end">Action</th>
+                </tr>
+              </thead>
 
-            <tbody>
-              <tr>
-                <td>
-                  <i className="bi bi-heart-pulse-fill text-success me-2"></i>
-                  Cow
-                </td>
-                <td>Loss of appetite, fever</td>
-                <td>Ramesh</td>
-                <td>
-                  <span className="badge bg-danger">
-                    High
-                  </span>
-                </td>
-                <td>16 Jan 2026</td>
-                <td className="text-end">
-                  <button className="btn btn-sm btn-primary me-2">
-                    Accept
-                  </button>
-                  <button className="btn btn-sm btn-outline-secondary">
-                    View
-                  </button>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
-                  <i className="bi bi-heart-pulse-fill text-success me-2"></i>
-                  Goat
-                </td>
-                <td>Limping, swelling</td>
-                <td>Suresh</td>
-                <td>
-                  <span className="badge bg-warning text-dark">
-                    Medium
-                  </span>
-                </td>
-                <td>15 Jan 2026</td>
-                <td className="text-end">
-                  <button className="btn btn-sm btn-primary me-2">
-                    Accept
-                  </button>
-                  <button className="btn btn-sm btn-outline-secondary">
-                    View
-                  </button>
-                </td>
-              </tr>
-
-              <tr>
-                <td>
-                  <i className="bi bi-heart-pulse-fill text-success me-2"></i>
-                  Sheep
-                </td>
-                <td>Skin irritation</td>
-                <td>Anita</td>
-                <td>
-                  <span className="badge bg-secondary">
-                    Low
-                  </span>
-                </td>
-                <td>14 Jan 2026</td>
-                <td className="text-end">
-                  <button className="btn btn-sm btn-primary me-2">
-                    Accept
-                  </button>
-                  <button className="btn btn-sm btn-outline-secondary">
-                    View
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+              <tbody>
+                {cases.length > 0 ? cases.map(c => (
+                  <tr key={c.id}>
+                    <td>
+                      <i className="bi bi-heart-pulse-fill text-success me-2"></i>
+                      {c.animal_type || 'N/A'}
+                    </td>
+                    <td>{c.description}</td>
+                    <td>
+                      <span className={`badge ${c.status === 'open' ? 'bg-danger' : 'bg-success'}`}>
+                        {c.status}
+                      </span>
+                    </td>
+                    <td>{new Date(c.created_at).toLocaleDateString()}</td>
+                    <td className="text-end">
+                      {c.status === 'open' && (
+                        <button 
+                          className="btn btn-sm btn-primary me-2"
+                          onClick={() => handleAssign(c.id)}
+                        >
+                          Accept
+                        </button>
+                      )}
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => handleViewCase(c)}
+                      >
+                        View Case
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan="5" className="text-center py-4 text-muted">No cases found</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
 
         </div>
       </div>
 
+      <CaseDetailsModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        caseData={selectedCase} 
+      />
     </div>
   )
 }

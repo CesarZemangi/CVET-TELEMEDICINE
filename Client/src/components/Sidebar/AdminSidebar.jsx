@@ -23,47 +23,43 @@ export default function AdminSidebar() {
     <>
       <li className="nav-item">
         <NavLink to="/admindashboard" end className={linkClass}>
-          <i className="bi bi-speedometer2 me-3"></i> Overview
+          <i className="bi bi-speedometer2 me-3"></i> Dashboard
         </NavLink>
       </li>
 
-      {/* Farmer Pages Monitor */}
-      <li>
-        <div className={sectionHeaderClass} onClick={() => toggleSection("farmerPages")}>
-          <span><i className="bi bi-person-badge me-3"></i> Farmer Content</span>
-          <small>{openSection === "farmerPages" ? "▾" : "▸"}</small>
-        </div>
-        {openSection === "farmerPages" && (
-          <div className={dropdownContainerClass}>
-            <NavLink to="/farmerdashboard/animals" className={linkClass}>Livestock</NavLink>
-            <NavLink to="/farmerdashboard/cases" className={linkClass}>Cases</NavLink>
-            <NavLink to="/farmerdashboard/consultations" className={linkClass}>Consultations</NavLink>
-            <NavLink to="/farmerdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
-            <NavLink to="/farmerdashboard/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
-          </div>
-        )}
-      </li>
-
-      {/* Vet Pages Monitor */}
-      <li>
-        <div className={sectionHeaderClass} onClick={() => toggleSection("vetPages")}>
-          <span><i className="bi bi-shield-check me-3"></i> Vet Content</span>
-          <small>{openSection === "vetPages" ? "▾" : "▸"}</small>
-        </div>
-        {openSection === "vetPages" && (
-          <div className={dropdownContainerClass}>
-            <NavLink to="/vetdashboard/appointments" className={linkClass}>Appointments</NavLink>
-            <NavLink to="/vetdashboard/cases" className={linkClass}>Cases</NavLink>
-            <NavLink to="/vetdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
-            <NavLink to="/vetdashboard/treatment/prescriptions" className={linkClass}>Prescriptions</NavLink>
-          </div>
-        )}
-      </li>
-
       {/* User Management */}
-      <li className="nav-item mt-2">
-        <NavLink to="/admindashboard/users" className={linkClass}>
-          <i className="bi bi-people me-3"></i> Manage Users
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("userMgmt")}>
+          <span><i className="bi bi-people me-3"></i> User Management</span>
+          <small>{openSection === "userMgmt" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "userMgmt" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/admindashboard/users" className={linkClass}>Manage Users</NavLink>
+            <NavLink to="/admindashboard/farmers" className={linkClass}>Farmers</NavLink>
+            <NavLink to="/admindashboard/vets" className={linkClass}>Vets</NavLink>
+          </div>
+        )}
+      </li>
+
+      {/* Operations */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("operations")}>
+          <span><i className="bi bi-gear me-3"></i> Operations</span>
+          <small>{openSection === "operations" ? "▾" : "▸"}</small>
+        </div>
+        {openSection === "operations" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/admindashboard/cases" className={linkClass}>Cases</NavLink>
+            <NavLink to="/admindashboard/consultations" className={linkClass}>Consultations</NavLink>
+            <NavLink to="/admindashboard/media-reports" className={linkClass}>Media Reports</NavLink>
+          </div>
+        )}
+      </li>
+
+      <li className="nav-item">
+        <NavLink to="/admindashboard/analytics" className={linkClass}>
+          <i className="bi bi-graph-up me-3"></i> Analytics
         </NavLink>
       </li>
 

@@ -102,6 +102,14 @@ import ChatLogs from "./vet/Communication/ChatLogs"
 import VideoSessions from "./vet/Communication/VideoSessions"
 import Feedback from "./vet/Communication/Feedback"
 
+/* Admin Pages */
+import AdminUsers from "./pages/AdminUsers"
+import AdminFarmers from "./pages/AdminFarmers"
+import AdminVets from "./pages/AdminVets"
+import AdminLogs from "./pages/AdminLogs"
+import AdminCases from "./pages/AdminCases"
+import AdminConsultations from "./pages/AdminConsultations"
+
 function RequireAuth({ role, children }) {
 const userData = localStorage.getItem("user")
 
@@ -220,8 +228,7 @@ return (
     <Route path="communication/feedback" element={<Feedback />} />
   </Route>
 
-  <Route
-    path="/admindashboard/*"
+    <Route path="/admindashboard/*"
     element={
       <RequireAuth role="admin">
         <AdminLayout />
@@ -229,6 +236,16 @@ return (
     }
   >
     <Route index element={<AdminDashboard />} />
+    <Route path="users" element={<AdminUsers />} />
+    <Route path="farmers" element={<AdminFarmers />} />
+    <Route path="vets" element={<AdminVets />} />
+    <Route path="cases" element={<AdminCases />} />
+    <Route path="consultations" element={<AdminConsultations />} />
+    <Route path="logs" element={<AdminLogs />} />
+    
+    <Route path="analytics" element={<div>Analytics Page</div>} />
+    <Route path="media-reports" element={<div>Media Reports Page</div>} />
+    <Route path="communication/messages" element={<Messages />} />
   </Route>
 
   <Route path="*" element={<Navigate to="/" replace />} />

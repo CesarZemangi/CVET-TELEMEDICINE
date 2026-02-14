@@ -1,4 +1,36 @@
+import React, { useState, useEffect } from "react"
+import { getDashboardData } from "./services/vet.dashboard.service"
+import { getCases } from "./services/vet.cases.service"
+import { getAppointments } from "./services/vet.appointments.service"
+
 export default function VetOverview() {
+  const [data, setData] = useState(null)
+  const [cases, setCases] = useState([])
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dashResult, casesResult, apptResult] = await Promise.all([
+          getDashboardData(),
+          getCases(),
+          getAppointments()
+        ])
+        setData(dashResult)
+        setCases(casesResult)
+        setAppointments(apptResult)
+      } catch (error) {
+        console.error("Error fetching vet data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) return <div>Loading...</div>
+
   return (
     <div className="container-fluid">
 
@@ -16,11 +48,17 @@ export default function VetOverview() {
         <div className="col-md-3">
           <div className="card shadow-sm h-100">
             <div className="card-body">
+              <p className="text-muted mb-1">Incoming Cases</p>
+              <h4 className="fw-bold">{data?.incomingCases || 0}</h4>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-3">
+          <div className="card shadow-sm h-100">
+            <div className="card-body">
               <p className="text-muted mb-1">Appointments Today</p>
-              <h4 className="fw-bold">63%</h4>
-              <div className="progress">
-                <div className="progress-bar bg-primary" style={{ width: "63%" }}></div>
-              </div>
+              <h4 className="fw-bold">{data?.appointmentsToday || 0}</h4>
             </div>
           </div>
         </div>
@@ -28,11 +66,8 @@ export default function VetOverview() {
         <div className="col-md-3">
           <div className="card shadow-sm h-100">
             <div className="card-body">
-              <p className="text-muted mb-1">Treatment Success</p>
-              <h4 className="fw-bold">32%</h4>
-              <div className="progress">
-                <div className="progress-bar bg-success" style={{ width: "32%" }}></div>
-              </div>
+              <p className="text-muted mb-1">Ongoing Treatments</p>
+              <h4 className="fw-bold">{data?.ongoingTreatments || 0}</h4>
             </div>
           </div>
         </div>
@@ -40,23 +75,8 @@ export default function VetOverview() {
         <div className="col-md-3">
           <div className="card shadow-sm h-100">
             <div className="card-body">
-              <p className="text-muted mb-1">New Patients</p>
-              <h4 className="fw-bold">71%</h4>
-              <div className="progress">
-                <div className="progress-bar bg-info" style={{ width: "71%" }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-md-3">
-          <div className="card shadow-sm h-100">
-            <div className="card-body">
-              <p className="text-muted mb-1">Medication Usage</p>
-              <h4 className="fw-bold">32%</h4>
-              <div className="progress">
-                <div className="progress-bar bg-danger" style={{ width: "32%" }}></div>
-              </div>
+              <p className="text-muted mb-1">Reports Submitted</p>
+              <h4 className="fw-bold">{data?.reportsSubmitted || 0}</h4>
             </div>
           </div>
         </div>
@@ -117,30 +137,23 @@ export default function VetOverview() {
                   <tr>
                     <th>Animal</th>
                     <th>Symptoms</th>
-                    <th>Farmer</th>
-                    <th>Priority</th>
+                    <th>Status</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Cow</td>
-                    <td>Loss of appetite</td>
-                    <td>Ramesh</td>
-                    <td><span className="badge bg-danger">High</span></td>
-                    <td>
-                      <button className="btn btn-sm btn-primary">Respond</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Goat</td>
-                    <td>Limping</td>
-                    <td>Suresh</td>
-                    <td><span className="badge bg-warning text-dark">Medium</span></td>
-                    <td>
-                      <button className="btn btn-sm btn-primary">Respond</button>
-                    </td>
-                  </tr>
+                  {cases.length > 0 ? cases.map(c => (
+                    <tr key={c.id}>
+                      <td>{c.animal_type || 'N/A'}</td>
+                      <td>{c.description || 'N/A'}</td>
+                      <td><span className={`badge ${c.status === 'open' ? 'bg-danger' : 'bg-success'}`}>{c.status}</span></td>
+                      <td>
+                        <button className="btn btn-sm btn-primary">Respond</button>
+                      </td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan="4" className="text-center text-muted">No cases found</td></tr>
+                  )}
                 </tbody>
               </table>
 
@@ -156,25 +169,21 @@ export default function VetOverview() {
               <table className="table align-middle">
                 <thead className="table-light">
                   <tr>
-                    <th>Farmer</th>
-                    <th>Animal</th>
-                    <th>Time</th>
-                    <th>Mode</th>
+                    <th>Subject</th>
+                    <th>Date</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Anita</td>
-                    <td>Cow</td>
-                    <td>10:30 AM</td>
-                    <td>Video</td>
-                  </tr>
-                  <tr>
-                    <td>Mahesh</td>
-                    <td>Sheep</td>
-                    <td>12:00 PM</td>
-                    <td>Chat</td>
-                  </tr>
+                  {appointments.length > 0 ? appointments.map(a => (
+                    <tr key={a.id}>
+                      <td>{a.subject || 'Consultation'}</td>
+                      <td>{new Date(a.date).toLocaleString()}</td>
+                      <td><span className="badge bg-info">{a.status || 'Scheduled'}</span></td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan="3" className="text-center text-muted">No appointments found</td></tr>
+                  )}
                 </tbody>
               </table>
 

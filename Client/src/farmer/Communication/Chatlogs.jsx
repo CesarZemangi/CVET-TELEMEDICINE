@@ -8,11 +8,11 @@ export default function ChatLogs() {
 
   useEffect(() => {
     fetch(
-      `/api/chats/logs?category=${categoryFilter}&date=${dateFilter}`
+      `/api/communication/chatlogs?category=${categoryFilter}&date=${dateFilter}`
     )
       .then(res => res.json())
       .then(data => {
-        setLogs(data.logs)
+        setLogs(Array.isArray(data) ? data : (data.logs || []))
       })
       .catch(err => console.error(err))
   }, [categoryFilter, dateFilter])
@@ -83,10 +83,10 @@ export default function ChatLogs() {
             className="list-group-item d-flex justify-content-between align-items-center"
           >
             <span>
-              <strong>{log.category}:</strong> {log.title}
+              <strong>{log.sender?.name || "User"}:</strong> {log.message}
             </span>
             <small className="text-muted">
-              {log.date} , {log.status}
+              {new Date(log.created_at).toLocaleDateString()} , {log.is_read ? "Read" : "Unread"}
             </small>
           </li>
         ))}

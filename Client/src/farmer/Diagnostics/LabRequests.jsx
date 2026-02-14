@@ -1,5 +1,6 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Pie } from "react-chartjs-2"
+import { getLabRequests } from "../services/farmer.diagnostics.service"
 import {
   Chart as ChartJS,
   ArcElement,
@@ -12,19 +13,22 @@ ChartJS.register(ArcElement, Tooltip, Legend, Title)
 
 export default function LabRequests() {
   const [statusFilter, setStatusFilter] = useState("All")
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const requests = [
-    { id: "LR-101", test: "Blood Test", status: "Pending", date: "Jan 20, 2026" },
-    { id: "LR-102", test: "Urine Analysis", status: "Completed", date: "Jan 18, 2026" },
-    { id: "LR-103", test: "Milk Quality Test", status: "In Progress", date: "Jan 19, 2026" },
-    { id: "LR-104", test: "Fecal Examination", status: "Pending", date: "Jan 21, 2026" },
-    { id: "LR-105", test: "Respiratory Culture", status: "Completed", date: "Jan 15, 2026" },
-    { id: "LR-106", test: "Skin Scraping", status: "Completed", date: "Jan 16, 2026" },
-    { id: "LR-107", test: "Serology Test", status: "In Progress", date: "Jan 22, 2026" },
-    { id: "LR-108", test: "Urine Culture", status: "Pending", date: "Jan 23, 2026" },
-    { id: "LR-109", test: "Blood Chemistry", status: "Completed", date: "Jan 17, 2026" },
-    { id: "LR-110", test: "PCR Test", status: "Pending", date: "Jan 24, 2026" }
-  ]
+  useEffect(() => {
+    const fetchRequests = async () => {
+      try {
+        const data = await getLabRequests()
+        setRequests(data)
+      } catch (error) {
+        console.error("Error fetching lab requests:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRequests()
+  }, [])
 
   const filteredRequests = requests.filter(req =>
     statusFilter === "All" ? true : req.status === statusFilter
@@ -79,7 +83,11 @@ export default function LabRequests() {
       </div>
 
       <div className="row">
-        {filteredRequests.length > 0 ? filteredRequests.map(req => (
+        {loading ? (
+          <div className="col-12 text-center py-5">
+            <div className="spinner-border text-brown" role="status"></div>
+          </div>
+        ) : filteredRequests.length > 0 ? filteredRequests.map(req => (
           <div key={req.id} className="col-md-6 mb-3">
             <div className="card shadow-sm">
               <div className="card-body">

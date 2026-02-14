@@ -1,29 +1,29 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
-const Notification = sequelize.define('Notification', {
+const Chatlog = sequelize.define('Chatlog', {
   id: { 
     type: DataTypes.INTEGER, 
     primaryKey: true, 
     autoIncrement: true 
   },
-  user_id: { 
+  case_id: { 
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  title: { 
-    type: DataTypes.STRING,
+  sender_id: { 
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  receiver_id: { 
+    type: DataTypes.INTEGER,
     allowNull: false
   },
   message: { 
     type: DataTypes.TEXT,
     allowNull: false
   },
-  type: { 
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  seen: { 
+  is_read: { 
     type: DataTypes.BOOLEAN, 
     defaultValue: false 
   },
@@ -32,8 +32,8 @@ const Notification = sequelize.define('Notification', {
     defaultValue: DataTypes.NOW 
   }
 }, { 
-  tableName: 'notifications', 
+  tableName: 'chatlogs', 
   timestamps: false 
 });
 
-export default Notification;
+export default Chatlog;

@@ -7,11 +7,12 @@ export default function ProfileImage({ src, role, size = "40px", className = "" 
   const getDefaultAvatar = () => {
     if (role === 'vet') return "/assets/vet.jpeg";
     if (role === 'farmer') return "/assets/fam.jpeg";
-    return "/assets/default-avatar.png"; // Generic fallback
+    if (role === 'admin') return "/assets/admin.jpg";
+    return "/assets/fam.jpeg"; // Default fallback
   };
 
   const defaultAvatar = getDefaultAvatar();
-  const imagePath = src ? `${serverBaseUrl}${src}` : defaultAvatar;
+  const imagePath = (src && src !== "") ? `${serverBaseUrl}${src}` : defaultAvatar;
 
   return (
     <div 

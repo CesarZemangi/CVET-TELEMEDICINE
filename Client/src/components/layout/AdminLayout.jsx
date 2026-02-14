@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom"
 import Sidebar from "./Sidebar"
 import Topbar from "./Topbar"
+import NavigationControls from "../common/NavigationControls"
 
 export default function AdminLayout() {
   return (
@@ -22,6 +23,7 @@ export default function AdminLayout() {
             <Outlet />
           </div>
         </main>
+        <NavigationControls />
       </div>
     </div>
   )

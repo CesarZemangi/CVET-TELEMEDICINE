@@ -8,10 +8,10 @@ export default function Notifications() {
 
   useEffect(() => {
     fetch(
-      `/api/notifications?category=${categoryFilter}&date=${dateFilter}`
+      `/api/communication/notifications?category=${categoryFilter}&date=${dateFilter}`
     )
       .then(res => res.json())
-      .then(data => setNotifications(data.notifications))
+      .then(data => setNotifications(Array.isArray(data) ? data : (data.notifications || [])))
       .catch(err => console.error(err))
   }, [categoryFilter, dateFilter])
 
@@ -81,9 +81,9 @@ export default function Notifications() {
             className="list-group-item d-flex justify-content-between align-items-center"
           >
             <div>
-              <strong>{note.category}:</strong> {note.message}
+              <strong>{note.title}:</strong> {note.message}
             </div>
-            <small className="text-muted">{note.date}</small>
+            <small className="text-muted">{new Date(note.created_at).toLocaleDateString()}</small>
           </li>
         ))}
 

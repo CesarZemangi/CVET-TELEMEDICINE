@@ -5,6 +5,7 @@ import MetricCard from "../components/dashboard/MetricCard";
 export default function Animals() {
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [livestockCount, setLivestockCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", species: "", breed: "", age: "" });
 
@@ -12,8 +13,8 @@ export default function Animals() {
     try {
       setLoading(true);
       const res = await api.get("/farmer/animals");
-      // The API returns { success: true, data: [...] } based on common project pattern
       setAnimals(res.data?.data || res.data || []);
+      setLivestockCount(res.data?.livestock_count || 0);
     } catch (err) {
       console.error("Error fetching animals:", err);
     } finally {
@@ -41,7 +42,7 @@ export default function Animals() {
     <div className="container-fluid py-2">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h4 className="fw-bold mb-0">Livestock Inventory</h4>
+          <h4 className="fw-bold mb-0">Livestock Inventory ({livestockCount})</h4>
           <p className="text-muted small">Manage and monitor your farm animals</p>
         </div>
         <button className="btn btn-primary-custom" onClick={() => setShowModal(true)}>

@@ -24,6 +24,11 @@ export default function VetSidebar() {
     <>
       {/* Overview & Appointments (No Dropdown) */}
       <li>
+        <NavLink to="/vetdashboard" end className={linkClass}>
+          <i className="bi bi-speedometer2 me-3"></i> Overview
+        </NavLink>
+      </li>
+      <li>
         <NavLink to="/vetdashboard/appointments" className={linkClass}>
           <i className="bi bi-calendar-event me-3"></i> Appointments
         </NavLink>

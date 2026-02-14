@@ -7,47 +7,26 @@ const Vet = sequelize.define('Vet', {
     primaryKey: true,
     autoIncrement: true
   },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true
-    }
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  specialization: {
-    type: DataTypes.STRING, // e.g., Large Animals, Poultry, Surgery
-    allowNull: false
-  },
-  license_number: {
-    type: DataTypes.STRING,
+  user_id: {
+    type: DataTypes.INTEGER,
     allowNull: false,
     unique: true
   },
-  phone: {
+  specialization: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  is_verified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
-  },
-  profile_picture: {
+  license_number: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  experience_years: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   tableName: 'vets',
-  timestamps: true,
-  underscored: true
+  timestamps: false
 });
 
 export default Vet;

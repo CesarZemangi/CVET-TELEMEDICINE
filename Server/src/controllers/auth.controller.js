@@ -5,8 +5,6 @@ import User from "../models/user.model.js";
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("LOGIN BODY", req.body);
-
     const userInstance = await User.findOne({
       where: { email: email.trim().toLowerCase() }
     });
@@ -16,8 +14,6 @@ export const login = async (req, res) => {
     }
 
     const user = userInstance.get({ plain: true });
-
-    // Note: user.password works if your model maps 'password_hash' to 'password'
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
@@ -33,7 +29,8 @@ export const login = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        profilePic: user.profile_pic
       }
     });
   } catch (err) {
@@ -43,7 +40,7 @@ export const login = async (req, res) => {
       error: err.message
     });
   }
-}; // Closed properly now
+};
 
 export const logout = async (req, res) => {
   return res.status(200).json({ message: "Logged out successfully" });
@@ -71,5 +68,29 @@ export const register = async (req, res) => {
       message: "Registration failed",
       error: err.message
     });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { name, phone, sms_opt_in } = req.body;
+    const user = await User.findByPk(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    await user.update({ name, phone, sms_opt_in });
+
+    return res.json({
+      message: "Profile updated successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        sms_opt_in: user.sms_opt_in,
+        profilePic: user.profile_pic
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

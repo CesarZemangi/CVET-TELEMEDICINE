@@ -8,11 +8,11 @@ export default function Messages() {
 
   useEffect(() => {
     fetch(
-      `/api/messages?sender=${senderFilter}&topic=${topicFilter}`
+      `/api/communication/messages?sender=${senderFilter}&topic=${topicFilter}`
     )
       .then(res => res.json())
       .then(data => {
-        setMessages(data.messages)
+        setMessages(Array.isArray(data) ? data : (data.messages || []))
       })
       .catch(err => console.error(err))
   }, [senderFilter, topicFilter])
@@ -82,11 +82,11 @@ export default function Messages() {
             className="list-group-item d-flex justify-content-between align-items-center"
           >
             <div>
-              <strong>{msg.sender}</strong>
+              <strong>{msg.sender?.name || "Unknown"}</strong>
               <br />
-              <span className="text-dark">{msg.subject}</span>
+              <span className="text-dark">{msg.message}</span>
             </div>
-            <small className="text-muted">{msg.date}</small>
+            <small className="text-muted">{new Date(msg.created_at).toLocaleDateString()}</small>
           </li>
         ))}
 

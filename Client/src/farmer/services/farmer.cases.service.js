@@ -1,28 +1,28 @@
-import axios from "axios"
+import api from "../../services/api"
 
-const API_URL = "/api/farmer/cases"
+const API_URL = "/farmer/cases"
 
 export const getCases = async () => {
-  const response = await axios.get(API_URL)
+  const response = await api.get(API_URL)
   return response.data
 }
 
 export const getCaseById = async (id) => {
-  const response = await axios.get(`${API_URL}/${id}`)
+  const response = await api.get(`${API_URL}/${id}`)
   return response.data
 }
 
 export const addCase = async (caseData) => {
-  const response = await axios.post(API_URL, caseData)
+  const response = await api.post(API_URL, caseData)
   return response.data
 }
 
 export const updateCase = async (id, caseData) => {
-  const response = await axios.put(`${API_URL}/${id}`, caseData)
+  const response = await api.put(`${API_URL}/${id}`, caseData)
   return response.data
 }
 
 export const deleteCase = async (id) => {
-  const response = await axios.delete(`${API_URL}/${id}`)
+  const response = await api.delete(`${API_URL}/${id}`)
   return response.data
 }

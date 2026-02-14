@@ -37,6 +37,7 @@ export default function Login() {
           token: result.token,
           role: role,
           name: result.user?.name,
+          profilePic: result.user?.profilePic
         })
       );
 

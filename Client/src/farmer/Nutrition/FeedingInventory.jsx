@@ -1,5 +1,6 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Pie, Line } from "react-chartjs-2"
+import { getFeedInventory } from "../services/farmer.nutrition.service"
 import {
   Chart as ChartJS,
   ArcElement,
@@ -25,24 +26,30 @@ ChartJS.register(
 
 export default function FeedingInventory() {
   const [filter, setFilter] = useState("All")
+  const [inventory, setInventory] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const inventory = [
-    { id: 1, item: "Hay", quantity: "120 kg", status: "Available", date: "10 Jan 2026" },
-    { id: 2, item: "Silage", quantity: "200 kg", status: "Available", date: "11 Jan 2026" },
-    { id: 3, item: "Corn Feed", quantity: "150 kg", status: "Low Stock", date: "12 Jan 2026" },
-    { id: 4, item: "Soybean Meal", quantity: "80 kg", status: "Available", date: "13 Jan 2026" },
-    { id: 5, item: "Mineral Mix", quantity: "50 kg", status: "Available", date: "14 Jan 2026" },
-    { id: 6, item: "Salt Lick", quantity: "30 blocks", status: "Available", date: "15 Jan 2026" },
-    { id: 7, item: "Wheat Bran", quantity: "90 kg", status: "Available", date: "16 Jan 2026" },
-    { id: 8, item: "Cottonseed Cake", quantity: "60 kg", status: "Available", date: "17 Jan 2026" },
-    { id: 9, item: "Molasses", quantity: "40 L", status: "Available", date: "18 Jan 2026" },
-    { id: 10, item: "Green Fodder", quantity: "300 kg", status: "Available", date: "19 Jan 2026" },
-    { id: 11, item: "Barley Feed", quantity: "70 kg", status: "Low Stock", date: "20 Jan 2026" },
-    { id: 12, item: "Peanut Cake", quantity: "55 kg", status: "Available", date: "21 Jan 2026" },
-    { id: 13, item: "Rice Bran", quantity: "100 kg", status: "Available", date: "22 Jan 2026" },
-    { id: 14, item: "Fish Meal", quantity: "25 kg", status: "Available", date: "23 Jan 2026" },
-    { id: 15, item: "Vitamin Supplements", quantity: "20 packs", status: "Pending Order", date: "24 Jan 2026" }
-  ]
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        const data = await getFeedInventory()
+        // Map backend data to frontend structure if needed
+        const mappedData = data.map(item => ({
+          id: item.id,
+          item: item.feed_name,
+          quantity: `${item.quantity} ${item.unit}`,
+          status: item.quantity < 50 ? "Low Stock" : "Available", // Simplified status logic
+          date: new Date(item.created_at).toLocaleDateString()
+        }))
+        setInventory(mappedData)
+      } catch (error) {
+        console.error("Error fetching inventory:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchInventory()
+  }, [])
 
   const filteredInventory = inventory.filter(feed =>
     filter === "All" ? true : feed.status === filter
@@ -121,17 +128,23 @@ export default function FeedingInventory() {
       </div>
 
       {/* Inventory list */}
-      <ul className="list-group">
-        {filteredInventory.map(feed => (
-          <li key={feed.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{feed.item} • {feed.quantity}</span>
-            <small className={getStatusClass(feed.status)}>{feed.status} • {feed.date}</small>
-          </li>
-        ))}
-        {filteredInventory.length === 0 && (
-          <li className="list-group-item text-muted">No {filter.toLowerCase()} items found.</li>
-        )}
-      </ul>
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="spinner-border text-brown" role="status"></div>
+        </div>
+      ) : (
+        <ul className="list-group">
+          {filteredInventory.map(feed => (
+            <li key={feed.id} className="list-group-item d-flex justify-content-between align-items-center">
+              <span>{feed.item} • {feed.quantity}</span>
+              <small className={getStatusClass(feed.status)}>{feed.status} • {feed.date}</small>
+            </li>
+          ))}
+          {filteredInventory.length === 0 && (
+            <li className="list-group-item text-muted">No {filter.toLowerCase()} items found.</li>
+          )}
+        </ul>
+      )}
 
       {/* Charts */}
       <div className="mt-4" style={{ width: "300px", height: "250px" }}>

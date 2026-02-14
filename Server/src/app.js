@@ -19,6 +19,7 @@ import farmerDashboardRoutes from "./routes/farmer/dashboard.routes.js";
 
 // Admin routes
 import adminRoutes from "./routes/admin.routes.js";
+import communicationRoutes from "./routes/communication.routes.js";
 import path from "path";
 
 // Vet routes
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/communication", authenticate, communicationRoutes);
 app.use("/api/farmer/dashboard", authenticate, authorizeRole("farmer"), farmerDashboardRoutes);
 // Core
 // Farmer
