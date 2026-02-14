@@ -35,6 +35,7 @@ export const createCase = async (req, res) => {
       animal_id,
       title,
       description,
+      symptoms: req.body.symptoms || description,
       status: 'open'
     });
 

@@ -1,21 +1,23 @@
-import db from "../config/db.js"
+import User from "../models/user.model.js"
 
 export const getMe = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT id, name, email, role FROM users WHERE id = ?",
-    [req.user.id]
-  )
-
-  res.json(rows[0])
+  try {
+    const user = await User.findByPk(req.user.id, {
+      attributes: ['id', 'name', 'email', 'role', 'status', 'created_at']
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
 export const updateMe = async (req, res) => {
-  const { name, email } = req.body
-
-  await db.query(
-    "UPDATE users SET name = ?, email = ? WHERE id = ?",
-    [name, email, req.user.id]
-  )
-
-  res.json({ message: "Profile updated" })
+  try {
+    const { name, email } = req.body
+    await User.update({ name, email }, { where: { id: req.user.id } });
+    res.json({ message: "Profile updated" })
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }

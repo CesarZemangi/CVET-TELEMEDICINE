@@ -1,36 +1,50 @@
-import db from "../../config/db.js";
+import Animal from "../../models/animal.model.js";
+import Case from "../../models/case.model.js";
+import Consultation from "../../models/consultation.model.js";
+import LabRequest from "../../models/labRequest.model.js";
+import { Op } from "sequelize";
 
 export const getDashboardData = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     // Total Animals for this farmer
-    const [animalCount] = await db.query(
-      "SELECT COUNT(*) as count FROM animals WHERE farmer_id = (SELECT id FROM farmers WHERE user_id = ?)",
-      [req.user.id]
-    );
+    const animalCount = await Animal.count({
+      where: { farmer_id: userId }
+    });
 
     // Active Cases (open)
-    const [activeCases] = await db.query(
-      "SELECT COUNT(*) as count FROM cases WHERE farmer_id = (SELECT id FROM farmers WHERE user_id = ?) AND status = 'open'",
-      [req.user.id]
-    );
+    const activeCasesCount = await Case.count({
+      where: { farmer_id: userId, status: 'open' }
+    });
+
+    // Get farmer's case IDs for nested queries
+    const farmerCases = await Case.findAll({
+      where: { farmer_id: userId },
+      attributes: ['id']
+    });
+    const caseIds = farmerCases.map(c => c.id);
 
     // Pending Consultations
-    const [pendingConsults] = await db.query(
-      "SELECT COUNT(*) as count FROM consultations WHERE case_id IN (SELECT id FROM cases WHERE farmer_id = (SELECT id FROM farmers WHERE user_id = ?))",
-      [req.user.id]
-    );
+    const pendingConsultationsCount = await Consultation.count({
+      where: {
+        case_id: { [Op.in]: caseIds }
+      }
+    });
 
     // Health Alerts (Lab requests with pending status)
-    const [alerts] = await db.query(
-      "SELECT COUNT(*) as count FROM lab_requests WHERE status = 'pending' AND case_id IN (SELECT id FROM cases WHERE farmer_id = (SELECT id FROM farmers WHERE user_id = ?))",
-      [req.user.id]
-    );
+    const alertsCount = await LabRequest.count({
+      where: {
+        status: 'pending',
+        case_id: { [Op.in]: caseIds }
+      }
+    });
 
     res.json({
-      totalAnimals: animalCount[0].count,
-      activeCases: activeCases[0].count,
-      pendingConsultations: pendingConsults[0].count,
-      healthAlerts: alerts[0].count
+      totalAnimals: animalCount,
+      activeCases: activeCasesCount,
+      pendingConsultations: pendingConsultationsCount,
+      healthAlerts: alertsCount
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

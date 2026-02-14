@@ -29,6 +29,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     defaultValue: 'active'
   },
+  sms_opt_in: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
   created_at: { 
     type: DataTypes.DATE, 
     defaultValue: DataTypes.NOW 

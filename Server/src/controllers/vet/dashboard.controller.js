@@ -1,36 +1,47 @@
-import db from "../../config/db.js";
+import Case from "../../models/case.model.js";
+import Consultation from "../../models/consultation.model.js";
+import LabRequest from "../../models/labRequest.model.js";
+import { Op } from "sequelize";
 
 export const getDashboardData = async (req, res) => {
   try {
+    const vetUserId = req.user.id;
+
     // Incoming / Active Cases assigned to this vet
-    const [activeCases] = await db.query(
-      "SELECT COUNT(*) as count FROM cases WHERE vet_id = (SELECT id FROM vets WHERE user_id = ?) AND status = 'open'",
-      [req.user.id]
-    );
+    const incomingCasesCount = await Case.count({
+      where: {
+        vet_id: vetUserId,
+        status: 'open'
+      }
+    });
 
     // Appointments (Consultations) for this vet
-    const [appointments] = await db.query(
-      "SELECT COUNT(*) as count FROM consultations WHERE vet_id = (SELECT id FROM vets WHERE user_id = ?)",
-      [req.user.id]
-    );
+    const appointmentsCount = await Consultation.count({
+      where: {
+        vet_id: vetUserId
+      }
+    });
 
     // Lab Requests submitted by this vet
-    const [labRequests] = await db.query(
-      "SELECT COUNT(*) as count FROM lab_requests WHERE requested_by = (SELECT id FROM vets WHERE user_id = ?)",
-      [req.user.id]
-    );
+    const labRequestsCount = await LabRequest.count({
+      where: {
+        requested_by: vetUserId
+      }
+    });
 
     // Ongoing treatments (cases not closed)
-    const [ongoing] = await db.query(
-      "SELECT COUNT(*) as count FROM cases WHERE vet_id = (SELECT id FROM vets WHERE user_id = ?) AND status != 'closed'",
-      [req.user.id]
-    );
+    const ongoingTreatmentsCount = await Case.count({
+      where: {
+        vet_id: vetUserId,
+        status: { [Op.ne]: 'closed' }
+      }
+    });
 
     res.json({
-      incomingCases: activeCases[0].count,
-      appointmentsToday: appointments[0].count,
-      ongoingTreatments: ongoing[0].count,
-      reportsSubmitted: labRequests[0].count
+      incomingCases: incomingCasesCount,
+      appointmentsToday: appointmentsCount,
+      ongoingTreatments: ongoingTreatmentsCount,
+      reportsSubmitted: labRequestsCount
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

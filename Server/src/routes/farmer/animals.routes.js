@@ -9,10 +9,10 @@ import {
 
 const router = express.Router()
 
-// Change 'auth' to 'authenticate' here:
-router.get("/", authenticate, getAnimals)
-router.post("/", authenticate, createAnimal)
-router.put("/:id", authenticate, updateAnimal)
-router.delete("/:id", authenticate, deleteAnimal)
+// Middlewares are handled in app.js
+router.get("/", getAnimals)
+router.post("/", createAnimal)
+router.put("/:id", updateAnimal)
+router.delete("/:id", deleteAnimal)
 
 export default router

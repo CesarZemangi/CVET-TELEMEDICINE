@@ -7,7 +7,7 @@ if (!SECRET && process.env.NODE_ENV === "production") {
   throw new Error("JWT_SECRET is not defined in environment variables");
 }
 
-const FINAL_SECRET = SECRET || "dev_secret_only";
+const FINAL_SECRET = SECRET || "supersecretkey";
 
 export const generateToken = (user) => {
   // FIX: Extract only the necessary data into a plain object

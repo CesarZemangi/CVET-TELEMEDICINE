@@ -6,6 +6,8 @@ const Case = sequelize.define('Case', {
   farmer_id: { type: DataTypes.INTEGER },
   vet_id: { type: DataTypes.INTEGER },
   animal_id: { type: DataTypes.INTEGER },
+  title: { type: DataTypes.STRING },
+  description: { type: DataTypes.TEXT },
   symptoms: { type: DataTypes.TEXT },
   status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open' },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
