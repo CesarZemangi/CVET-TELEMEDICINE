@@ -4,11 +4,14 @@ import api from '../services/api';
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      const res = await api.get('/admin/users');
-      setUsers(res.data);
+      const res = await api.get(`/admin/users`);
+      setUsers(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Error fetching users:", err);
     } finally {
@@ -81,6 +84,9 @@ export default function AdminUsers() {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="card-footer bg-white border-0 py-3 text-center">
+          <span className="small text-muted">Showing all {users.length} users</span>
         </div>
       </div>
     </div>

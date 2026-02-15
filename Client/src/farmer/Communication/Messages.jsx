@@ -1,101 +1,84 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import api from "../../services/api";
 
 export default function Messages() {
-  const [senderFilter, setSenderFilter] = useState("All")
-  const [topicFilter, setTopicFilter] = useState("All")
   const [messages, setMessages] = useState([])
+  const [loading, setLoading] = useState(true);
+
+  const fetchMessages = async () => {
+    try {
+      const res = await api.get("/communication/messages");
+      setMessages(res.data);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(
-      `/api/communication/messages?sender=${senderFilter}&topic=${topicFilter}`
-    )
-      .then(res => res.json())
-      .then(data => {
-        setMessages(Array.isArray(data) ? data : (data.messages || []))
-      })
-      .catch(err => console.error(err))
-  }, [senderFilter, topicFilter])
+    fetchMessages();
+  }, []);
+
+  const replyMessage = (sender) => {
+    alert(`Replying to ${sender}...`)
+  }
+
+  const markAsRead = (id) => {
+    console.log("Marking as read", id);
+  }
 
   return (
-    <DashboardSection title="Messages (Zimbabwe)">
-      <p>Recent messages from vets and support staff.</p>
+    <DashboardSection title="Messages">
+      <p className="mb-3">Recent messages from vets and support staff.</p>
 
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {[
-          "All",
-          "Dr. Moyo",
-          "Dr. Ncube",
-          "Vet Clinic Harare",
-          "Dr. Dube",
-          "Dr. Sibanda",
-          "Vet Support Midlands",
-          "Dr. Mutasa",
-          "Dr. Chirwa",
-          "Vet Clinic Bulawayo",
-          "Dr. Nkomo"
-        ].map(sender => (
-          <button
-            key={sender}
-            className={`btn btn-sm ${
-              senderFilter === sender
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setSenderFilter(sender)}
-          >
-            {sender}
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="spinner-border text-brown" role="status"></div>
+          <p className="mt-2 text-muted">Loading messages...</p>
+        </div>
+      ) : (
+        <ul className="list-group shadow-sm">
+          {messages.map(msg => (
+            <li
+              key={msg.id}
+              className="list-group-item d-flex justify-content-between align-items-center p-3"
+            >
+              <div className="flex-grow-1">
+                <div className="d-flex align-items-center mb-1">
+                  <span className="fw-bold text-brown me-2">{msg.sender?.name || "Support"}</span>
+                  <small className="badge bg-light text-muted border">{new Date(msg.created_at).toLocaleString()}</small>
+                </div>
+                <div className="text-dark small">{msg.message}</div>
+              </div>
+              <div className="ms-3 d-flex gap-2">
+                <button 
+                  className="btn btn-sm btn-brown"
+                  onClick={() => replyMessage(msg.sender?.name)}
+                >
+                  Reply
+                </button>
+                <button 
+                  className="btn btn-sm btn-outline-brown"
+                  onClick={() => markAsRead(msg.id)}
+                >
+                  <i className="bi bi-check-all"></i>
+                </button>
+              </div>
+            </li>
+          ))}
 
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {[
-          "All",
-          "Lab",
-          "Consultation",
-          "Vaccination",
-          "Nutrition",
-          "Surgery",
-          "Medication",
-          "Screening",
-          "Compliance"
-        ].map(topic => (
-          <button
-            key={topic}
-            className={`btn btn-sm ${
-              topicFilter === topic
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setTopicFilter(topic)}
-          >
-            {topic}
-          </button>
-        ))}
-      </div>
-
-      <ul className="list-group">
-        {messages.map(msg => (
-          <li
-            key={msg.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <strong>{msg.sender?.name || "Unknown"}</strong>
-              <br />
-              <span className="text-dark">{msg.message}</span>
-            </div>
-            <small className="text-muted">{new Date(msg.created_at).toLocaleDateString()}</small>
-          </li>
-        ))}
-
-        {messages.length === 0 && (
-          <li className="list-group-item text-muted">
-            No messages found for {senderFilter} in {topicFilter}.
-          </li>
-        )}
-      </ul>
+          {messages.length === 0 && (
+            <li className="list-group-item text-center py-5">
+              <div className="text-muted mb-2">
+                <i className="bi bi-chat-dots" style={{fontSize: '2rem'}}></i>
+              </div>
+              <p className="mb-0">No messages found in your inbox.</p>
+            </li>
+          )}
+        </ul>
+      )}
     </DashboardSection>
   )
 }

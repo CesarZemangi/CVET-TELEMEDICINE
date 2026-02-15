@@ -9,6 +9,8 @@ import Notification from './notification.model.js';
 import Farmer from './farmer.model.js';
 import Vet from './vet.model.js';
 
+import Animal from './animal.model.js';
+
 // User Associations
 User.hasMany(Case, { foreignKey: 'farmer_id' });
 User.hasMany(Case, { foreignKey: 'vet_id' });
@@ -19,6 +21,10 @@ User.hasOne(Vet, { foreignKey: 'user_id' });
 // Farmer & Vet Associations back to User
 Farmer.belongsTo(User, { foreignKey: 'user_id' });
 Vet.belongsTo(User, { foreignKey: 'user_id' });
+
+// Animal Associations
+Animal.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
+Animal.hasMany(PreventiveReminder, { foreignKey: 'animal_id' });
 
 // Case Associations
 Case.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
@@ -48,8 +54,9 @@ VideoSession.belongsTo(User, { as: 'vet', foreignKey: 'vet_id' });
 
 // PreventiveReminder Associations
 PreventiveReminder.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
+PreventiveReminder.belongsTo(Animal, { as: 'animal', foreignKey: 'animal_id' });
 
 // Notification Associations
 Notification.belongsTo(User, { foreignKey: 'user_id' });
 
-export { User, Case, Consultation, Message, Chatlog, VideoSession, PreventiveReminder, Notification, Farmer, Vet };
+export { User, Case, Consultation, Message, Chatlog, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Animal };

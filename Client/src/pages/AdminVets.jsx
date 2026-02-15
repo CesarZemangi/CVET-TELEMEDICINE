@@ -37,7 +37,7 @@ export default function AdminVets() {
                   <th>License #</th>
                   <th>Exp (Years)</th>
                   <th>Assigned Cases</th>
-                  <th>Active Consultations</th>
+                  <th>Consultations</th>
                   <th className="text-end pe-4">Actions</th>
                 </tr>
               </thead>
@@ -52,8 +52,8 @@ export default function AdminVets() {
                     <td>{v.experience_years} yrs</td>
                     <td><span className="badge bg-info text-white rounded-pill">{v.assignedCases}</span></td>
                     <td>
-                      <span className={`badge ${v.activeConsultations > 0 ? 'bg-success' : 'bg-light text-muted'}`}>
-                        {v.activeConsultations}
+                      <span className={`badge ${v.totalConsultations > 0 ? 'bg-success' : 'bg-light text-muted'}`}>
+                        {v.totalConsultations}
                       </span>
                     </td>
                     <td className="text-end pe-4">

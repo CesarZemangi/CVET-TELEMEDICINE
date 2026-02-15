@@ -7,6 +7,10 @@ const Message = sequelize.define('Message', {
   receiver_id: { type: DataTypes.INTEGER },
   message: { type: DataTypes.TEXT },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, { tableName: 'messages', timestamps: false });
+}, { 
+  tableName: 'messages', 
+  timestamps: false,
+  indexes: [{ fields: ['case_id'] }]
+});
 
 export default Message;

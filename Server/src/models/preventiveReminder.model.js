@@ -11,6 +11,10 @@ const PreventiveReminder = sequelize.define('PreventiveReminder', {
   status: { type: DataTypes.ENUM('pending', 'sent', 'cancelled'), defaultValue: 'pending' },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   sent_at: { type: DataTypes.DATE }
-}, { tableName: 'preventive_reminders', timestamps: false });
+}, { 
+  tableName: 'preventive_reminders', 
+  timestamps: false,
+  indexes: [{ fields: ['reminder_date'] }]
+});
 
 export default PreventiveReminder;

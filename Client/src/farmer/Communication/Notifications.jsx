@@ -1,98 +1,94 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import api from "../../services/api";
 
 export default function Notifications() {
   const [categoryFilter, setCategoryFilter] = useState("All")
-  const [dateFilter, setDateFilter] = useState("All")
   const [notifications, setNotifications] = useState([])
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(
-      `/api/communication/notifications?category=${categoryFilter}&date=${dateFilter}`
-    )
-      .then(res => res.json())
-      .then(data => setNotifications(Array.isArray(data) ? data : (data.notifications || [])))
-      .catch(err => console.error(err))
-  }, [categoryFilter, dateFilter])
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const res = await api.get(`/communication/notifications?category=${categoryFilter}`);
+        setNotifications(res.data);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, [categoryFilter])
+
+  const getPriorityClass = (type) => {
+    switch (type) {
+      case "critical": return "badge bg-danger"
+      case "message": return "badge bg-primary"
+      case "reminder": return "badge bg-warning text-dark"
+      default: return "badge bg-secondary"
+    }
+  }
 
   return (
-    <DashboardSection title="Notifications (Zimbabwe)">
-      <p>Recent alerts and updates.</p>
+    <DashboardSection title="Notifications">
+      <p className="mb-3">Recent alerts and updates regarding your animals and consultations.</p>
 
-      <div className="mb-3 d-flex gap-2 flex-wrap">
+      <div className="mb-4 d-flex gap-2 flex-wrap">
         {[
           "All",
-          "Consultation",
-          "Lab",
-          "Vaccination",
-          "Medication",
-          "Communication",
-          "Screening",
-          "Nutrition",
-          "System",
-          "Feedback"
+          "message",
+          "reminder",
+          "system",
+          "treatment",
+          "diagnostic"
         ].map(cat => (
           <button
             key={cat}
-            className={`btn btn-sm ${
+            className={`btn btn-sm rounded-pill px-3 ${
               categoryFilter === cat
                 ? "btn-brown"
                 : "btn-outline-brown"
             }`}
             onClick={() => setCategoryFilter(cat)}
           >
-            {cat}
+            {cat.charAt(0).toUpperCase() + cat.slice(1)}
           </button>
         ))}
       </div>
 
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {[
-          "All",
-          "Jan 26, 2026",
-          "Jan 25, 2026",
-          "Jan 24, 2026",
-          "Jan 23, 2026",
-          "Jan 22, 2026",
-          "Jan 21, 2026",
-          "Jan 20, 2026",
-          "Jan 19, 2026",
-          "Jan 18, 2026",
-          "Jan 17, 2026"
-        ].map(date => (
-          <button
-            key={date}
-            className={`btn btn-sm ${
-              dateFilter === date
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setDateFilter(date)}
-          >
-            {date}
-          </button>
-        ))}
-      </div>
-
-      <ul className="list-group">
-        {notifications.map(note => (
-          <li
-            key={note.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <div>
-              <strong>{note.title}:</strong> {note.message}
+      <div className="list-group shadow-sm">
+        {loading ? (
+          <div className="list-group-item text-center py-5">
+            <div className="spinner-border text-brown" role="status"></div>
+            <p className="mt-2 text-muted mb-0">Checking for updates...</p>
+          </div>
+        ) : notifications.length > 0 ? (
+          notifications.map(note => (
+            <li
+              key={note.id}
+              className="list-group-item d-flex justify-content-between align-items-center p-3"
+            >
+              <div>
+                <div className="fw-bold text-dark">{note.title}</div>
+                <div className="small text-muted">{note.message}</div>
+              </div>
+              <div className="text-end">
+                <span className={`${getPriorityClass(note.type)} mb-1 d-block`}>{note.type}</span>
+                <small className="text-muted d-block" style={{fontSize: '0.7rem'}}>{new Date(note.created_at).toLocaleDateString()}</small>
+              </div>
+            </li>
+          ))
+        ) : (
+          <li className="list-group-item text-center py-5">
+            <div className="text-muted mb-2">
+              <i className="bi bi-bell-slash" style={{fontSize: '2rem'}}></i>
             </div>
-            <small className="text-muted">{new Date(note.created_at).toLocaleDateString()}</small>
-          </li>
-        ))}
-
-        {notifications.length === 0 && (
-          <li className="list-group-item text-muted">
-            No notifications found for {categoryFilter} on {dateFilter}.
+            <p className="mb-0 text-muted">No {categoryFilter !== 'All' ? categoryFilter : ''} notifications found.</p>
           </li>
         )}
-      </ul>
+      </div>
     </DashboardSection>
   )
 }

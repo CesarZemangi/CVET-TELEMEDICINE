@@ -4,18 +4,22 @@ import api from '../services/api';
 export default function AdminConsultations() {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchConsultations = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/admin/consultations`);
+      setConsultations(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching consultations:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchConsultations = async () => {
-      try {
-        const res = await api.get('/admin/consultations');
-        setConsultations(res.data);
-      } catch (err) {
-        console.error("Error fetching consultations:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchConsultations();
   }, []);
 
@@ -64,6 +68,9 @@ export default function AdminConsultations() {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="card-footer bg-white border-0 py-3 text-center">
+          <span className="small text-muted">Showing all {consultations.length} consultations</span>
         </div>
       </div>
     </div>

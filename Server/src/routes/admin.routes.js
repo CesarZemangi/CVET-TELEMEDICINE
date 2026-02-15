@@ -12,21 +12,33 @@ import {
   getCases,
   getConsultations
 } from "../controllers/admin/admin.controller.js";
-import { authenticate } from "../middleware/auth.middleware.js";
-import { adminOnly } from "../middleware/admin.middleware.js";
+import {
+  getOverviewAnalytics,
+  getCaseAnalytics,
+  getMessageAnalytics,
+  getReminderAnalytics,
+  getVetPerformance
+} from "../controllers/admin/analytics.controller.js";
 
 const router = express.Router();
 
-router.get("/overview", authenticate, adminOnly, getOverview);
-router.get("/users", authenticate, adminOnly, getUsers);
-router.get("/users/:id", authenticate, adminOnly, getUserDetails);
-router.put("/users/:id", authenticate, adminOnly, updateUserStatus);
-router.delete("/users/:id", authenticate, adminOnly, deleteUser);
-router.get("/farmers", authenticate, adminOnly, getFarmerStats);
-router.get("/vets", authenticate, adminOnly, getVetStats);
-router.get("/cases", authenticate, adminOnly, getCases);
-router.get("/consultations", authenticate, adminOnly, getConsultations);
-router.get("/logs", authenticate, adminOnly, getSystemLogs);
-router.get("/profile", authenticate, adminOnly, getProfile);
+router.get("/overview", getOverview);
+router.get("/users", getUsers);
+router.get("/users/:id", getUserDetails);
+router.put("/users/:id", updateUserStatus);
+router.delete("/users/:id", deleteUser);
+router.get("/farmers", getFarmerStats);
+router.get("/vets", getVetStats);
+router.get("/cases", getCases);
+router.get("/consultations", getConsultations);
+router.get("/logs", getSystemLogs);
+router.get("/profile", getProfile);
+
+// Analytics
+router.get("/analytics/overview", getOverviewAnalytics);
+router.get("/analytics/cases", getCaseAnalytics);
+router.get("/analytics/messages", getMessageAnalytics);
+router.get("/analytics/reminders", getReminderAnalytics);
+router.get("/analytics/vet-performance", getVetPerformance);
 
 export default router;

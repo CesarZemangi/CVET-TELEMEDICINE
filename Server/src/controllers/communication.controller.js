@@ -123,8 +123,15 @@ export const sendMessage = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
+    const { category } = req.query;
+    const where = { user_id: req.user.id };
+    
+    if (category && category !== 'All') {
+      where.type = category;
+    }
+
     const notifications = await Notification.findAll({
-      where: { user_id: req.user.id },
+      where,
       order: [['created_at', 'DESC']],
       limit: 20
     });

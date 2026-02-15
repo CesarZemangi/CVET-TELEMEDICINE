@@ -33,7 +33,8 @@ const Chatlog = sequelize.define('Chatlog', {
   }
 }, { 
   tableName: 'chatlogs', 
-  timestamps: false 
+  timestamps: false,
+  indexes: [{ fields: ['case_id'] }]
 });
 
 export default Chatlog;

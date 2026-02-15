@@ -109,6 +109,8 @@ import AdminVets from "./pages/AdminVets"
 import AdminLogs from "./pages/AdminLogs"
 import AdminCases from "./pages/AdminCases"
 import AdminConsultations from "./pages/AdminConsultations"
+import AdminAnalytics from "./pages/AdminAnalytics"
+import AdminVetPerformance from "./pages/AdminVetPerformance"
 
 function RequireAuth({ role, children }) {
 const userData = localStorage.getItem("user")
@@ -243,7 +245,8 @@ return (
     <Route path="consultations" element={<AdminConsultations />} />
     <Route path="logs" element={<AdminLogs />} />
     
-    <Route path="analytics" element={<div>Analytics Page</div>} />
+    <Route path="analytics" element={<AdminAnalytics />} />
+    <Route path="vet-performance" element={<AdminVetPerformance />} />
     <Route path="media-reports" element={<div>Media Reports Page</div>} />
     <Route path="communication/messages" element={<Messages />} />
   </Route>

@@ -4,18 +4,22 @@ import api from '../services/api';
 export default function AdminLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/admin/logs`);
+      setLogs(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching logs:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const res = await api.get('/admin/logs');
-        setLogs(res.data);
-      } catch (err) {
-        console.error("Error fetching logs:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchLogs();
   }, []);
 
@@ -59,6 +63,9 @@ export default function AdminLogs() {
               </tbody>
             </table>
           </div>
+        </div>
+        <div className="card-footer bg-white border-0 py-3 text-center">
+          <span className="small text-muted">Showing all {logs.length} system events</span>
         </div>
       </div>
     </div>

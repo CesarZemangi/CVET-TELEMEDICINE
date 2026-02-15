@@ -1,102 +1,56 @@
 import { useState, useEffect } from "react"
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import api from "../../services/api"
 
 export default function ChatLogs() {
-  const [categoryFilter, setCategoryFilter] = useState("All")
-  const [dateFilter, setDateFilter] = useState("All")
   const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(
-      `/api/communication/chatlogs?category=${categoryFilter}&date=${dateFilter}`
-    )
-      .then(res => res.json())
-      .then(data => {
-        setLogs(Array.isArray(data) ? data : (data.logs || []))
-      })
-      .catch(err => console.error(err))
-  }, [categoryFilter, dateFilter])
+    const fetchLogs = async () => {
+      try {
+        const res = await api.get("/communication/chatlogs")
+        setLogs(res.data)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLogs()
+  }, [])
 
   return (
     <DashboardSection title="Chat Logs (Zimbabwe)">
       <p>Archived veterinary communication records.</p>
 
-      <div className="mb-3 d-flex gap-2">
-        {[
-          "All",
-          "Consultation",
-          "Treatment",
-          "Vaccination",
-          "Nutrition",
-          "Surgery",
-          "Lab",
-          "Medication",
-          "Feedback",
-          "Screening"
-        ].map(cat => (
-          <button
-            key={cat}
-            className={`btn btn-sm ${
-              categoryFilter === cat
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setCategoryFilter(cat)}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-brown"></div>
+        </div>
+      ) : (
+        <ul className="list-group">
+          {logs.map(log => (
+            <li
+              key={log.id}
+              className="list-group-item d-flex justify-content-between align-items-center"
+            >
+              <span>
+                <strong>{log.sender?.name || "User"}:</strong> {log.message}
+              </span>
+              <small className="text-muted">
+                {new Date(log.created_at).toLocaleString()} , {log.is_read ? "Read" : "Unread"}
+              </small>
+            </li>
+          ))}
 
-      <div className="mb-3 d-flex gap-2">
-        {[
-          "All",
-          "Jan 10, 2026",
-          "Jan 12, 2026",
-          "Jan 14, 2026",
-          "Jan 15, 2026",
-          "Jan 17, 2026",
-          "Jan 18, 2026",
-          "Jan 20, 2026",
-          "Jan 22, 2026",
-          "Jan 23, 2026",
-          "Jan 25, 2026"
-        ].map(date => (
-          <button
-            key={date}
-            className={`btn btn-sm ${
-              dateFilter === date
-                ? "btn-brown"
-                : "btn-outline-brown"
-            }`}
-            onClick={() => setDateFilter(date)}
-          >
-            {date}
-          </button>
-        ))}
-      </div>
-
-      <ul className="list-group">
-        {logs.map(log => (
-          <li
-            key={log.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <span>
-              <strong>{log.sender?.name || "User"}:</strong> {log.message}
-            </span>
-            <small className="text-muted">
-              {new Date(log.created_at).toLocaleDateString()} , {log.is_read ? "Read" : "Unread"}
-            </small>
-          </li>
-        ))}
-
-        {logs.length === 0 && (
-          <li className="list-group-item text-muted">
-            No chat logs found for {categoryFilter} on {dateFilter}.
-          </li>
-        )}
-      </ul>
+          {logs.length === 0 && (
+            <li className="list-group-item text-muted text-center py-4">
+              No chat logs found in your history.
+            </li>
+          )}
+        </ul>
+      )}
     </DashboardSection>
   )
 }

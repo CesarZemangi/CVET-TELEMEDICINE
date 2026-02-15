@@ -1,13 +1,22 @@
 import Case from "../../models/case.model.js";
 import CaseMedia from "../../models/caseMedia.model.js";
 import Animal from "../../models/animal.model.js";
+import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 
 export const getCases = async (req, res) => {
   try {
-    const cases = await Case.findAll({
-      where: { farmer_id: req.user.id }
+    const { page, size } = req.query;
+    const { limit, offset } = getPagination(page, size);
+
+    const data = await Case.findAndCountAll({
+      where: { farmer_id: req.user.id },
+      limit,
+      offset,
+      order: [['created_at', 'DESC']]
     });
-    res.json(cases);
+
+    const response = getPagingData(data, page, limit);
+    res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -15,7 +24,7 @@ export const getCases = async (req, res) => {
 
 export const createCase = async (req, res) => {
   try {
-    const { animal_id, title, description } = req.body;
+    const { animal_id, title, description, symptoms, priority } = req.body;
 
     if (!title || !description || !animal_id) {
       return res.status(400).json({ error: "Title, description and animal_id are required" });
@@ -35,7 +44,8 @@ export const createCase = async (req, res) => {
       animal_id,
       title,
       description,
-      symptoms: req.body.symptoms || description,
+      symptoms: symptoms || description,
+      priority: priority || 'medium',
       status: 'open'
     });
 
@@ -72,6 +82,19 @@ export const uploadMedia = async (req, res) => {
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    // Custom size validation
+    for (const file of req.files) {
+      if (file.mimetype.startsWith('image/')) {
+        if (file.size > 5 * 1024 * 1024) {
+          return res.status(400).json({ error: `Image ${file.originalname} exceeds 5MB limit` });
+        }
+      } else if (file.mimetype.startsWith('video/')) {
+        if (file.size > 25 * 1024 * 1024) {
+          return res.status(400).json({ error: `Video ${file.originalname} exceeds 25MB limit` });
+        }
+      }
     }
 
     const mediaEntries = await Promise.all(

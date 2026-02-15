@@ -4,12 +4,13 @@ import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
 import SystemLog from "../../models/systemLog.model.js";
 import { fn, col, literal, Op } from "sequelize";
+import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 
 export const getOverview = async (req, res) => {
   try {
     const total_users = await User.count();
     const total_farmers = await User.count({ where: { role: 'farmer' } });
-    const total_vets = await User.count({ where: { role: 'vet' } });
+    const total_vets = await Vet.count();
     const total_cases = await Case.count();
     const open_cases = await Case.count({ where: { status: 'open' } });
     const closed_cases = await Case.count({ where: { status: 'closed' } });
@@ -17,13 +18,17 @@ export const getOverview = async (req, res) => {
     const total_consultations = await Consultation.count();
 
     const total_messages = await Message.count();
-    const unread_notifications = await Notification.count({ where: { is_read: false } });
+    const unread_notifications = await Notification.count({ where: { seen: false } });
     const active_video_sessions = await VideoSession.count({ where: { status: 'active' } });
     const completed_video_sessions = await VideoSession.count({ where: { status: 'ended' } });
     const total_emails_sent = await EmailLog.count({ where: { status: 'sent' } });
     const total_sms_sent = await SMSLog.count({ where: { status: 'sent' } });
     const pending_reminders = await PreventiveReminder.count({ where: { status: 'pending' } });
     const sent_reminders = await PreventiveReminder.count({ where: { status: 'sent' } });
+    const failed_emails = await EmailLog.count({ where: { status: 'failed' } });
+    const failed_sms = await SMSLog.count({ where: { status: 'failed' } });
+    const high_priority_cases = await Case.count({ where: { priority: 'high' } });
+    const critical_priority_cases = await Case.count({ where: { priority: 'critical' } });
 
     const recent_cases = await Case.findAll({
       attributes: ['id', 'description', 'created_at', 'status'],
@@ -37,7 +42,28 @@ export const getOverview = async (req, res) => {
       limit: 8
     });
 
+    const casesByStatus = await Case.findAll({
+      attributes: ['status', [fn('count', col('id')), 'count']],
+      group: ['status']
+    });
+
+    const casesByPriority = await Case.findAll({
+      attributes: ['priority', [fn('count', col('id')), 'count']],
+      group: ['priority']
+    });
+
+    const monthlyCases = await Case.findAll({
+      attributes: [
+        [fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'month'],
+        [fn('count', col('id')), 'count']
+      ],
+      group: [fn('DATE_FORMAT', col('created_at'), '%Y-%m')],
+      order: [[fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'ASC']],
+      limit: 12
+    });
+
     res.json({
+      server_status: 'online',
       total_users,
       total_farmers,
       total_vets,
@@ -54,8 +80,15 @@ export const getOverview = async (req, res) => {
       total_sms_sent,
       pending_reminders,
       sent_reminders,
+      failed_emails,
+      failed_sms,
+      high_priority_cases,
+      critical_priority_cases,
       recent_cases,
-      recent_users
+      recent_users,
+      casesByStatus,
+      casesByPriority,
+      monthlyCases
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -64,10 +97,11 @@ export const getOverview = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: ['id', 'name', 'email', 'role', 'status', 'phone', 'created_at']
+    const data = await User.findAll({
+      attributes: ['id', 'name', 'email', 'role', 'status', 'phone', 'created_at'],
+      order: [['created_at', 'DESC']]
     });
-    res.json(users);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -168,11 +202,8 @@ export const getVetStats = async (req, res) => {
 
     const vetStats = await Promise.all(vets.map(async (user) => {
       const assignedCases = await Case.count({ where: { vet_id: user.id } });
-      const completedConsultations = await Consultation.count({ 
-        where: { vet_id: user.id, status: 'completed' } 
-      });
-      const activeConsultations = await Consultation.count({ 
-        where: { vet_id: user.id, status: 'active' } 
+      const totalConsultations = await Consultation.count({ 
+        where: { vet_id: user.id } 
       });
 
       return {
@@ -186,8 +217,7 @@ export const getVetStats = async (req, res) => {
         license_number: user.Vet?.license_number || 'N/A',
         experience_years: user.Vet?.experience_years || 0,
         assignedCases,
-        completedConsultations,
-        activeConsultations
+        totalConsultations
       };
     }));
 
@@ -199,14 +229,14 @@ export const getVetStats = async (req, res) => {
 
 export const getCases = async (req, res) => {
   try {
-    const cases = await Case.findAll({
+    const data = await Case.findAll({
       include: [
         { model: User, as: 'farmer', attributes: ['id', 'name'] },
         { model: User, as: 'vet', attributes: ['id', 'name'] }
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json(cases);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -214,14 +244,14 @@ export const getCases = async (req, res) => {
 
 export const getConsultations = async (req, res) => {
   try {
-    const consultations = await Consultation.findAll({
+    const data = await Consultation.findAll({
       include: [
         { model: User, as: 'vet', attributes: ['id', 'name'] },
         { model: Case, attributes: ['id', 'description'] }
       ],
-      order: [['scheduled_at', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
-    res.json(consultations);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -247,11 +277,10 @@ export const deleteUser = async (req, res) => {
 
 export const getSystemLogs = async (req, res) => {
   try {
-    const logs = await SystemLog.findAll({
-      order: [['created_at', 'DESC']],
-      limit: 100
+    const data = await SystemLog.findAll({
+      order: [['created_at', 'DESC']]
     });
-    res.json(logs);
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
