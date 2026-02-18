@@ -9,7 +9,14 @@ const EmailLog = sequelize.define('EmailLog', {
   message: { type: DataTypes.TEXT },
   status: { type: DataTypes.STRING }, // 'sent', 'failed'
   sent_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-  error_message: { type: DataTypes.TEXT }
-}, { tableName: 'email_logs', timestamps: false });
+  error_message: { type: DataTypes.TEXT },
+  created_by: { type: DataTypes.INTEGER, allowNull: true },
+  updated_by: { type: DataTypes.INTEGER, allowNull: true }
+}, { 
+  tableName: 'email_logs', 
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
+});
 
 export default EmailLog;

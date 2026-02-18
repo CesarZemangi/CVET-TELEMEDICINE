@@ -11,10 +11,13 @@ const Case = sequelize.define('Case', {
   symptoms: { type: DataTypes.TEXT },
   status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open' },
   priority: { type: DataTypes.ENUM('low', 'medium', 'high', 'critical'), defaultValue: 'medium' },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+  created_by: { type: DataTypes.INTEGER, allowNull: true },
+  updated_by: { type: DataTypes.INTEGER, allowNull: true }
 }, { 
   tableName: 'cases', 
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [
     { fields: ['status'] },
     { fields: ['priority'] }

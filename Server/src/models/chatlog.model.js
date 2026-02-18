@@ -27,13 +27,13 @@ const Chatlog = sequelize.define('Chatlog', {
     type: DataTypes.BOOLEAN, 
     defaultValue: false 
   },
-  created_at: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
-  }
+  created_by: { type: DataTypes.INTEGER, allowNull: true },
+  updated_by: { type: DataTypes.INTEGER, allowNull: true }
 }, { 
   tableName: 'chatlogs', 
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [{ fields: ['case_id'] }]
 });
 

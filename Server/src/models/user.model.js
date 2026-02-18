@@ -37,13 +37,19 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  created_at: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
+  created_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  updated_by: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   }
 }, { 
   tableName: 'users', // Ensure this matches your phpMyAdmin table name
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [{ fields: ['role'] }]
 });
 

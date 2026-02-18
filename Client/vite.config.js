@@ -13,4 +13,17 @@ export default defineConfig({
       src: path.resolve(__dirname, './src'),
     },
   },
+server: {
+host: true,
+allowedHosts: [
+'uncomical-winfred-unwealthy.ngrok-free.dev'
+],
+proxy: {
+'/api': {
+target: 'http://localhost:5000',
+changeOrigin: true,
+secure: false
+}
+}
+}
 })

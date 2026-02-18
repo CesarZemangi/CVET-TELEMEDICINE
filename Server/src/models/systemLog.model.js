@@ -15,13 +15,13 @@ const SystemLog = sequelize.define('SystemLog', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  created_at: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
-  }
+  created_by: { type: DataTypes.INTEGER, allowNull: true },
+  updated_by: { type: DataTypes.INTEGER, allowNull: true }
 }, { 
   tableName: 'system_logs', 
-  timestamps: false 
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 export default SystemLog;

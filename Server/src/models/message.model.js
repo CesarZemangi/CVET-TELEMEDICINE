@@ -6,10 +6,13 @@ const Message = sequelize.define('Message', {
   sender_id: { type: DataTypes.INTEGER },
   receiver_id: { type: DataTypes.INTEGER },
   message: { type: DataTypes.TEXT },
-  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+  created_by: { type: DataTypes.INTEGER, allowNull: true },
+  updated_by: { type: DataTypes.INTEGER, allowNull: true }
 }, { 
   tableName: 'messages', 
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   indexes: [{ fields: ['case_id'] }]
 });
 
