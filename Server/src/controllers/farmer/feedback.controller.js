@@ -1,19 +1,33 @@
-// Change 'require' to 'import'
-import Feedback from '../../models/feedback.model.js'; 
+import { Feedback, Case } from '../../models/associations.js'; 
 import { success, error } from '../../utils/response.js';
 
-// Change 'exports.name' to 'export const name'
 export const createFeedback = async (req, res) => {
   try {
-    const { consultation_id, rating, comments } = req.body;
+    const { case_id, consultation_id, rating, comments } = req.body;
     const farmer_id = req.user.id; 
 
+    if (!case_id || !rating || !comments) {
+      return res.status(400).json({ error: "case_id, rating and comments are required" });
+    }
+
+    // Find the case to get vet_id
+    const singleCase = await Case.findOne({
+      where: { id: case_id, farmer_id }
+    });
+
+    if (!singleCase) {
+      return res.status(404).json({ error: "Case not found or does not belong to you" });
+    }
+
     const feedback = await Feedback.create({
-      consultation_id,
+      case_id,
+      consultation_id: consultation_id || null,
+      vet_id: singleCase.vet_id,
       farmer_id,
       rating,
       comments,
-      created_at: new Date()
+      created_by: farmer_id,
+      updated_by: farmer_id
     });
 
     success(res, feedback, 'Feedback submitted successfully');
@@ -22,11 +36,10 @@ export const createFeedback = async (req, res) => {
   }
 };
 
-export const getFeedbackByConsultation = async (req, res) => {
+export const getFeedbackByCase = async (req, res) => {
   try {
-    const { consultationId } = req.params;
-    const feedback = await Feedback.findAll({ where: { consultation_id: consultationId } });
-
+    const { case_id } = req.params;
+    const feedback = await Feedback.findAll({ where: { case_id } });
     success(res, feedback, 'Feedback retrieved successfully');
   } catch (err) {
     error(res, err.message);
@@ -36,8 +49,10 @@ export const getFeedbackByConsultation = async (req, res) => {
 export const getFeedbackByFarmer = async (req, res) => {
   try {
     const farmer_id = req.user.id;
-    const feedback = await Feedback.findAll({ where: { farmer_id } });
-
+    const feedback = await Feedback.findAll({ 
+      where: { farmer_id },
+      include: [{ model: Case, attributes: ['title'] }]
+    });
     success(res, feedback, 'Farmer feedback retrieved successfully');
   } catch (err) {
     error(res, err.message);

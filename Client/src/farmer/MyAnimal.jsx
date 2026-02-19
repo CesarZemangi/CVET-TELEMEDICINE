@@ -1,4 +1,42 @@
+import React, { useState, useEffect } from "react";
+import api from "../services/api";
+
 export default function MyAnimals() {
+  const [animals, setAnimals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+
+  const fetchAnimals = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/farmer/animals");
+      setAnimals(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error("Error fetching animals:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnimals();
+  }, []);
+
+  const handleAddAnimal = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post("/farmer/animals", formData);
+      setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+      // Close modal using bootstrap
+      const modal = document.getElementById('addAnimalModal');
+      const modalInstance = bootstrap.Modal.getInstance(modal);
+      modalInstance.hide();
+      fetchAnimals();
+    } catch (err) {
+      alert("Failed to add animal: " + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <div className="container-fluid px-4 py-4">
 
@@ -22,158 +60,45 @@ export default function MyAnimals() {
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-0">
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+            </div>
+          ) : (
+            <table className="table table-hover align-middle mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th className="ps-4">Tag Number</th>
+                  <th>Species</th>
+                  <th>Breed</th>
+                  <th>Age</th>
+                  <th>Health Status</th>
+                  <th className="text-end pe-4">Action</th>
+                </tr>
+              </thead>
 
-          <table className="table table-hover align-middle mb-0">
-            <thead className="table-light">
-              <tr>
-                <th className="ps-4">Animal</th>
-                <th>Species</th>
-                <th>Age</th>
-                <th>Health Status</th>
-                <th className="text-end pe-4">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr>
-                <td className="ps-4 fw-medium">Lakshmi</td>
-                <td>Cow</td>
-                <td>4 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Kannan</td>
-                <td>Goat</td>
-                <td>2 Years</td>
-                <td><span className="badge bg-warning text-dark">Under Treatment</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Raja</td>
-                <td>Buffalo</td>
-                <td>6 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Meena</td>
-                <td>Hen</td>
-                <td>1 Year</td>
-                <td><span className="badge bg-danger">Critical</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Arun</td>
-                <td>Dog</td>
-                <td>3 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Sita</td>
-                <td>Goat</td>
-                <td>5 Years</td>
-                <td><span className="badge bg-warning text-dark">Under Treatment</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Muthu</td>
-                <td>Cow</td>
-                <td>7 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Radha</td>
-                <td>Sheep</td>
-                <td>2 Years</td>
-                <td><span className="badge bg-warning text-dark">Under Treatment</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Kumar</td>
-                <td>Horse</td>
-                <td>8 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Anjali</td>
-                <td>Cow</td>
-                <td>3 Years</td>
-                <td><span className="badge bg-danger">Critical</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              {/* Additional entries */}
-              <tr>
-                <td className="ps-4 fw-medium">Balu</td>
-                <td>Ox</td>
-                <td>9 Years</td>
-                <td><span className="badge bg-success">Stable</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Priya</td>
-                <td>Duck</td>
-                <td>1 Year</td>
-                <td><span className="badge bg-warning text-dark">Under Observation</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Ganesh</td>
-                <td>Cow</td>
-                <td>10 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Latha</td>
-                <td>Goat</td>
-                <td>4 Years</td>
-                <td><span className="badge bg-danger">Critical</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Ramesh</td>
-                <td>Buffalo</td>
-                <td>5 Years</td>
-                <td><span className="badge bg-success">Stable</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Divya</td>
-                <td>Hen</td>
-                <td>2 Years</td>
-                <td><span className="badge bg-warning text-dark">Under Treatment</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-
-              <tr>
-                <td className="ps-4 fw-medium">Surya</td>
-                <td>Dog</td>
-                <td>6 Years</td>
-                <td><span className="badge bg-success">Healthy</span></td>
-                <td className="text-end pe-4"><button className="btn btn-sm btn-outline-primary">View Health</button></td>
-              </tr>
-            </tbody>
-          </table>
-
+              <tbody>
+                {animals.length > 0 ? animals.map(animal => (
+                  <tr key={animal.id}>
+                    <td className="ps-4 fw-medium">{animal.tag_number}</td>
+                    <td>{animal.species}</td>
+                    <td>{animal.breed}</td>
+                    <td>{animal.age} Years</td>
+                    <td>
+                      <span className={`badge ${animal.health_status === 'healthy' ? 'bg-success' : 'bg-warning text-dark'}`}>
+                        {animal.health_status}
+                      </span>
+                    </td>
+                    <td className="text-end pe-4">
+                      <button className="btn btn-sm btn-outline-primary">View Health</button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan="6" className="text-center py-4 text-muted">No animals found</td></tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -192,38 +117,82 @@ export default function MyAnimals() {
               <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-                        <div className="modal-body">
-                          <div className="mb-3">
-                            <label className="form-label">Animal Name</label>
-                            <input type="text" className="form-control" placeholder="Enter animal name" />
-                          </div>
-            
-                          <div className="mb-3">
-                            <label className="form-label">Species</label>
-                            <select className="form-select">
-                              <option>Select species</option>
-                              <option>Cow</option>
-                              <option>Goat</option>
-                              <option>Buffalo</option>
-                              <option>Sheep</option>
-                            </select>
-                          </div>
-            
-                          <div className="mb-3">
-                            <label className="form-label">Age</label>
-                            <input type="text" className="form-control" placeholder="Enter age" />
-                          </div>
-                        </div>
-            
-                        <div className="modal-footer">
-                          <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                          <button type="button" className="btn btn-primary">Add Animal</button>
-                        </div>
-            
-                      </div>
-                    </div>
-                  </div>
-            
+            <form onSubmit={handleAddAnimal}>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label">Tag Number</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="Enter tag number" 
+                    required 
+                    value={formData.tag_number} 
+                    onChange={e => setFormData({...formData, tag_number: e.target.value})} 
+                  />
                 </div>
-              );
-            }
+  
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Species</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="e.g. Cow" 
+                      required 
+                      value={formData.species} 
+                      onChange={e => setFormData({...formData, species: e.target.value})} 
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Breed</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="e.g. Holstein" 
+                      required 
+                      value={formData.breed} 
+                      onChange={e => setFormData({...formData, breed: e.target.value})} 
+                    />
+                  </div>
+                </div>
+  
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Age</label>
+                    <input 
+                      type="number" 
+                      className="form-control" 
+                      placeholder="Enter age" 
+                      required 
+                      value={formData.age} 
+                      onChange={e => setFormData({...formData, age: e.target.value})} 
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Health Status</label>
+                    <select 
+                      className="form-select" 
+                      value={formData.health_status} 
+                      onChange={e => setFormData({...formData, health_status: e.target.value})}
+                    >
+                      <option value="healthy">Healthy</option>
+                      <option value="sick">Sick</option>
+                      <option value="under treatment">Under Treatment</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+  
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" className="btn btn-primary">Add Animal</button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}

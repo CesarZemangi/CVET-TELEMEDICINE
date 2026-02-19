@@ -1,141 +1,94 @@
-import React, { useState } from "react"
-import { Pie, Line, Bar } from "react-chartjs-2"
-import {
-  Chart as ChartJS,
-  ArcElement,
-  LineElement,
-  PointElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-  Title
-} from "chart.js"
-import DashboardSection from "../../components/dashboard/DashboardSection"
-
-ChartJS.register(
-  ArcElement,
-  LineElement,
-  PointElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-  Title
-)
+import React, { useState, useEffect } from "react";
+import api from "../../services/api";
+import DashboardSection from "../../components/dashboard/DashboardSection";
 
 export default function MedicationHistory() {
-  const [filter, setFilter] = useState("All")
+  const [medications, setMedications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Example dataset with species breakdown
-  const medicationRecords = [
-    { species: "Cattle", type: "Antibiotics" },
-    { species: "Cattle", type: "Painkillers" },
-    { species: "Cattle", type: "Vitamins" },
-    { species: "Goat", type: "Antibiotics" },
-    { species: "Goat", type: "Vaccines" },
-    { species: "Sheep", type: "Painkillers" },
-    { species: "Sheep", type: "Vitamins" },
-    { species: "Sheep", type: "Vaccines" },
-    { species: "Cattle", type: "Antibiotics" },
-    { species: "Goat", type: "Painkillers" }
-  ]
-
-  // Apply filter
-  const filteredRecords = medicationRecords.filter(m =>
-    filter === "All" ? true : m.species === filter
-  )
-
-  // Pie chart: distribution of medication types (filtered)
-  const types = ["Antibiotics", "Painkillers", "Vitamins", "Vaccines"]
-  const pieData = {
-    labels: types,
-    datasets: [
-      {
-        data: types.map(t => filteredRecords.filter(m => m.type === t).length),
-        backgroundColor: ["#8B4513", "#A0522D", "#CD853F", "#D2B48C"],
-        borderColor: "#fff",
-        borderWidth: 2
-      }
-    ]
-  }
-
-  // Line chart: dosage trends over weeks (static demo data)
-  const lineData = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-    datasets: [
-      {
-        label: "Dosages Administered",
-        data: [12, 18, 15, 20],
-        borderColor: "#A0522D",
-        backgroundColor: "#D2B48C",
-        tension: 0.3,
-        fill: true
-      }
-    ]
-  }
-
-  // Species breakdown chart (stacked bar, filtered)
-  const species = [...new Set(filteredRecords.map(m => m.species))]
-  const barData = {
-    labels: species,
-    datasets: types.map(type => ({
-      label: type,
-      data: species.map(sp => filteredRecords.filter(m => m.species === sp && m.type === type).length),
-      backgroundColor:
-        type === "Antibiotics" ? "#8B4513" :
-        type === "Painkillers" ? "#A0522D" :
-        type === "Vitamins" ? "#CD853F" :
-        "#D2B48C"
-    }))
-  }
-
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { position: "bottom" },
-      title: { display: false }
-    },
-    scales: {
-      x: { stacked: true },
-      y: { stacked: true }
+  const fetchMedications = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/farmer/treatment/medications");
+      setMedications(res.data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching medication history:", err);
+      setError("Failed to load medication history.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchMedications();
+  }, []);
 
   return (
-    <DashboardSection title="Medication History (Zimbabwe)">
-      <p className="mb-3">View past medications and dosage records for cattle, goats, and sheep.</p>
+    <DashboardSection title="Medication History">
+      <p className="text-muted mb-4">
+        A complete record of medications administered to your animals by veterinarians.
+      </p>
 
-      {/* Filter buttons */}
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {["All", "Cattle", "Goat", "Sheep"].map(f => (
-          <button
-            key={f}
-            className={`btn btn-sm ${filter === f ? "btn-brown" : "btn-outline-brown"}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {/* Charts */}
-      <div className="mb-3" style={{ width: "250px", height: "250px" }}>
-        <h6>Medication Types</h6>
-        <Pie data={pieData} options={options} />
-      </div>
-
-      <div className="mb-3" style={{ width: "300px", height: "200px" }}>
-        <h6>Dosage Trends</h6>
-        <Line data={lineData} options={options} />
-      </div>
-
-      <div className="mb-3" style={{ width: "500px", height: "300px" }}>
-        <h6>Species Breakdown</h6>
-        <Bar data={barData} options={{ ...options, title: { text: "Medication Types by Species" } }} />
-      </div>
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      ) : error ? (
+        <div className="alert alert-danger">{error}</div>
+      ) : (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th className="ps-4">Date</th>
+                    <th>Animal</th>
+                    <th>Medicine</th>
+                    <th>Dosage</th>
+                    <th>Duration</th>
+                    <th>Administered By</th>
+                    <th className="pe-4">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {medications.length > 0 ? (
+                    medications.map((med) => (
+                      <tr key={med.id}>
+                        <td className="ps-4">
+                          {new Date(med.created_at).toLocaleDateString()}
+                        </td>
+                        <td>
+                          <span className="fw-medium">{med.Case?.Animal?.tag_number}</span>
+                          <br />
+                          <small className="text-muted">{med.Case?.Animal?.species}</small>
+                        </td>
+                        <td className="fw-bold text-brown">{med.medicine}</td>
+                        <td>{med.dosage}</td>
+                        <td>{med.duration}</td>
+                        <td>Dr. {med.Case?.vet?.name || "Unknown"}</td>
+                        <td className="pe-4">
+                          <small className="text-wrap" style={{ maxWidth: '200px', display: 'block' }}>
+                            {med.notes || "-"}
+                          </small>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center py-5 text-muted">
+                        No medication records found for your animals.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardSection>
-  )
+  );
 }

@@ -1,67 +1,109 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import { getLabResults } from "../services/vet.diagnostics.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
 
 export default function LabResults() {
-  const results = [
-    { id: 1, farmer: "Tendai Moyo", animal: "Nguni Cow #A12", test: "Blood panel", finding: "Normal", severity: "Normal", date: "02 Jan 2026" },
-    { id: 2, farmer: "Rudo Chikafu", animal: "Matabele Goat #B07", test: "Fecal exam", finding: "High parasite load", severity: "Critical", date: "03 Jan 2026" },
-    { id: 3, farmer: "Blessing Ncube", animal: "Indigenous Chicken Flock", test: "PCR (Newcastle)", finding: "Negative", severity: "Normal", date: "04 Jan 2026" },
-    { id: 4, farmer: "Tatenda Dube", animal: "Nguni Cow #A15", test: "Blood test (FMD antibodies)", finding: "Positive", severity: "Critical", date: "05 Jan 2026" },
-    { id: 5, farmer: "Nyasha Sibanda", animal: "Goat #B11", test: "Skin scraping", finding: "Dermatitis confirmed", severity: "Minor", date: "06 Jan 2026" },
-    { id: 6, farmer: "Chipo Mutasa", animal: "Sheep #C09", test: "Blood chemistry", finding: "Low calcium", severity: "Minor", date: "07 Jan 2026" },
-    { id: 7, farmer: "Tafadzwa Mhlanga", animal: "Nguni Cow #A18", test: "Serology (Brucellosis)", finding: "Negative", severity: "Normal", date: "08 Jan 2026" },
-    { id: 8, farmer: "Kudakwashe Dlamini", animal: "Goat #B14", test: "Fecal culture", finding: "Coccidiosis detected", severity: "Critical", date: "09 Jan 2026" },
-    { id: 9, farmer: "Ropafadzo Nkomo", animal: "Sheep #C25", test: "Joint fluid analysis", finding: "Mild inflammation", severity: "Minor", date: "10 Jan 2026" },
-    { id: 10, farmer: "Simba Chirwa", animal: "Nguni Cow #A20", test: "Rabies antigen", finding: "Negative", severity: "Normal", date: "11 Jan 2026" }
-  ]
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedResult, setSelectedResult] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
-  const [filter, setFilter] = useState("All")
-
-  const filteredResults = results.filter(r =>
-    filter === "All" ? true : r.severity === filter
-  )
-
-  const getSeverityClass = (severity) => {
-    switch (severity) {
-      case "Critical": return "badge bg-danger"
-      case "Minor": return "badge bg-warning text-dark"
-      case "Normal": return "badge bg-success"
-      default: return "badge bg-secondary"
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const data = await getLabResults();
+      setResults(data?.data || data || []);
+    } catch (err) {
+      console.error("Error fetching lab results:", err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleViewResult = (result) => {
+    setSelectedResult(result);
+    setShowModal(true);
+  };
 
   return (
     <DashboardSection title="Lab Results">
-      <p className="mb-3">Laboratory results from Zimbabwean farmers:</p>
+      <p className="mb-4 text-muted">View completed laboratory findings</p>
 
-      {/* Filter bar */}
-      <div className="mb-3 d-flex gap-2">
-        {["All", "Normal", "Minor", "Critical"].map(severity => (
-          <button
-            key={severity}
-            className={`btn btn-sm ${filter === severity ? "btn-brown" : "btn-outline-brown"}`}
-            onClick={() => setFilter(severity)}
-          >
-            {severity}
-          </button>
-        ))}
+      <div className="table-responsive">
+        <table className="table table-hover align-middle border-top">
+          <thead className="table-light">
+            <tr>
+              <th>Result ID</th>
+              <th>Case Title</th>
+              <th>Test Type</th>
+              <th>Date Uploaded</th>
+              <th className="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan="5" className="text-center py-4"><div className="spinner-border spinner-border-sm text-primary"></div></td></tr>
+            ) : results.length > 0 ? results.map(r => (
+              <tr key={r.id}>
+                <td className="fw-bold">#RES-{r.id}</td>
+                <td>{r.LabRequest?.Case?.title || `Case #${r.LabRequest?.case_id}`}</td>
+                <td>{r.LabRequest?.test_type}</td>
+                <td>{new Date(r.uploaded_at).toLocaleDateString()}</td>
+                <td className="text-end">
+                  <button 
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => handleViewResult(r)}
+                  >
+                    View Result
+                  </button>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan="5" className="text-center py-4 text-muted">No lab results found.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Results list */}
-      <ul className="list-group">
-        {filteredResults.map(r => (
-          <li key={r.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{r.farmer} • {r.animal} • {r.test} • {r.finding}</span>
-            <div>
-              <span className={getSeverityClass(r.severity)}>{r.severity}</span>
-              <small className="text-muted ms-2">{r.date}</small>
+      {/* View Result Modal */}
+      {showModal && selectedResult && (
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">Lab Result Details</h5>
+                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted">Case</label>
+                  <p className="fw-medium">{selectedResult.LabRequest?.Case?.title}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted">Test Type</label>
+                  <p className="fw-medium">{selectedResult.LabRequest?.test_type}</p>
+                </div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted">Findings</label>
+                  <div className="p-3 bg-light rounded border">
+                    {selectedResult.result}
+                  </div>
+                </div>
+                <div className="text-muted small">
+                  Uploaded on: {new Date(selectedResult.uploaded_at).toLocaleString()}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
+              </div>
             </div>
-          </li>
-        ))}
-        {filteredResults.length === 0 && (
-          <li className="list-group-item text-muted">No results found for {filter}.</li>
-        )}
-      </ul>
+          </div>
+        </div>
+      )}
     </DashboardSection>
   )
 }

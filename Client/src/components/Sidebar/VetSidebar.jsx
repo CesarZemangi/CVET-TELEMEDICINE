@@ -49,9 +49,6 @@ export default function VetSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/vetdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
             <NavLink to="/vetdashboard/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
-            <NavLink to="/vetdashboard/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
-            <NavLink to="/vetdashboard/diagnostics/disease-tracking" className={linkClass}>Disease Tracking</NavLink>
-            <NavLink to="/vetdashboard/diagnostics/preventive-screenings" className={linkClass}>Screenings</NavLink>
           </div>
         )}
       </li>
@@ -67,25 +64,6 @@ export default function VetSidebar() {
             <NavLink to="/vetdashboard/treatment/prescriptions" className={linkClass}>Prescriptions</NavLink>
             <NavLink to="/vetdashboard/treatment/plans" className={linkClass}>Treatment Plans</NavLink>
             <NavLink to="/vetdashboard/treatment/history" className={linkClass}>Med History</NavLink>
-            <NavLink to="/vetdashboard/treatment/follow-ups" className={linkClass}>Follow Ups</NavLink>
-            <NavLink to="/vetdashboard/treatment/surgical-cases" className={linkClass}>Surgical Cases</NavLink>
-          </div>
-        )}
-      </li>
-
-      {/* Analytics Section */}
-      <li>
-        <div className={sectionHeaderClass} onClick={() => toggleSection("analytics")}>
-          <span><i className="bi bi-bar-chart-line-fill me-3"></i> Analytics</span>
-          <small>{openSection === "analytics" ? "▾" : "▸"}</small>
-        </div>
-        {openSection === "analytics" && (
-          <div className={dropdownContainerClass}>
-            <NavLink to="/vetdashboard/analytics/case-statistics" className={linkClass}>Case Stats</NavLink>
-            <NavLink to="/vetdashboard/analytics/consultation-reports" className={linkClass}>Reports</NavLink>
-            <NavLink to="/vetdashboard/analytics/treatment-effectiveness" className={linkClass}>Effectiveness</NavLink>
-            <NavLink to="/vetdashboard/analytics/animal-health-trends" className={linkClass}>Health Trends</NavLink>
-            <NavLink to="/vetdashboard/analytics/export" className={linkClass}>Export</NavLink>
           </div>
         )}
       </li>
@@ -100,7 +78,6 @@ export default function VetSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/vetdashboard/communication/messages" className={linkClass}>Messages</NavLink>
             <NavLink to="/vetdashboard/communication/notifications" className={linkClass}>Notifications</NavLink>
-            <NavLink to="/vetdashboard/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
             <NavLink to="/vetdashboard/video-sessions" className={linkClass}>Video Sessions</NavLink>
             <NavLink to="/vetdashboard/communication/feedback" className={linkClass}>Feedback</NavLink>
           </div>

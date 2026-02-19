@@ -15,14 +15,17 @@ export const getAnimals = async (req, res) => {
 
 export const createAnimal = async (req, res) => {
   try {
-    const { name, species, breed, age } = req.body
+    const { tag_number, species, breed, age, health_status } = req.body
 
     const animal = await Animal.create({
       farmer_id: req.user.id,
-      tag_number: name, // Using 'name' as tag_number as per existing logic
+      tag_number,
       species,
       breed,
-      age
+      age,
+      health_status: health_status || 'healthy',
+      created_by: req.user.id,
+      updated_by: req.user.id
     })
 
     success(res, animal, "Animal added")
@@ -33,13 +36,15 @@ export const createAnimal = async (req, res) => {
 
 export const updateAnimal = async (req, res) => {
   try {
-    const { name, species, breed, age } = req.body
+    const { tag_number, species, breed, age, health_status } = req.body
 
     await Animal.update({
-      tag_number: name,
+      tag_number,
       species,
       breed,
-      age
+      age,
+      health_status,
+      updated_by: req.user.id
     }, {
       where: { id: req.params.id, farmer_id: req.user.id }
     })

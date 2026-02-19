@@ -4,6 +4,16 @@ const API_URL = "/vet/cases"
 
 export const getCases = async () => {
   const response = await api.get(`${API_URL}`)
+  return response.data?.data || response.data
+}
+
+export const getUnassignedCases = async () => {
+  const response = await api.get(`${API_URL}/unassigned`)
+  return response.data?.data || response.data
+}
+
+export const updatePriority = async (id, priority) => {
+  const response = await api.put(`${API_URL}/${id}/priority`, { priority })
   return response.data
 }
 

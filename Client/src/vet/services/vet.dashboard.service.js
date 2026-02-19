@@ -1,8 +1,11 @@
-import api from "../../services/api"
+import api from "../../services/api";
 
-const API_URL = "/vet"
+export const getVetDashboardData = async () => {
+  const response = await api.get("/vet/dashboard");
+  return response.data;
+};
 
-export const getDashboardData = async () => {
-  const response = await api.get(`${API_URL}/dashboard`)
-  return response.data
-}
+export const getVetRecentActivity = async () => {
+  const response = await api.get("/vet/dashboard/activity");
+  return response.data;
+};

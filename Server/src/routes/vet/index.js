@@ -7,6 +7,8 @@ import diagnosticsRoutes from "./diagnostics.routes.js"
 import treatmentRoutes from "./treatment.routes.js"
 import analyticsRoutes from "./analytics.routes.js"
 import communicationRoutes from "./communication.routes.js"
+import notificationRoutes from "./notification.routes.js"
+import feedbackRoutes from "./feedback.routes.js"
 
 const router = express.Router()
 
@@ -17,5 +19,7 @@ router.use("/diagnostics", diagnosticsRoutes)
 router.use("/treatment", treatmentRoutes)
 router.use("/analytics", analyticsRoutes)
 router.use("/messages", communicationRoutes)
+router.use("/notifications", notificationRoutes)
+router.use("/feedback", feedbackRoutes)
 
 export default router

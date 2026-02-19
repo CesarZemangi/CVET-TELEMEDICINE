@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProfileImage from "../common/ProfileImage";
 import api from "../../services/api";
+import socket from "../../services/socket";
 
 export default function Topbar() {
   const location = useLocation();
@@ -9,27 +10,47 @@ export default function Topbar() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
         const res = await api.get('/communication/notifications');
         setNotifications(res.data);
+        const count = res.data.filter(n => !n.is_read).length;
+        setUnreadCount(count);
       } catch (err) {
         console.error("Notif error", err);
       }
     };
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 30000); // Polling for demo
-    return () => clearInterval(interval);
-  }, []);
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+    fetchNotifs();
+
+    // Socket setup
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.on("receive_notification", (notif) => {
+      setNotifications(prev => [notif, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    });
+
+    socket.on("update_notification_count", ({ count }) => {
+      setUnreadCount(count);
+    });
+
+    return () => {
+      socket.off("receive_notification");
+      socket.off("update_notification_count");
+    };
+  }, []);
 
   const handleMarkRead = async (id) => {
     try {
       await api.put(`/communication/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error(err);
     }

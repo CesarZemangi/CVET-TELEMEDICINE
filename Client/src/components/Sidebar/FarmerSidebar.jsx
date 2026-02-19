@@ -53,10 +53,7 @@ export default function FarmerSidebar() {
         {openSection === "diagnostics" && (
           <div className={dropdownContainerClass}>
             <NavLink to="/farmerdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
-            <NavLink to="/farmerdashboard/diagnostics/lab-tests" className={linkClass}>Lab Tests</NavLink>
             <NavLink to="/farmerdashboard/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
-            <NavLink to="/farmerdashboard/diagnostics/imaging-reports" className={linkClass}>Imaging Reports</NavLink>
-            <NavLink to="/farmerdashboard/diagnostics/vaccinations" className={linkClass}>Vaccinations</NavLink>
           </div>
         )}
       </li>
@@ -71,23 +68,20 @@ export default function FarmerSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/farmerdashboard/treatment/prescriptions" className={linkClass}>Prescriptions</NavLink>
             <NavLink to="/farmerdashboard/treatment/plans" className={linkClass}>Treatment Plans</NavLink>
-            <NavLink to="/farmerdashboard/treatment/history" className={linkClass}>History</NavLink>
-            <NavLink to="/farmerdashboard/treatment/medication-schedule" className={linkClass}>Schedule</NavLink>
-            <NavLink to="/farmerdashboard/treatment/pharmacy-orders" className={linkClass}>Pharmacy Orders</NavLink>
+            <NavLink to="/farmerdashboard/treatment/history" className={linkClass}>Medication History</NavLink>
           </div>
         )}
       </li>
 
-      {/* Analytics Section */}
+      {/* Nutrition Section */}
       <li>
-        <div className={sectionHeaderClass} onClick={() => toggleSection("analytics")}>
-          <span><i className="bi bi-graph-up-arrow me-3"></i> Analytics</span>
-          <small>{openSection === "analytics" ? "▾" : "▸"}</small>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("nutrition")}>
+          <span><i className="bi bi-egg-fried me-3"></i> Nutrition</span>
+          <small>{openSection === "nutrition" ? "▾" : "▸"}</small>
         </div>
-        {openSection === "analytics" && (
+        {openSection === "nutrition" && (
           <div className={dropdownContainerClass}>
-            <NavLink to="/farmerdashboard/analytics/livestock-performance" className={linkClass}>Performance</NavLink>
-            <NavLink to="/farmerdashboard/analytics/reports" className={linkClass}>Reports</NavLink>
+            <NavLink to="/farmerdashboard/nutrition/feeding-inventory" className={linkClass}>Feeding Inventory</NavLink>
           </div>
         )}
       </li>
@@ -102,24 +96,7 @@ export default function FarmerSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/farmerdashboard/communication/messages" className={linkClass}>Messages</NavLink>
             <NavLink to="/farmerdashboard/communication/notifications" className={linkClass}>Notifications</NavLink>
-            <NavLink to="/farmerdashboard/communication/chat-logs" className={linkClass}>Chat Logs</NavLink>
-          </div>
-        )}
-      </li>
-
-      {/* Nutrition Section */}
-      <li>
-        <div className={sectionHeaderClass} onClick={() => toggleSection("nutrition")}>
-          <span><i className="bi bi-egg-fried me-3"></i> Nutrition</span>
-          <small>{openSection === "nutrition" ? "▾" : "▸"}</small>
-        </div>
-        {openSection === "nutrition" && (
-          <div className={dropdownContainerClass}>
-            <NavLink to="/farmerdashboard/nutrition/dietary-needs" className={linkClass}>Dietary Needs</NavLink>
-            <NavLink to="/farmerdashboard/nutrition/feeding-inventory" className={linkClass}>Feeding Inventory</NavLink>
-            <NavLink to="/farmerdashboard/nutrition/feed-plans" className={linkClass}>Feed Plans</NavLink>
-            <NavLink to="/farmerdashboard/nutrition/reports" className={linkClass}>Reports</NavLink>
-            <NavLink to="/farmerdashboard/nutrition/supplements" className={linkClass}>Supplements</NavLink>
+            <NavLink to="/farmerdashboard/communication/feedback" className={linkClass}>Feedback</NavLink>
           </div>
         )}
       </li>

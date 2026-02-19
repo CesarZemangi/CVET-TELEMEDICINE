@@ -1,19 +1,72 @@
-import db from "../../config/db.js"
+import { Prescription, TreatmentPlan, Case, Animal, User, MedicationHistory } from "../../models/associations.js";
 
 export const getPrescriptions = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM prescriptions WHERE farmer_id = ?",
-    [req.user.id]
-  )
-
-  res.json(rows)
-}
+  try {
+    const userId = req.user.id;
+    const data = await Prescription.findAll({
+      include: [
+        { 
+          model: Case, 
+          where: { farmer_id: userId },
+          include: [
+            { model: Animal, attributes: ['tag_number', 'species'] },
+            { model: User, as: 'vet', attributes: ['name'] }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 export const getTreatmentPlans = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM treatment_plans WHERE farmer_id = ?",
-    [req.user.id]
-  )
+  try {
+    const userId = req.user.id;
+    const data = await TreatmentPlan.findAll({
+      include: [
+        { 
+          model: Case, 
+          where: { farmer_id: userId },
+          include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-  res.json(rows)
-}
+export const getMedicationHistory = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { animal_id } = req.query;
+
+    const query = {
+      include: [
+        {
+          model: Case,
+          where: { farmer_id: userId },
+          include: [
+            { model: Animal, attributes: ['tag_number', 'species'] },
+            { model: User, as: 'vet', attributes: ['name'] }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    };
+
+    if (animal_id) {
+      query.where = { animal_id };
+    }
+
+    const data = await MedicationHistory.findAll(query);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

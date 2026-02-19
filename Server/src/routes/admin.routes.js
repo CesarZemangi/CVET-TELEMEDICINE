@@ -10,7 +10,10 @@ import {
   getFarmerStats,
   getVetStats,
   getCases,
-  getConsultations
+  getConsultations,
+  broadcastNotification,
+  sendDirectNotification,
+  getAllChatLogs
 } from "../controllers/admin/admin.controller.js";
 import {
   getOverviewAnalytics,
@@ -33,6 +36,9 @@ router.get("/cases", getCases);
 router.get("/consultations", getConsultations);
 router.get("/logs", getSystemLogs);
 router.get("/profile", getProfile);
+router.post("/notifications/broadcast", broadcastNotification);
+router.post("/notifications/direct", sendDirectNotification);
+router.get("/chat-logs", getAllChatLogs);
 
 // Analytics
 router.get("/analytics/overview", getOverviewAnalytics);

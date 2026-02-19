@@ -1,5 +1,39 @@
-import { PreventiveReminder, Animal } from '../models/associations.js';
+import { PreventiveReminder, Animal, Reminder } from '../models/associations.js';
 import SystemLog from '../models/systemLog.model.js';
+
+export const createAdminReminder = async (req, res) => {
+  try {
+    const { title, message, target_role, schedule_date } = req.body;
+
+    if (!title || !message || !target_role || !schedule_date) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const reminder = await Reminder.create({
+      title,
+      message,
+      target_role,
+      schedule_date,
+      created_by: req.user.id,
+      status: 'scheduled'
+    });
+
+    res.status(201).json(reminder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getAdminReminders = async (req, res) => {
+  try {
+    const reminders = await Reminder.findAll({
+      order: [['created_at', 'DESC']]
+    });
+    res.json(reminders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const createReminder = async (req, res) => {
   try {

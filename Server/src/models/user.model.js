@@ -49,7 +49,7 @@ const User = sequelize.define('User', {
   tableName: 'users', // Ensure this matches your phpMyAdmin table name
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  updatedAt: false,
   indexes: [{ fields: ['role'] }]
 });
 

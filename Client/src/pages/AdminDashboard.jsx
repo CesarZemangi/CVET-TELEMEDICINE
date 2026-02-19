@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     closed_cases: 0,
     pending_lab_requests: 0,
     total_consultations: 0,
+    scheduled_reminders: 0,
     recent_users: [],
     recent_cases: [],
     monthlyCases: [],
@@ -120,17 +121,17 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card border-0 shadow-sm text-white p-0 h-100 overflow-hidden" style={{backgroundColor: '#FF4136'}}>
+          <div className="card border-0 shadow-sm text-white p-0 h-100 overflow-hidden" style={{backgroundColor: '#605ca8'}}>
             <div className="d-flex align-items-center p-3">
               <div className="flex-grow-1">
-                <h3 className="fw-bold mb-0">{metrics.pending_lab_requests}</h3>
-                <p className="mb-0 opacity-75 small fw-bold text-uppercase">Pending Labs</p>
+                <h3 className="fw-bold mb-0">{metrics.scheduled_reminders}</h3>
+                <p className="mb-0 opacity-75 small fw-bold text-uppercase">Reminders</p>
               </div>
-              <div className="opacity-25"><i className="bi bi-droplet-fill" style={{fontSize: '3rem'}}></i></div>
+              <div className="opacity-25"><i className="bi bi-megaphone-fill" style={{fontSize: '3rem'}}></i></div>
             </div>
-            <div className="bg-dark bg-opacity-10 py-1 text-center small">
-              Needs Attention <i className="bi bi-exclamation-triangle ms-1"></i>
-            </div>
+            <a href="/admindashboard/reminders" className="bg-dark bg-opacity-10 py-1 text-center small text-white text-decoration-none">
+              Manage Broadcasts <i className="bi bi-arrow-right-circle ms-1"></i>
+            </a>
           </div>
         </div>
       </div>

@@ -1,7 +1,13 @@
 import { io } from "socket.io-client"
 
-const socket = io("http://localhost:5000", {
-autoConnect: false
-})
+const SOCKET_URL = "http://localhost:5000";
 
-export default socket
+const socket = io(SOCKET_URL, {
+  autoConnect: false,
+  auth: (cb) => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    cb({ token: user?.token });
+  }
+});
+
+export default socket;

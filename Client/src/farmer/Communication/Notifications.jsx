@@ -11,8 +11,8 @@ export default function Notifications() {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        const res = await api.get(`/communication/notifications?category=${categoryFilter}`);
-        setNotifications(res.data);
+        const res = await api.get(`/farmer/notifications?category=${categoryFilter}`);
+        setNotifications(res.data?.data || res.data || []);
       } catch (err) {
         console.error("Error fetching notifications:", err);
       } finally {

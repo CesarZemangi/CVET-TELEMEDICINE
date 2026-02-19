@@ -10,6 +10,8 @@ import * as notificationVetController from '../../controllers/vet/notification.c
 
 // Use the corrected middleware names
 router.get('/', authenticate, authorizeRole('vet'), notificationVetController.getVetNotifications);
-router.put('/:id/seen', authenticate, authorizeRole('vet'), notificationVetController.markVetNotificationAsSeen);
+router.put('/:id/read', authenticate, authorizeRole('vet'), notificationVetController.markVetNotificationAsSeen);
+router.post('/send', authenticate, authorizeRole('vet'), notificationVetController.sendNotification);
+router.get('/sent', authenticate, authorizeRole('vet'), notificationVetController.getSentNotifications);
 
 export default router;

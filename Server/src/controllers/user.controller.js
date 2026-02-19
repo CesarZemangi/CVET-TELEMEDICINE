@@ -21,3 +21,15 @@ export const updateMe = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
+
+export const getVets = async (req, res) => {
+  try {
+    const vets = await User.findAll({
+      where: { role: 'vet', status: 'active' },
+      attributes: ['id', 'name']
+    });
+    res.json(vets);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}

@@ -8,7 +8,7 @@ import { authenticate } from '../../middleware/auth.middleware.js';
 import * as notificationController from '../../controllers/farmer/notification.controller.js';
 
 router.get('/', authenticate, notificationController.getNotifications);
-router.put('/:id/seen', authenticate, notificationController.markAsSeen);
+router.put('/:id/read', authenticate, notificationController.markAsSeen);
 router.post('/', authenticate, notificationController.createNotification);
 
 // 4. Use export default instead of module.exports

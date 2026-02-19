@@ -4,20 +4,29 @@ import {
     getFarmerReminders, 
     updateReminder, 
     deleteReminder,
-    getAllReminders
+    getAllReminders,
+    createAdminReminder,
+    getAdminReminders
 } from '../controllers/reminder.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
-import { authorizeRole } from '../middleware/role.middleware.js';
+import { authorizeRoles } from '../middleware/role.middleware.js';
 import { reminderValidation } from '../middleware/validation.middleware.js';
 
 const router = express.Router();
 
-router.post('/', authenticate, authorizeRole('farmer'), reminderValidation, createReminder);
+// Preventive Reminders (Farmers)
+router.post('/preventive', authenticate, authorizeRoles('farmer'), reminderValidation, createReminder);
 router.get('/farmer/:id', authenticate, getFarmerReminders);
+
+// Admin Reminders
+router.post('/admin', authenticate, authorizeRoles('admin'), createAdminReminder);
+router.get('/admin', authenticate, authorizeRoles('admin'), getAdminReminders);
+
+// General
 router.put('/:id', authenticate, updateReminder);
 router.delete('/:id', authenticate, deleteReminder);
 
-// Admin only: view all reminders
-router.get('/', authenticate, authorizeRole('admin'), getAllReminders);
+// View all preventive reminders (Admin only)
+router.get('/all-preventive', authenticate, authorizeRoles('admin'), getAllReminders);
 
 export default router;

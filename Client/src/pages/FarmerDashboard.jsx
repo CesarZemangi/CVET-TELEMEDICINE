@@ -8,15 +8,17 @@ export default function FarmerDashboard() {
     totalAnimals: 0,
     activeCases: 0,
     pendingConsultations: 0,
-    healthAlerts: 0
+    healthAlerts: 0,
+    statusDistribution: [],
+    monthlyActivity: []
   });
 
   const [chartData, setChartData] = useState({
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    labels: ["No Data"],
     datasets: [
       {
-        label: "Health Score",
-        data: [85, 88, 82, 90, 85, 89],
+        label: "Case Activity",
+        data: [0],
         borderColor: "#228B22",
         tension: 0.4,
         fill: true,
@@ -25,12 +27,47 @@ export default function FarmerDashboard() {
     ]
   });
 
+  const [donutData, setDonutData] = useState({
+    labels: ["No Data"],
+    datasets: [{
+      data: [1],
+      backgroundColor: ["#f0f0f0"]
+    }]
+  });
+
   useEffect(() => {
     // Fetch real metrics from API
     const fetchDashboardData = async () => {
       try {
         const res = await api.get("/farmer/dashboard");
-        setMetrics(res.data);
+        const data = res.data;
+        setMetrics(data);
+
+        // Update line chart
+        if (data.monthlyActivity && data.monthlyActivity.length > 0) {
+          setChartData({
+            labels: data.monthlyActivity.map(m => m.month),
+            datasets: [{
+              label: "Case Activity",
+              data: data.monthlyActivity.map(m => m.count),
+              borderColor: "#228B22",
+              tension: 0.4,
+              fill: true,
+              backgroundColor: "rgba(34, 139, 34, 0.1)"
+            }]
+          });
+        }
+
+        // Update donut chart
+        if (data.statusDistribution && data.statusDistribution.length > 0) {
+          setDonutData({
+            labels: data.statusDistribution.map(s => s.status),
+            datasets: [{
+              data: data.statusDistribution.map(s => s.count),
+              backgroundColor: ["#228B22", "#FFD700", "#DC3545", "#1E90FF"]
+            }]
+          });
+        }
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
       }
@@ -52,7 +89,6 @@ export default function FarmerDashboard() {
             label="Total Livestock" 
             value={metrics.totalAnimals} 
             icon="bi-piggy-bank" 
-            trend="+12%"
           />
         </div>
         <div className="col-md-3">
@@ -60,7 +96,6 @@ export default function FarmerDashboard() {
             label="Active Medical Cases" 
             value={metrics.activeCases} 
             icon="bi-clipboard-pulse" 
-            trend="-2"
           />
         </div>
         <div className="col-md-3">
@@ -82,7 +117,7 @@ export default function FarmerDashboard() {
       <div className="row g-4">
         <div className="col-md-8">
           <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
-            <h5 className="fw-bold mb-4">Livestock Health Trends</h5>
+            <h5 className="fw-bold mb-4">Case Activity Trends</h5>
             <div style={{ height: "300px" }}>
               <ChartWrapper type="line" data={chartData} options={{ maintainAspectRatio: false }} />
             </div>
@@ -90,17 +125,12 @@ export default function FarmerDashboard() {
         </div>
         <div className="col-md-4">
           <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
-            <h5 className="fw-bold mb-4">Distribution</h5>
+            <h5 className="fw-bold mb-4">Case Status Distribution</h5>
             <div style={{ height: "250px" }}>
               <ChartWrapper 
                 type="doughnut" 
-                data={{
-                  labels: ["Healthy", "Monitoring", "Critical"],
-                  datasets: [{
-                    data: [70, 20, 10],
-                    backgroundColor: ["#228B22", "#FFD700", "#DC3545"]
-                  }]
-                }} 
+                data={donutData}
+                options={{ maintainAspectRatio: false }}
               />
             </div>
           </div>

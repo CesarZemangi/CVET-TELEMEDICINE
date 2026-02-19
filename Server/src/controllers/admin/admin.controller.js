@@ -1,4 +1,4 @@
-import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet } from "../../models/associations.js";
+import { User, Case, Consultation, Chatlog, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
@@ -16,9 +16,10 @@ export const getOverview = async (req, res) => {
     const closed_cases = await Case.count({ where: { status: 'closed' } });
     const pending_lab_requests = await LabRequest.count({ where: { status: 'pending' } });
     const total_consultations = await Consultation.count();
+    const scheduled_reminders = await Reminder.count({ where: { status: 'scheduled' } });
 
     const total_messages = await Message.count();
-    const unread_notifications = await Notification.count({ where: { seen: false } });
+    const unread_notifications = await Notification.count({ where: { is_read: false } });
     const active_video_sessions = await VideoSession.count({ where: { status: 'active' } });
     const completed_video_sessions = await VideoSession.count({ where: { status: 'ended' } });
     const total_emails_sent = await EmailLog.count({ where: { status: 'sent' } });
@@ -72,6 +73,7 @@ export const getOverview = async (req, res) => {
       closed_cases,
       pending_lab_requests,
       total_consultations,
+      scheduled_reminders,
       total_messages,
       unread_notifications,
       active_video_sessions,
@@ -292,6 +294,73 @@ export const getProfile = async (req, res) => {
       attributes: ['id', 'name', 'email', 'role', 'status', 'created_at']
     });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const broadcastNotification = async (req, res) => {
+  try {
+    const { title, message, role } = req.body;
+    
+    const where = {};
+    if (role && role !== 'all') {
+      where.role = role;
+    }
+    
+    const users = await User.findAll({ where });
+    
+    const notifications = await Promise.all(users.map(u => 
+      Notification.create({
+        user_id: u.id,
+        sender_id: req.user.id,
+        title,
+        message,
+        type: 'broadcast',
+        is_read: false,
+        created_by: req.user.id,
+        updated_by: req.user.id
+      })
+    ));
+    
+    res.json({ message: `Broadcast sent to ${notifications.length} users` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const sendDirectNotification = async (req, res) => {
+  try {
+    const { user_id, title, message } = req.body;
+    
+    const notification = await Notification.create({
+      user_id,
+      sender_id: req.user.id,
+      title,
+      message,
+      type: 'direct',
+      is_read: false,
+      created_by: req.user.id,
+      updated_by: req.user.id
+    });
+    
+    res.json({ message: "Notification sent", notification });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllChatLogs = async (req, res) => {
+  try {
+    const logs = await Chatlog.findAll({
+      include: [
+        { model: User, as: 'sender', attributes: ['id', 'name', 'role'] },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'role'] },
+        { model: Case, attributes: ['id', 'title'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(logs);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,13 +1,13 @@
 import express from "express"
 import auth from "../../middleware/auth.middleware.js"
 import {
-  getMessages,
+  getAllMessages,
   sendMessage
-} from "../../controllers/farmer/communication.controller.js"
+} from "../../controllers/communication.controller.js"
 
 const router = express.Router()
 
-router.get("/", auth, getMessages)
+router.get("/", auth, getAllMessages)
 router.post("/", auth, sendMessage)
 
 export default router

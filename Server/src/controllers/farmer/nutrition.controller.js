@@ -1,21 +1,30 @@
-import db from "../../config/db.js"
+import { FeedInventory } from "../../models/associations.js";
 
 export const getFeedInventory = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM feed_inventory WHERE farmer_id = ?",
-    [req.user.id]
-  )
-
-  res.json(rows)
+  try {
+    const rows = await FeedInventory.findAll({
+      where: { farmer_id: req.user.id }
+    });
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
 
 export const addFeedInventory = async (req, res) => {
-  const { feed_name, quantity, unit } = req.body
+  try {
+    const { feed_name, quantity } = req.body;
+    
+    const feed = await FeedInventory.create({
+      farmer_id: req.user.id,
+      feed_name,
+      quantity,
+      created_by: req.user.id,
+      updated_by: req.user.id
+    });
 
-  await db.query(
-    "INSERT INTO feed_inventory (farmer_id, feed_name, quantity, unit) VALUES (?, ?, ?, ?)",
-    [req.user.id, feed_name, quantity, unit]
-  )
-
-  res.status(201).json({ message: "Feed added" })
+    res.status(201).json(feed);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }

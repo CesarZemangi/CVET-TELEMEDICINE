@@ -9,7 +9,7 @@ const Chatlog = sequelize.define('Chatlog', {
   },
   case_id: { 
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   sender_id: { 
     type: DataTypes.INTEGER,
@@ -33,7 +33,7 @@ const Chatlog = sequelize.define('Chatlog', {
   tableName: 'chatlogs', 
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  updatedAt: false,
   indexes: [{ fields: ['case_id'] }]
 });
 

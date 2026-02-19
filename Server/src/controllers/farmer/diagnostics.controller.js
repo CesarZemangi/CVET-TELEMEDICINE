@@ -1,30 +1,44 @@
-import db from "../../config/db.js"
+import { LabRequest, LabResult, Case, Animal } from "../../models/associations.js";
 
 export const getLabRequests = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM lab_requests WHERE farmer_id = ?",
-    [req.user.id]
-  )
-
-  res.json(rows)
-}
-
-export const createLabRequest = async (req, res) => {
-  const { case_id, notes } = req.body
-
-  await db.query(
-    "INSERT INTO lab_requests (case_id, farmer_id, notes) VALUES (?, ?, ?)",
-    [case_id, req.user.id, notes]
-  )
-
-  res.status(201).json({ message: "Lab request created" })
-}
+  try {
+    const userId = req.user.id;
+    const data = await LabRequest.findAll({
+      include: [
+        { 
+          model: Case, 
+          where: { farmer_id: userId },
+          include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
 export const getLabResults = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM lab_results WHERE farmer_id = ?",
-    [req.user.id]
-  )
-
-  res.json(rows)
-}
+  try {
+    const userId = req.user.id;
+    const data = await LabResult.findAll({
+      include: [
+        { 
+          model: LabRequest,
+          include: [
+            { 
+              model: Case, 
+              where: { farmer_id: userId },
+              include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+            }
+          ]
+        }
+      ],
+      order: [['uploaded_at', 'DESC']]
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

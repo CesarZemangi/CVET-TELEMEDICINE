@@ -7,14 +7,15 @@ export default function Animals() {
   const [loading, setLoading] = useState(true);
   const [livestockCount, setLivestockCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: "", species: "", breed: "", age: "" });
+  const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
 
   const fetchAnimals = async () => {
     try {
       setLoading(true);
       const res = await api.get("/farmer/animals");
       setAnimals(res.data?.data || res.data || []);
-      setLivestockCount(res.data?.livestock_count || 0);
+      // Some versions of the API might return total count separately
+      setLivestockCount(res.data?.data ? res.data.data.length : (Array.isArray(res.data) ? res.data.length : 0));
     } catch (err) {
       console.error("Error fetching animals:", err);
     } finally {
@@ -31,7 +32,7 @@ export default function Animals() {
     try {
       await api.post("/farmer/animals", formData);
       setShowModal(false);
-      setFormData({ name: "", species: "", breed: "", age: "" });
+      setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
       fetchAnimals(); // Refresh list immediately
     } catch (err) {
       alert("Failed to add animal: " + (err.response?.data?.message || err.message));
@@ -64,7 +65,7 @@ export default function Animals() {
                     <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
                       <i className="bi bi-tag-fill text-primary"></i>
                     </div>
-                    <h6 className="fw-bold mb-0">{animal.name}</h6>
+                    <h6 className="fw-bold mb-0">{animal.tag_number}</h6>
                   </div>
                   
                   <div className="mb-3">
@@ -79,8 +80,8 @@ export default function Animals() {
                   </div>
 
                   <div className="d-flex justify-content-between align-items-center pt-2 border-top">
-                    <span className={`status-badge ${animal.status === 'Healthy' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
-                      {animal.status || 'Active'}
+                    <span className={`status-badge ${animal.health_status === 'healthy' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
+                      {animal.health_status || 'Active'}
                     </span>
                     <button className="btn btn-sm btn-outline-primary border-0">
                       Details <i className="bi bi-chevron-right ms-1"></i>
@@ -113,21 +114,31 @@ export default function Animals() {
                 </div>
                 <div className="modal-body p-4 pt-0">
                   <div className="mb-3">
-                    <label className="form-label small fw-bold">Name</label>
-                    <input type="text" className="form-control" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    <label className="form-label small fw-bold">Tag Number</label>
+                    <input type="text" className="form-control" placeholder="e.g. TAG-001" required value={formData.tag_number} onChange={e => setFormData({...formData, tag_number: e.target.value})} />
                   </div>
                   <div className="row">
-                    <div className="col-md-4 mb-3">
+                    <div className="col-md-6 mb-3">
                       <label className="form-label small fw-bold">Species</label>
                       <input type="text" className="form-control" placeholder="e.g. Cow" required value={formData.species} onChange={e => setFormData({...formData, species: e.target.value})} />
                     </div>
-                    <div className="col-md-4 mb-3">
+                    <div className="col-md-6 mb-3">
                       <label className="form-label small fw-bold">Breed</label>
-                      <input type="text" className="form-control" required value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
+                      <input type="text" className="form-control" placeholder="e.g. Holstein" required value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
                     </div>
-                    <div className="col-md-4 mb-3">
+                  </div>
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
                       <label className="form-label small fw-bold">Age (Years)</label>
                       <input type="number" className="form-control" required value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+                    </div>
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label small fw-bold">Health Status</label>
+                      <select className="form-select" value={formData.health_status} onChange={e => setFormData({...formData, health_status: e.target.value})}>
+                        <option value="healthy">Healthy</option>
+                        <option value="sick">Sick</option>
+                        <option value="under treatment">Under Treatment</option>
+                      </select>
                     </div>
                   </div>
                 </div>

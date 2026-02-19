@@ -1,130 +1,96 @@
-import React, { useState } from "react"
-import DashboardSection from "../../components/dashboard/DashboardSection"
-import { Pie, Bar, Line } from "react-chartjs-2"
-import {
-  Chart as ChartJS,
-  ArcElement,
-  BarElement,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-  Title
-} from "chart.js"
-
-ChartJS.register(
-  ArcElement,
-  BarElement,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-  Title
-)
+import React, { useState, useEffect } from "react";
+import api from "../../services/api";
+import DashboardSection from "../../components/dashboard/DashboardSection";
 
 export default function MedicationHistory() {
-  const [filter, setFilter] = useState("All")
+  const [medications, setMedications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const medicationTypes = ["Antibiotics", "Painkillers", "Vitamins", "Vaccines"]
-  const medicationData = [45, 25, 15, 15]
-
-  const total = medicationData.reduce((a, b) => a + b, 0)
-  const antibioticsShare = (medicationData[0] / total) * 100
-
-  const pieData = {
-    labels: medicationTypes,
-    datasets: [
-      {
-        data: medicationData,
-        backgroundColor: ["#FF4500", "#A0522D", "#CD853F", "#228B22"],
-        borderColor: "#fff",
-        borderWidth: 2
-      }
-    ]
-  }
-
-  const barData = {
-    labels: ["Sep", "Oct", "Nov", "Dec", "Jan"],
-    datasets: [
-      {
-        label: "Completed Treatments",
-        data: [5, 8, 6, 7, 4],
-        backgroundColor: "#A0522D"
-      }
-    ]
-  }
-
-  const lineData = {
-    labels: ["Sep", "Oct", "Nov", "Dec", "Jan"],
-    datasets: [
-      {
-        label: "Antibiotics",
-        data: [2, 3, 2, 4, 1],
-        borderColor: "#FF4500",
-        backgroundColor: "#FFA07A",
-        tension: 0.3,
-        fill: true
-      },
-      {
-        label: "Vaccines",
-        data: [1, 2, 1, 2, 2],
-        borderColor: "#228B22",
-        backgroundColor: "#90EE90",
-        tension: 0.3,
-        fill: true
-      }
-    ]
-  }
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: "bottom" },
-      title: { display: false }
+  const fetchMedications = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/farmer/treatment/medications");
+      setMedications(res.data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching medication history:", err);
+      setError("Failed to load medication history.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchMedications();
+  }, []);
 
   return (
-    <DashboardSection title="Medication History (Zimbabwe)">
-      <p className="mb-3">Completed antibiotic and vaccine treatments last month for cattle, goats, and sheep.</p>
+    <DashboardSection title="Medication History">
+      <p className="text-muted mb-4">
+        A complete record of medications administered to your animals by veterinarians.
+      </p>
 
-      {antibioticsShare > 50 && (
-        <div className="alert alert-warning fw-bold">
-          ⚠️ Antibiotics usage is {Math.round(antibioticsShare)}% of total — potential overuse risk!
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      ) : error ? (
+        <div className="alert alert-danger">{error}</div>
+      ) : (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body p-0">
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th className="ps-4">Start Date</th>
+                    <th>Animal</th>
+                    <th>Medicine</th>
+                    <th>Dosage</th>
+                    <th>End Date</th>
+                    <th>Administered By</th>
+                    <th className="pe-4">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {medications.length > 0 ? (
+                    medications.map((med) => (
+                      <tr key={med.id}>
+                        <td className="ps-4 small">
+                          {new Date(med.start_date).toLocaleDateString()}
+                        </td>
+                        <td>
+                          <span className="fw-medium">{med.Case?.Animal?.tag_number}</span>
+                          <br />
+                          <small className="text-muted">{med.Case?.Animal?.species}</small>
+                        </td>
+                        <td className="fw-bold text-brown">{med.medication_name}</td>
+                        <td>{med.dosage}</td>
+                        <td>
+                          {med.end_date ? new Date(med.end_date).toLocaleDateString() : "-"}
+                        </td>
+                        <td>Dr. {med.Case?.vet?.name || "Unknown"}</td>
+                        <td className="pe-4">
+                          <small className="text-wrap" style={{ maxWidth: '200px', display: 'block' }}>
+                            {med.notes || "-"}
+                          </small>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center py-5 text-muted">
+                        No medication records found for your animals.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
-
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {["All", ...medicationTypes].map(f => (
-          <button
-            key={f}
-            className={`btn btn-sm ${filter === f ? "btn-brown" : "btn-outline-brown"}`}
-            onClick={() => setFilter(f)}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-3" style={{ width: "250px", height: "250px" }}>
-        <h6>Medication Types</h6>
-        <Pie data={pieData} options={options} />
-      </div>
-
-      <div className="mb-3" style={{ width: "300px", height: "200px" }}>
-        <h6>Treatments Completed (Last 5 Months)</h6>
-        <Bar data={barData} options={options} />
-      </div>
-
-      <div className="mb-3" style={{ width: "500px", height: "300px" }}>
-        <h6>Medication Usage Trend</h6>
-        <Line data={lineData} options={{ ...options, title: { text: "Medication Trend Over Time" } }} />
-      </div>
     </DashboardSection>
-  )
+  );
 }

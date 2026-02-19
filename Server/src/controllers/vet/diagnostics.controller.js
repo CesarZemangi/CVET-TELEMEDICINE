@@ -1,23 +1,80 @@
-import db from "../../config/db.js"
+import { LabRequest, LabResult, Case } from "../../models/associations.js";
+import { success, error } from "../../utils/response.js";
+
+export const getLabRequests = async (req, res) => {
+  try {
+    const requests = await LabRequest.findAll({
+      where: { vet_id: req.user.id },
+      include: [{ model: Case }]
+    });
+    success(res, requests, "Lab requests fetched");
+  } catch (err) {
+    error(res, err.message);
+  }
+};
 
 export const createLabRequest = async (req, res) => {
-  const { case_id, notes } = req.body
+  try {
+    const { case_id, test_type, notes } = req.body;
 
-  await db.query(
-    "INSERT INTO lab_requests (case_id, vet_id, notes) VALUES (?, ?, ?)",
-    [case_id, req.user.id, notes]
-  )
+    if (!case_id || !test_type) {
+      return res.status(400).json({ error: "case_id and test_type are required" });
+    }
 
-  res.status(201).json({ message: "Lab request created" })
-}
+    const labRequest = await LabRequest.create({
+      case_id,
+      vet_id: req.user.id,
+      test_type,
+      notes,
+      status: 'pending',
+      created_by: req.user.id,
+      updated_by: req.user.id
+    });
+
+    success(res, labRequest, "Lab request created successfully");
+  } catch (err) {
+    error(res, err.message);
+  }
+};
 
 export const uploadLabResult = async (req, res) => {
-  const { case_id, result } = req.body
+  try {
+    const { lab_request_id, result } = req.body;
 
-  await db.query(
-    "INSERT INTO lab_results (case_id, vet_id, result) VALUES (?, ?, ?)",
-    [case_id, req.user.id, result]
-  )
+    if (!lab_request_id || !result) {
+      return res.status(400).json({ error: "lab_request_id and result are required" });
+    }
 
-  res.status(201).json({ message: "Lab result uploaded" })
-}
+    const labResult = await LabResult.create({
+      lab_request_id,
+      result,
+      created_by: req.user.id,
+      updated_by: req.user.id
+    });
+
+    // Update lab request status
+    await LabRequest.update(
+      { status: 'completed', updated_by: req.user.id },
+      { where: { id: lab_request_id } }
+    );
+
+    success(res, labResult, "Lab result uploaded successfully");
+  } catch (err) {
+    error(res, err.message);
+  }
+};
+
+export const getLabResults = async (req, res) => {
+  try {
+    const results = await LabResult.findAll({
+      include: [{
+        model: LabRequest,
+        where: { vet_id: req.user.id },
+        include: [{ model: Case }]
+      }]
+    });
+    success(res, results, "Lab results fetched");
+  } catch (err) {
+    error(res, err.message);
+  }
+};

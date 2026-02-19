@@ -3,9 +3,13 @@ import { verifyToken } from '../utils/jwt.js';
 import Message from '../models/message.model.js';
 import Case from '../models/case.model.js';
 import VideoSession from '../models/videoSession.model.js';
+import Notification from '../models/notification.model.js';
+import User from '../models/user.model.js';
+
+let io;
 
 const socketService = (server) => {
-  const io = new Server(server, {
+  io = new Server(server, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
@@ -28,6 +32,9 @@ const socketService = (server) => {
 
   io.on('connection', (socket) => {
     console.log(`User connected: ${socket.user.id} (${socket.user.role})`);
+    
+    // Join a private room for the user to receive direct notifications
+    socket.join(`user_${socket.user.id}`);
 
     socket.on('join_case', async ({ case_id }) => {
       try {
@@ -42,10 +49,7 @@ const socketService = (server) => {
         if (socket.user.role === 'vet' && caseRecord.vet_id !== socket.user.id) {
           return socket.emit('error', { message: 'Unauthorized access to this case' });
         }
-        if (socket.user.role === 'admin') {
-          return socket.emit('error', { message: 'Admins cannot join chat rooms' });
-        }
-
+        
         socket.join(`case_${case_id}`);
         console.log(`User ${socket.user.id} joined case_${case_id}`);
       } catch (error) {
@@ -53,24 +57,62 @@ const socketService = (server) => {
       }
     });
 
-    socket.on('send_message', async ({ case_id, message }) => {
+    socket.on('send_message', async ({ receiver_id, case_id, message }) => {
       try {
-        const caseRecord = await Case.findByPk(case_id);
-        if (!caseRecord) return;
+        let target_receiver_id = receiver_id;
 
-        if (socket.user.role === 'farmer' && caseRecord.farmer_id !== socket.user.id) return;
-        if (socket.user.role === 'vet' && caseRecord.vet_id !== socket.user.id) return;
+        if (case_id && !target_receiver_id) {
+          const caseRecord = await Case.findByPk(case_id);
+          if (caseRecord) {
+            if (socket.user.role === 'farmer') target_receiver_id = caseRecord.vet_id;
+            else if (socket.user.role === 'vet') target_receiver_id = caseRecord.farmer_id;
+          }
+        }
 
-        const receiver_id = socket.user.role === 'farmer' ? caseRecord.vet_id : caseRecord.farmer_id;
+        if (!target_receiver_id) return;
 
         const newMessage = await Message.create({
-          case_id,
+          case_id: case_id || null,
           sender_id: socket.user.id,
-          receiver_id,
-          message: message.substring(0, 1000)
+          receiver_id: target_receiver_id,
+          message: message.substring(0, 1000),
+          is_read: false,
+          created_by: socket.user.id,
+          updated_by: socket.user.id
         });
 
-        io.to(`case_${case_id}`).emit('receive_message', newMessage);
+        // Add sender info for UI
+        const sender = await User.findByPk(socket.user.id, { attributes: ['id', 'name', 'profile_pic'] });
+        const messageWithSender = { ...newMessage.toJSON(), sender };
+
+        // Emit to the specific case room if exists
+        if (case_id) {
+          io.to(`case_${case_id}`).emit('receive_message', messageWithSender);
+        } else {
+          // Direct message
+          io.to(`user_${target_receiver_id}`).emit('receive_message', messageWithSender);
+          socket.emit('receive_message', messageWithSender); // Echo back to sender
+        }
+
+        // Create and emit notification
+        const notification = await Notification.create({
+          user_id: target_receiver_id,
+          sender_id: socket.user.id,
+          title: socket.user.role === 'admin' ? "System Message" : "New Message",
+          message: socket.user.role === 'admin' ? message : `You have a new message from ${socket.user.name}`,
+          type: "chat",
+          reference_id: newMessage.id,
+          is_read: false,
+          created_by: socket.user.id,
+          updated_by: socket.user.id
+        });
+
+        io.to(`user_${target_receiver_id}`).emit('receive_notification', notification);
+        
+        // Update unread count
+        const unreadCount = await Message.count({ where: { receiver_id: target_receiver_id, is_read: false } });
+        io.to(`user_${target_receiver_id}`).emit('update_unread_count', { count: unreadCount });
+
       } catch (error) {
         console.error('Socket send_message error:', error);
       }
@@ -138,6 +180,13 @@ const socketService = (server) => {
     });
   });
 
+  return io;
+};
+
+export const getIO = () => {
+  if (!io) {
+    throw new Error("Socket.io not initialized!");
+  }
   return io;
 };
 

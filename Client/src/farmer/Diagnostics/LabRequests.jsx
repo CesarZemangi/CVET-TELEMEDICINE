@@ -35,22 +35,22 @@ export default function LabRequests() {
   )
 
   const getStatusClass = (status) => {
-    if (status === "Pending") return "text-warning fw-bold"
-    if (status === "In Progress") return "text-primary fw-bold"
-    if (status === "Completed") return "text-success fw-bold"
-    return ""
+    switch(status?.toLowerCase()) {
+      case "pending": return "text-warning fw-bold";
+      case "completed": return "text-success fw-bold";
+      default: return "";
+    }
   }
 
   const pieData = {
-    labels: ["Pending", "In Progress", "Completed"],
+    labels: ["Pending", "Completed"],
     datasets: [
       {
         data: [
-          requests.filter(r => r.status === "Pending").length,
-          requests.filter(r => r.status === "In Progress").length,
-          requests.filter(r => r.status === "Completed").length
+          requests.filter(r => r.status?.toLowerCase() === "pending").length,
+          requests.filter(r => r.status?.toLowerCase() === "completed").length
         ],
-        backgroundColor: ["#FFA500", "#1E90FF", "#228B22"],
+        backgroundColor: ["#FFA500", "#228B22"],
         borderColor: "#fff",
         borderWidth: 2
       }
@@ -61,26 +61,14 @@ export default function LabRequests() {
     responsive: true,
     plugins: {
       legend: { position: "bottom" },
-      title: { display: true, text: "Lab Requests by Status" }
+      title: { display: true, text: "Lab Requests Status" }
     }
   }
 
   return (
     <div>
-      <h4>Lab Requests (Zimbabwe)</h4>
-      <p>View and manage lab test requests for cattle, goats, and sheep.</p>
-
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {["All", "Pending", "In Progress", "Completed"].map(status => (
-          <button
-            key={status}
-            className={`btn btn-sm ${statusFilter === status ? "btn-brown" : "btn-outline-brown"}`}
-            onClick={() => setStatusFilter(status)}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
+      <h4>Lab Requests</h4>
+      <p>View lab test requests for your livestock.</p>
 
       <div className="row">
         {loading ? (
@@ -89,23 +77,26 @@ export default function LabRequests() {
           </div>
         ) : filteredRequests.length > 0 ? filteredRequests.map(req => (
           <div key={req.id} className="col-md-6 mb-3">
-            <div className="card shadow-sm">
+            <div className="card shadow-sm border-0">
               <div className="card-body">
-                <h6 className="card-title">{req.id} — {req.test}</h6>
-                <p className={`card-text ${getStatusClass(req.status)}`}>{req.status}</p>
-                <small className="text-muted">{req.date}</small>
+                <h6 className="card-title fw-bold">#{req.id} — {req.test_type}</h6>
+                <p className="small mb-1">Case: {req.Case?.title}</p>
+                <p className="small mb-1">Animal: {req.Case?.Animal?.species} ({req.Case?.Animal?.tag_number})</p>
+                <p className={`card-text ${getStatusClass(req.status)}`}>{req.status?.toUpperCase()}</p>
+                <small className="text-muted">{new Date(req.created_at).toLocaleDateString()}</small>
               </div>
             </div>
           </div>
         )) : (
-          <div className="col-12 text-muted">No lab requests found for {statusFilter}.</div>
+          <div className="col-12 text-muted">No lab requests found.</div>
         )}
       </div>
 
-      <div className="mt-4" style={{ width: "300px", height: "250px" }}>
-        <h6>Summary</h6>
-        <Pie data={pieData} options={options} />
-      </div>
+      {requests.length > 0 && (
+        <div className="mt-4" style={{ width: "300px", height: "250px" }}>
+          <Pie data={pieData} options={options} />
+        </div>
+      )}
     </div>
   )
 }
