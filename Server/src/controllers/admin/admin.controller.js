@@ -1,4 +1,4 @@
-import { User, Case, Consultation, Chatlog, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder } from "../../models/associations.js";
+import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
@@ -352,7 +352,7 @@ export const sendDirectNotification = async (req, res) => {
 
 export const getAllChatLogs = async (req, res) => {
   try {
-    const logs = await Chatlog.findAll({
+    const logs = await Message.findAll({
       include: [
         { model: User, as: 'sender', attributes: ['id', 'name', 'role'] },
         { model: User, as: 'receiver', attributes: ['id', 'name', 'role'] },

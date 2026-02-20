@@ -19,6 +19,40 @@ export const getLabRequests = async (req, res) => {
   }
 };
 
+export const createLabRequest = async (req, res) => {
+  try {
+    const { case_id, test_type, notes } = req.body;
+    const userId = req.user.id;
+
+    if (!case_id || !test_type) {
+      return res.status(400).json({ error: "case_id and test_type are required" });
+    }
+
+    // Validate case belongs to farmer
+    const singleCase = await Case.findOne({
+      where: { id: case_id, farmer_id: userId }
+    });
+
+    if (!singleCase) {
+      return res.status(403).json({ error: "Access denied or case not found" });
+    }
+
+    const labRequest = await LabRequest.create({
+      case_id,
+      vet_id: singleCase.vet_id, // Assigned vet from case
+      test_type,
+      notes,
+      status: 'pending',
+      created_by: userId,
+      updated_by: userId
+    });
+
+    res.status(201).json(labRequest);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const getLabResults = async (req, res) => {
   try {
     const userId = req.user.id;

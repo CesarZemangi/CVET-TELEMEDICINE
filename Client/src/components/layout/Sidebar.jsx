@@ -4,7 +4,7 @@ import FarmerSidebar from "../Sidebar/FarmerSidebar";
 import VetSidebar from "../Sidebar/VetSidebar";
 import AdminSidebar from "../Sidebar/AdminSidebar";
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = user?.role;
@@ -12,6 +12,10 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
+  };
+
+  const handleNavClick = () => {
+    if (onClose) onClose();
   };
 
   const linkClass = ({ isActive }) =>
@@ -53,6 +57,7 @@ export default function Sidebar() {
               }
               end
               className={linkClass}
+              onClick={handleNavClick}
             >
               <i className="bi bi-speedometer2 me-3"></i>
               Dashboard

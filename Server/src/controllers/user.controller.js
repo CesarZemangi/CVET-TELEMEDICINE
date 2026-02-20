@@ -1,4 +1,5 @@
 import User from "../models/user.model.js"
+import Vet from "../models/vet.model.js"
 
 export const getMe = async (req, res) => {
   try {
@@ -24,11 +25,23 @@ export const updateMe = async (req, res) => {
 
 export const getVets = async (req, res) => {
   try {
-    const vets = await User.findAll({
-      where: { role: 'vet', status: 'active' },
-      attributes: ['id', 'name']
+    const vets = await Vet.findAll({
+      include: [{
+        model: User,
+        where: { status: 'active' },
+        attributes: ['name']
+      }],
+      attributes: ['id', 'user_id']
     });
-    res.json(vets);
+    
+    // Flatten for frontend
+    const formatted = vets.map(v => ({
+      id: v.id, // This is Vet.id
+      user_id: v.user_id,
+      name: v.User?.name
+    }));
+
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

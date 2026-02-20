@@ -4,7 +4,7 @@ import ProfileImage from "../common/ProfileImage";
 import api from "../../services/api";
 import socket from "../../services/socket";
 
-export default function Topbar() {
+export default function Topbar({ isMobile = false, onMenuClick = null }) {
   const location = useLocation();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -73,7 +73,16 @@ export default function Topbar() {
       className="bg-white border-bottom px-4 py-3 d-flex align-items-center justify-content-between sticky-top"
       style={{ height: "70px", zIndex: 1000 }}
     >
-      <div className="d-flex align-items-center">
+      <div className="d-flex align-items-center gap-3">
+        {isMobile && onMenuClick && (
+          <button 
+            onClick={onMenuClick}
+            className="btn btn-sm d-md-none"
+            style={{ padding: "6px 12px" }}
+          >
+            <i className="bi bi-list fs-5 text-muted"></i>
+          </button>
+        )}
         <h5 className="mb-0 fw-bold text-muted d-none d-md-block">{getTitle()}</h5>
       </div>
 

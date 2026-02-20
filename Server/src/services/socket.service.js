@@ -5,6 +5,7 @@ import Case from '../models/case.model.js';
 import VideoSession from '../models/videoSession.model.js';
 import Notification from '../models/notification.model.js';
 import User from '../models/user.model.js';
+import Vet from '../models/vet.model.js';
 
 let io;
 
@@ -38,7 +39,9 @@ const socketService = (server) => {
 
     socket.on('join_case', async ({ case_id }) => {
       try {
-        const caseRecord = await Case.findByPk(case_id);
+        const caseRecord = await Case.findByPk(case_id, {
+          include: [{ model: Vet, as: 'vet', attributes: ['user_id'] }]
+        });
         if (!caseRecord) {
           return socket.emit('error', { message: 'Case not found' });
         }
@@ -46,7 +49,7 @@ const socketService = (server) => {
         if (socket.user.role === 'farmer' && caseRecord.farmer_id !== socket.user.id) {
           return socket.emit('error', { message: 'Unauthorized access to this case' });
         }
-        if (socket.user.role === 'vet' && caseRecord.vet_id !== socket.user.id) {
+        if (socket.user.role === 'vet' && caseRecord.vet?.user_id !== socket.user.id) {
           return socket.emit('error', { message: 'Unauthorized access to this case' });
         }
         
@@ -62,23 +65,50 @@ const socketService = (server) => {
         let target_receiver_id = receiver_id;
 
         if (case_id && !target_receiver_id) {
-          const caseRecord = await Case.findByPk(case_id);
+          const caseRecord = await Case.findByPk(case_id, {
+            include: [{ model: Vet, as: 'vet', attributes: ['user_id'] }]
+          });
           if (caseRecord) {
-            if (socket.user.role === 'farmer') target_receiver_id = caseRecord.vet_id;
+            if (socket.user.role === 'farmer') target_receiver_id = caseRecord.vet?.user_id;
             else if (socket.user.role === 'vet') target_receiver_id = caseRecord.farmer_id;
           }
         }
 
         if (!target_receiver_id) return;
 
+        // Access validation
+        if (socket.user.role === 'farmer') {
+          const isAssigned = await Case.findOne({ 
+            include: [{
+              model: Vet,
+              as: 'vet',
+              where: { user_id: target_receiver_id }
+            }],
+            where: { farmer_id: socket.user.id } 
+          });
+          if (!isAssigned) {
+            return socket.emit('error', { message: 'You can only message assigned vets' });
+          }
+        } else if (socket.user.role === 'vet') {
+          const isAssigned = await Case.findOne({ 
+            include: [{
+              model: Vet,
+              as: 'vet',
+              where: { user_id: socket.user.id }
+            }],
+            where: { farmer_id: target_receiver_id } 
+          });
+          if (!isAssigned) {
+            return socket.emit('error', { message: 'You can only message farmers assigned through cases' });
+          }
+        }
+
         const newMessage = await Message.create({
           case_id: case_id || null,
           sender_id: socket.user.id,
           receiver_id: target_receiver_id,
           message: message.substring(0, 1000),
-          is_read: false,
-          created_by: socket.user.id,
-          updated_by: socket.user.id
+          is_read: false
         });
 
         // Add sender info for UI
@@ -88,23 +118,18 @@ const socketService = (server) => {
         // Emit to the specific case room if exists
         if (case_id) {
           io.to(`case_${case_id}`).emit('receive_message', messageWithSender);
-        } else {
-          // Direct message
-          io.to(`user_${target_receiver_id}`).emit('receive_message', messageWithSender);
-          socket.emit('receive_message', messageWithSender); // Echo back to sender
         }
+        
+        // Always emit to individual user rooms for global chat/notifications
+        io.to(`user_${target_receiver_id}`).emit('receive_message', messageWithSender);
+        socket.emit('receive_message', messageWithSender); // Echo back to sender
 
         // Create and emit notification
         const notification = await Notification.create({
-          user_id: target_receiver_id,
-          sender_id: socket.user.id,
-          title: socket.user.role === 'admin' ? "System Message" : "New Message",
-          message: socket.user.role === 'admin' ? message : `You have a new message from ${socket.user.name}`,
+          receiver_id: target_receiver_id,
           type: "chat",
           reference_id: newMessage.id,
-          is_read: false,
-          created_by: socket.user.id,
-          updated_by: socket.user.id
+          is_read: false
         });
 
         io.to(`user_${target_receiver_id}`).emit('receive_notification', notification);

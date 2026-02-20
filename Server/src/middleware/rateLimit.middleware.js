@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import SystemLog from '../models/systemLog.model.js';
 import logger from '../utils/logger.js';
 
@@ -33,7 +33,7 @@ export const messageLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: 30,
     message: { message: "Message rate limit exceeded. Please slow down." },
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => req.user?.id || ipKeyGenerator(req),
     handler: (req, res, next, options) => {
         logViolation(req, 'Messages');
         res.status(options.statusCode).send(options.message);
@@ -44,7 +44,7 @@ export const caseCreationLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10,
     message: { message: "Case creation limit reached. Please try again in an hour." },
-    keyGenerator: (req) => req.user?.id || req.ip,
+    keyGenerator: (req) => req.user?.id || ipKeyGenerator(req),
     handler: (req, res, next, options) => {
         logViolation(req, 'Case Creation');
         res.status(options.statusCode).send(options.message);

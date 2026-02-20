@@ -115,22 +115,57 @@ import AdminReminders from "./pages/AdminReminders"
 import AdminCommunication from "./pages/AdminCommunication"
 
 function RequireAuth({ role, children }) {
+const [isAuthenticated, setIsAuthenticated] = React.useState(null)
+
+React.useEffect(() => {
+const checkAuth = () => {
 const userData = localStorage.getItem("user")
 
-if (!userData) return <Navigate to="/" replace />
+if (!userData) {
+setIsAuthenticated(false)
+return
+}
 
 let user
 try {
 user = JSON.parse(userData)
 } catch {
 localStorage.removeItem("user")
-return <Navigate to="/" replace />
+setIsAuthenticated(false)
+return
 }
 
-if (!user.token) return <Navigate to="/" replace />
+if (!user.token) {
+setIsAuthenticated(false)
+return
+}
 
 // Allow specific role OR admin
-if (user.role !== role && user.role !== "admin") return <Navigate to="/" replace />
+if (user.role !== role && user.role !== "admin") {
+setIsAuthenticated(false)
+return
+}
+
+setIsAuthenticated(true)
+}
+
+checkAuth()
+}, [role])
+
+if (isAuthenticated === null) {
+return (
+<div className="d-flex align-items-center justify-content-center vh-100" style={{ backgroundColor: "var(--background-light)" }}>
+<div className="text-center">
+<div className="spinner-border mb-3" role="status">
+<span className="visually-hidden">Loading...</span>
+</div>
+<p className="text-muted">Loading...</p>
+</div>
+</div>
+)
+}
+
+if (!isAuthenticated) return <Navigate to="/" replace />
 
 return children
 }

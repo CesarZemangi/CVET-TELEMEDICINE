@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../../services/api";
 import socket from "../../services/socket";
-import { Search, Send, User, MessageCircle, MoreVertical, Plus, X } from "lucide-react";
+import { Search, Send, User, MessageCircle, Plus, X, Zap } from "lucide-react";
+import "./ChatInterface.css";
 
 export default function ChatInterface({ readOnly = false }) {
   const location = useLocation();
@@ -11,10 +12,13 @@ export default function ChatInterface({ readOnly = false }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem("user")));
+  const [user] = useState(JSON.parse(localStorage.getItem("user")));
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sidebarSearch, setSidebarSearch] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -33,6 +37,14 @@ export default function ChatInterface({ readOnly = false }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -63,7 +75,7 @@ export default function ChatInterface({ readOnly = false }) {
     }
 
     if (!readOnly) {
-      socket.on("receive_message", (msg) => {
+      socket.on("receive_message", async (msg) => {
         if (selectedConv) {
           const partnerId = selectedConv.partner?.id || (selectedConv.sender_id === user.id ? selectedConv.receiver_id : selectedConv.sender_id);
           const isRelatedToSelected = 
@@ -75,6 +87,10 @@ export default function ChatInterface({ readOnly = false }) {
             if (selectedConv.isNew) {
               setSelectedConv(prev => ({...prev, isNew: false}));
             }
+            // If message is from partner, mark it as read immediately
+            if (msg.sender_id === partnerId) {
+              await api.put("/communication/messages/read", { partner_id: partnerId });
+            }
           }
         }
         fetchConversations();
@@ -84,7 +100,7 @@ export default function ChatInterface({ readOnly = false }) {
     return () => {
       socket.off("receive_message");
     };
-  }, [selectedConv?.partner?.id, readOnly, location.state]);
+  }, [selectedConv, readOnly, location.state, user.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -151,131 +167,176 @@ export default function ChatInterface({ readOnly = false }) {
     setShowNewChatModal(false);
   };
 
-  if (loading) return <div className="p-4 text-center">Loading chats...</div>;
+  if (loading) return (
+    <div className="chat-loading">
+      <MessageCircle className="animate-pulse" />
+      <p>Loading messages...</p>
+    </div>
+  );
 
   const filteredContacts = contacts.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className={`flex bg-white rounded-xl shadow-sm overflow-hidden border ${readOnly ? 'h-[500px]' : 'h-[calc(100vh-160px)]'}`}>
+    <div className={`chat-container ${readOnly ? 'chat-readonly' : ''}`}>
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="chat-overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-1/3 border-r flex flex-col">
-        <div className="p-4 border-b bg-gray-50/50">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-brown-600" />
-              {readOnly ? 'Chat Logs' : 'Messages'}
-            </h2>
-            {!readOnly && (
-              <button 
-                onClick={fetchContacts}
-                className="p-1.5 bg-brown-600 text-white rounded-lg hover:bg-brown-700 transition-colors"
-                title="New Message"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
+      <div className={`chat-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="chat-sidebar-header">
+          <div className="chat-sidebar-title">
+            <MessageCircle className="chat-icon" />
+            <span>{readOnly ? 'Chat Logs' : 'Messages'}</span>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search..."
-              className="w-full pl-10 pr-4 py-2 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-brown-500 text-sm"
-            />
-          </div>
+          {!readOnly && (
+            <button 
+              onClick={fetchContacts}
+              className="chat-new-btn"
+              title="New Message"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+          {isMobile && (
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="chat-close-btn d-md-none"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {conversations.length > 0 ? (
-            conversations.map((conv, idx) => {
-              const partner = readOnly ? (conv.sender_id === user.id ? conv.receiver : conv.sender) : conv.partner;
-              const lastMessage = readOnly ? conv.message : conv.lastMessage;
-              const lastTime = readOnly ? conv.created_at : conv.lastTime;
-              const displayPartner = partner || { name: 'Unknown', role: 'user' };
+        <div className="chat-search">
+          <Search className="chat-search-icon" />
+          <input 
+            type="text" 
+            placeholder="Search conversations..."
+            value={sidebarSearch}
+            onChange={(e) => setSidebarSearch(e.target.value)}
+            className="chat-search-input"
+          />
+        </div>
 
-              return (
-                <div 
-                  key={idx}
-                  onClick={() => fetchMessages(readOnly ? { partner: displayPartner, case_id: conv.case_id } : conv)}
-                  className={`p-4 border-b cursor-pointer transition-colors flex items-center gap-3 ${selectedConv?.partner.id === displayPartner.id && selectedConv?.case_id === conv.case_id ? 'bg-brown-50' : 'hover:bg-gray-50'}`}
-                >
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <User className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-semibold text-gray-900 truncate text-sm">{displayPartner.name}</h3>
-                      <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                        {new Date(lastTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                      </span>
+        <div className="chat-conversations">
+          {conversations.length > 0 ? (
+            conversations
+              .filter(conv => {
+                const partnerName = (readOnly ? (conv.sender_id === user.id ? conv.receiver : conv.sender) : conv.partner)?.name || '';
+                return partnerName.toLowerCase().includes(sidebarSearch.toLowerCase());
+              })
+              .map((conv, idx) => {
+                const partner = readOnly ? (conv.sender_id === user.id ? conv.receiver : conv.sender) : conv.partner;
+                const lastMessage = readOnly ? conv.message : conv.lastMessage;
+                const lastTime = readOnly ? conv.created_at : conv.lastTime;
+                const displayPartner = partner || { name: 'Unknown', role: 'user' };
+                const isSelected = selectedConv?.partner.id === displayPartner.id && selectedConv?.case_id === conv.case_id;
+
+                return (
+                  <div 
+                    key={idx}
+                    onClick={() => {
+                      fetchMessages(readOnly ? { partner: displayPartner, case_id: conv.case_id } : conv);
+                      if (isMobile) setSidebarOpen(false);
+                    }}
+                    className={`chat-conversation-item ${isSelected ? 'active' : ''}`}
+                  >
+                    <div className="chat-avatar">
+                      <User className="w-5 h-5" />
                     </div>
-                    <p className="text-xs text-gray-600 truncate">{lastMessage}</p>
-                    {conv.case_id && <span className="text-[9px] text-blue-600">Case #{conv.case_id}</span>}
+                    <div className="chat-conv-content">
+                      <div className="chat-conv-header">
+                        <h3 className="chat-conv-name">{displayPartner.name}</h3>
+                        <span className="chat-conv-time">
+                          {new Date(lastTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className="chat-conv-message">{lastMessage}</p>
+                      {conv.case_id && <span className="chat-case-tag">Case #{conv.case_id}</span>}
+                    </div>
+                    {conv.unread_count > 0 && (
+                      <span className="chat-badge">{conv.unread_count}</span>
+                    )}
                   </div>
-                </div>
-              );
-            })
+                );
+              })
           ) : (
-            <div className="p-8 text-center text-gray-500 text-sm">
-              No conversations found.
+            <div className="chat-empty">
+              <MessageCircle className="w-12 h-12" />
+              <p>No conversations yet</p>
+              <small>Start a new conversation to begin</small>
             </div>
           )}
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50/30">
+      <div className="chat-main">
         {selectedConv ? (
           <>
-            <div className="p-3 border-b bg-white flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-                  <User className="w-4 h-4 text-gray-400" />
+            <div className="chat-header">
+              <div className="chat-header-left">
+                {isMobile && (
+                  <button 
+                    onClick={() => setSidebarOpen(true)}
+                    className="chat-menu-btn"
+                  >
+                    <i className="bi bi-chevron-left"></i>
+                  </button>
+                )}
+                <div className="chat-header-avatar">
+                  <User className="w-5 h-5" />
+                  <span className="chat-online-dot"></span>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">{selectedConv.partner.name}</h3>
-                  <p className="text-[10px] text-gray-500 capitalize">{selectedConv.partner.role}</p>
+                <div className="chat-header-info">
+                  <h3 className="chat-header-name">{selectedConv.partner.name}</h3>
+                  <p className="chat-header-status">Online • {selectedConv.partner.role}</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+            <div className="chat-messages">
               {messages.length > 0 ? messages.map((msg, idx) => {
                 const isMine = msg.sender_id === user.id;
                 return (
-                  <div key={idx} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] px-3 py-1.5 rounded-xl shadow-sm ${
-                      isMine ? 'bg-brown-600 text-white' : 'bg-white text-gray-800 border'
-                    }`}>
-                      <p className="text-xs">{msg.message}</p>
-                      <span className={`text-[9px] mt-1 block ${isMine ? 'text-brown-100' : 'text-gray-400'}`}>
+                  <div key={idx} className={`chat-message ${isMine ? 'sent' : 'received'}`}>
+                    <div className="chat-bubble">
+                      <p className="chat-text">{msg.message}</p>
+                      <span className="chat-time">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                   </div>
                 );
               }) : (
-                <div className="flex-1 flex items-center justify-center text-gray-400 text-sm italic">
-                  Start of a new conversation
+                <div className="chat-empty-state">
+                  <MessageCircle className="w-16 h-16" />
+                  <p>Start of a new conversation</p>
+                  <small>Messages will appear here</small>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
             {!readOnly && (
-              <div className="p-3 bg-white border-t">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
+              <div className="chat-input-area">
+                <form onSubmit={handleSendMessage} className="chat-input-form">
                   <input 
                     type="text" 
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-1.5 border rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-brown-500"
+                    placeholder="Type your message..."
+                    className="chat-input"
                   />
                   <button 
                     type="submit"
                     disabled={!newMessage.trim()}
-                    className="w-8 h-8 bg-brown-600 text-white rounded-full flex items-center justify-center hover:bg-brown-700 disabled:opacity-50 transition-colors"
+                    className="chat-send-btn"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -284,48 +345,62 @@ export default function ChatInterface({ readOnly = false }) {
             )}
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-4 text-center">
-            <MessageCircle className="w-12 h-12 mb-3 opacity-20" />
-            <p className="text-sm">Select a conversation or start a new one</p>
+          <div className="chat-no-selection">
+            <div className="chat-welcome-icon">
+              <Zap className="w-16 h-16" />
+            </div>
+            <h3>Select a conversation</h3>
+            <p>Choose a conversation from the list or start a new one</p>
+            {!readOnly && conversations.length === 0 && (
+              <button 
+                onClick={fetchContacts}
+                className="chat-start-btn"
+              >
+                <Plus className="w-4 h-4" />
+                Start New Chat
+              </button>
+            )}
           </div>
         )}
       </div>
 
       {/* New Chat Modal */}
       {showNewChatModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[2000] p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-bold text-lg">New Message</h3>
-              <button onClick={() => setShowNewChatModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+        <div className="chat-modal-overlay">
+          <div className="chat-modal">
+            <div className="chat-modal-header">
+              <h3>New Message</h3>
+              <button onClick={() => setShowNewChatModal(false)} className="chat-modal-close">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="p-4 bg-gray-50 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search contacts..."
-                  className="w-full pl-10 pr-4 py-2 bg-white border rounded-lg focus:outline-none focus:ring-1 focus:ring-brown-500 text-sm"
-                />
-              </div>
+            <div className="chat-modal-search">
+              <Search className="chat-search-icon" />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search contacts..."
+                className="chat-search-input"
+              />
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div className="chat-modal-contacts">
               {filteredContacts.length > 0 ? filteredContacts.map(contact => (
                 <div 
                   key={contact.id}
                   onClick={() => startNewChat(contact)}
-                  className="p-4 border-b hover:bg-gray-50 cursor-pointer flex items-center gap-3"
+                  className="chat-contact-item"
                 >
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"><User className="w-5 h-5 text-gray-400" /></div>
-                  <div>
-                    <p className="font-semibold text-sm">{contact.name}</p>
-                    <p className="text-[10px] text-gray-500 capitalize">{contact.role}</p>
+                  <div className="chat-avatar">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div className="chat-contact-info">
+                    <p className="chat-contact-name">{contact.name}</p>
+                    <p className="chat-contact-role">{contact.role}</p>
                   </div>
                 </div>
               )) : (
-                <div className="p-8 text-center text-gray-500 text-sm">No contacts found.</div>
+                <div className="chat-modal-empty">No contacts found.</div>
               )}
             </div>
           </div>

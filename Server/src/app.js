@@ -66,6 +66,7 @@ app.use("/uploads", express.static("storage/uploads"));
 
 // 3. Routes
 app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/user", authenticate, userRoutes);
 app.use("/api/admin", authenticate, authorizeRoles("admin"), adminRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/communication", authenticate, communicationRoutes);

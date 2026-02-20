@@ -6,7 +6,7 @@ export const getNotifications = async (req, res) => {
     const user_id = req.user.id;
     const { category } = req.query;
     
-    const where = { user_id };
+    const where = { receiver_id: user_id };
     if (category && category !== 'All') {
       where.type = category;
     }
@@ -14,8 +14,7 @@ export const getNotifications = async (req, res) => {
     const notifications = await Notification.findAll({ 
       where, 
       include: [
-        { model: Case, attributes: ['title'] },
-        { model: User, as: 'sender', attributes: ['name'] }
+        { model: Message, foreignKey: 'reference_id' }
       ],
       order: [['created_at', 'DESC']] 
     });
@@ -30,13 +29,12 @@ export const markAsSeen = async (req, res) => {
   try {
     const { id } = req.params;
     const notification = await Notification.findOne({
-      where: { id, user_id: req.user.id }
+      where: { id, receiver_id: req.user.id }
     });
 
     if (!notification) return error(res, 'Notification not found', 404);
 
     notification.is_read = true;
-    notification.updated_by = req.user.id;
     await notification.save();
 
     success(res, notification, 'Notification marked as read');
@@ -47,18 +45,13 @@ export const markAsSeen = async (req, res) => {
 
 export const createNotification = async (req, res) => {
   try {
-    const { user_id, title, message, type, case_id } = req.body;
+    const { user_id, type, reference_id } = req.body;
 
     const notification = await Notification.create({
-      user_id,
-      sender_id: req.user.id,
-      case_id,
-      title,
-      message,
+      receiver_id: user_id,
       type: type || 'system',
-      is_read: false,
-      created_by: req.user.id,
-      updated_by: req.user.id
+      reference_id,
+      is_read: false
     });
 
     success(res, notification, 'Notification created successfully');

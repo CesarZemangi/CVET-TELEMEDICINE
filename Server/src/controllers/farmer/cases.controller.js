@@ -1,4 +1,4 @@
-import { Case, CaseMedia, Animal, User } from "../../models/associations.js";
+import { Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 
 export const getCases = async (req, res) => {
@@ -9,7 +9,12 @@ export const getCases = async (req, res) => {
     const data = await Case.findAndCountAll({
       where: { farmer_id: req.user.id },
       include: [
-        { model: User, as: 'vet', attributes: ['id', 'name'] },
+        { 
+          model: Vet, 
+          as: 'vet', 
+          attributes: ['id'],
+          include: [{ model: User, attributes: ['id', 'name'] }]
+        },
         { model: Animal, attributes: ['id', 'tag_number'] }
       ],
       limit,
@@ -17,7 +22,20 @@ export const getCases = async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    const response = getPagingData(data, page, limit);
+    // Flatten vet info for frontend
+    const rows = data.rows.map(c => {
+      const caseJson = c.toJSON();
+      if (caseJson.vet) {
+        caseJson.vet = {
+          id: caseJson.vet.id,
+          name: caseJson.vet.User?.name,
+          user_id: caseJson.vet.User?.id
+        };
+      }
+      return caseJson;
+    });
+
+    const response = getPagingData({ ...data, rows }, page, limit);
     res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -42,7 +60,7 @@ export const createCase = async (req, res) => {
     }
 
     // Validate vet exists
-    const vet = await User.findOne({ where: { id: vet_id, role: 'vet' } });
+    const vet = await Vet.findByPk(vet_id);
     if (!vet) {
       return res.status(400).json({ error: "Invalid Vet selected" });
     }
@@ -71,12 +89,26 @@ export const getCaseById = async (req, res) => {
     const singleCase = await Case.findOne({
       where: { id: req.params.id, farmer_id: req.user.id },
       include: [
-        { model: User, as: 'vet', attributes: ['id', 'name'] },
+        { 
+          model: Vet, 
+          as: 'vet', 
+          attributes: ['id'],
+          include: [{ model: User, attributes: ['id', 'name'] }]
+        },
         { model: Animal }
       ]
     });
     if (!singleCase) return res.status(404).json({ error: "Case not found" });
-    res.json(singleCase);
+
+    const caseJson = singleCase.toJSON();
+    if (caseJson.vet) {
+      caseJson.vet = {
+        id: caseJson.vet.id,
+        name: caseJson.vet.User?.name,
+        user_id: caseJson.vet.User?.id
+      };
+    }
+    res.json(caseJson);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

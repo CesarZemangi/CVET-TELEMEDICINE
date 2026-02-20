@@ -1,4 +1,4 @@
-import { Message, Case, Notification, User } from "../models/associations.js";
+import { Message, Case, Notification, User, Vet } from "../models/associations.js";
 import { Op } from "sequelize";
 import { getIO } from "../services/socket.service.js";
 import sequelize from "../config/db.js";
@@ -18,10 +18,24 @@ export const sendMessage = async (req, res) => {
 
     // Access validation
     if (req.user.role === 'farmer') {
-      const isAssigned = await Case.findOne({ where: { farmer_id: sender_id, vet_id: receiver_id } });
+      const isAssigned = await Case.findOne({ 
+        include: [{
+          model: Vet,
+          as: 'vet',
+          where: { user_id: receiver_id }
+        }],
+        where: { farmer_id: sender_id } 
+      });
       if (!isAssigned) return res.status(403).json({ error: "You can only message assigned vets" });
     } else if (req.user.role === 'vet') {
-      const isAssigned = await Case.findOne({ where: { vet_id: sender_id, farmer_id: receiver_id } });
+      const isAssigned = await Case.findOne({ 
+        include: [{
+          model: Vet,
+          as: 'vet',
+          where: { user_id: sender_id }
+        }],
+        where: { farmer_id: receiver_id } 
+      });
       if (!isAssigned) return res.status(403).json({ error: "You can only message farmers assigned through cases" });
     }
 
@@ -30,23 +44,15 @@ export const sendMessage = async (req, res) => {
       sender_id,
       receiver_id,
       message,
-      is_read: false,
-      created_by: sender_id,
-      updated_by: sender_id
+      is_read: false
     });
 
     // Create notification
     const notification = await Notification.create({
-      user_id: receiver_id,
-      sender_id,
-      case_id: case_id || null,
-      title: "New Message",
-      message: `You have a new message from ${req.user.name}`,
+      receiver_id,
       type: "chat",
       reference_id: newMessage.id,
-      is_read: false,
-      created_by: sender_id,
-      updated_by: sender_id
+      is_read: false
     });
 
     // Real-time updates
@@ -72,11 +78,15 @@ export const getConversations = async (req, res) => {
 
     // Subquery to find latest message per conversation
     const conversations = await sequelize.query(`
-      SELECT m.*, 
-             u.name as partner_name, 
-             u.profile_pic as partner_pic,
-             u.role as partner_role,
-             (SELECT COUNT(*) FROM messages WHERE receiver_id = :userId AND sender_id = CASE WHEN m.sender_id = :userId THEN m.receiver_id ELSE m.sender_id END AND is_read = 0) as unread_count
+      SELECT 
+        u.id as partner_id,
+        u.name as partner_name, 
+        u.profile_pic as partner_pic,
+        u.role as partner_role,
+        m.message as lastMessage,
+        m.created_at as lastTime,
+        m.case_id,
+        (SELECT COUNT(*) FROM messages WHERE receiver_id = :userId AND sender_id = u.id AND is_read = 0) as unread_count
       FROM messages m
       JOIN (
         SELECT 
@@ -94,7 +104,20 @@ export const getConversations = async (req, res) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    res.json(conversations);
+    const formattedConversations = conversations.map(c => ({
+      partner: {
+        id: c.partner_id,
+        name: c.partner_name,
+        profile_pic: c.partner_pic,
+        role: c.partner_role
+      },
+      lastMessage: c.lastMessage,
+      lastTime: c.lastTime,
+      case_id: c.case_id,
+      unread_count: parseInt(c.unread_count) || 0
+    }));
+
+    res.json(formattedConversations);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -120,10 +143,29 @@ export const getChatlogs = async (req, res) => {
       order: [['created_at', 'ASC']]
     });
 
-    // Mark as read
-    await Message.update({ is_read: true }, {
-      where: { sender_id: partner_id, receiver_id: userId, is_read: false }
+    // Find unread messages from this partner
+    const unreadMessages = await Message.findAll({
+      where: { sender_id: partner_id, receiver_id: userId, is_read: false },
+      attributes: ['id']
     });
+
+    if (unreadMessages.length > 0) {
+      const messageIds = unreadMessages.map(m => m.id);
+      
+      // Mark as read
+      await Message.update({ is_read: true }, {
+        where: { id: messageIds }
+      });
+
+      // Mark associated notifications as read
+      await Notification.update({ is_read: true }, {
+        where: { 
+          receiver_id: userId, 
+          type: 'chat',
+          reference_id: messageIds
+        }
+      });
+    }
 
     res.json(messages);
   } catch (err) {
@@ -136,15 +178,19 @@ export const getContacts = async (req, res) => {
     let users = [];
     if (req.user.role === 'farmer') {
       // Farmers can see Vets they have cases with
-      const cases = await Case.findAll({ where: { farmer_id: req.user.id }, attributes: ['vet_id'] });
-      const vetIds = [...new Set(cases.map(c => c.vet_id))];
+      const cases = await Case.findAll({ 
+        where: { farmer_id: req.user.id }, 
+        include: [{ model: Vet, as: 'vet', attributes: ['user_id'] }] 
+      });
+      const vetUserIds = [...new Set(cases.map(c => c.vet?.user_id).filter(Boolean))];
       users = await User.findAll({
-        where: { id: vetIds, role: 'vet' },
+        where: { id: vetUserIds, role: 'vet' },
         attributes: ['id', 'name', 'profile_pic', 'role']
       });
     } else if (req.user.role === 'vet') {
       // Vets can see Farmers they have cases with
-      const cases = await Case.findAll({ where: { vet_id: req.user.id }, attributes: ['farmer_id'] });
+      const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
+      const cases = await Case.findAll({ where: { vet_id: vetRecord.id }, attributes: ['farmer_id'] });
       const farmerIds = [...new Set(cases.map(c => c.farmer_id))];
       users = await User.findAll({
         where: { id: farmerIds, role: 'farmer' },
@@ -164,9 +210,32 @@ export const getContacts = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { partner_id } = req.body;
-    await Message.update({ is_read: true }, {
-      where: { sender_id: partner_id, receiver_id: req.user.id, is_read: false }
+    const userId = req.user.id;
+
+    // Find unread messages from this partner
+    const unreadMessages = await Message.findAll({
+      where: { sender_id: partner_id, receiver_id: userId, is_read: false },
+      attributes: ['id']
     });
+
+    if (unreadMessages.length > 0) {
+      const messageIds = unreadMessages.map(m => m.id);
+      
+      // Mark messages as read
+      await Message.update({ is_read: true }, {
+        where: { id: messageIds }
+      });
+
+      // Mark associated notifications as read
+      await Notification.update({ is_read: true }, {
+        where: { 
+          receiver_id: userId, 
+          type: 'chat',
+          reference_id: messageIds
+        }
+      });
+    }
+
     res.json({ message: "Marked as read" });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -176,7 +245,7 @@ export const markAsRead = async (req, res) => {
 export const getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.findAll({
-      where: { user_id: req.user.id },
+      where: { receiver_id: req.user.id },
       order: [['created_at', 'DESC']]
     });
     res.json(notifications);
@@ -187,22 +256,19 @@ export const getNotifications = async (req, res) => {
 
 export const adminBroadcastNotification = async (req, res) => {
   try {
-    const { title, message, type } = req.body;
+    const { type } = req.body;
     const users = await User.findAll({ attributes: ['id'] });
     
     const notifications = users.map(u => ({
-      user_id: u.id,
-      title,
-      message,
+      receiver_id: u.id,
       type: type || 'broadcast',
-      created_by: req.user.id,
-      updated_by: req.user.id
+      is_read: false
     }));
 
     await Notification.bulkCreate(notifications);
     
     const io = getIO();
-    io.emit('receive_notification', { title, message, type: type || 'broadcast' });
+    io.emit('receive_notification', { type: type || 'broadcast' });
     
     res.json({ message: "Broadcast sent" });
   } catch (err) {
@@ -212,20 +278,16 @@ export const adminBroadcastNotification = async (req, res) => {
 
 export const adminDirectNotification = async (req, res) => {
   try {
-    const { user_id, title, message, type } = req.body;
+    const { user_id, type } = req.body;
     const notification = await Notification.create({
-      user_id,
-      sender_id: req.user.id,
-      title,
-      message,
+      receiver_id: user_id,
       type: type || 'direct',
-      created_by: req.user.id,
-      updated_by: req.user.id
+      is_read: false
     });
 
     const io = getIO();
     io.to(`user_${user_id}`).emit('receive_notification', notification);
-    const unreadCount = await Notification.count({ where: { user_id, is_read: false } });
+    const unreadCount = await Notification.count({ where: { receiver_id: user_id, is_read: false } });
     io.to(`user_${user_id}`).emit('update_notification_count', { count: unreadCount });
 
     res.json({ message: "Direct notification sent" });
@@ -253,13 +315,15 @@ export const adminViewAllChatlogs = async (req, res) => {
 export const getMessagesByCase = async (req, res) => {
   try {
     const { case_id } = req.params;
-    const caseRecord = await Case.findByPk(case_id);
+    const caseRecord = await Case.findByPk(case_id, {
+      include: [{ model: Vet, as: 'vet', attributes: ['user_id'] }]
+    });
     if (!caseRecord) return res.status(404).json({ error: "Case not found" });
 
     if (req.user.role === 'farmer' && caseRecord.farmer_id !== req.user.id) {
       return res.status(403).json({ error: "Unauthorized access" });
     }
-    if (req.user.role === 'vet' && caseRecord.vet_id !== req.user.id) {
+    if (req.user.role === 'vet' && caseRecord.vet?.user_id !== req.user.id) {
       return res.status(403).json({ error: "Unauthorized access" });
     }
 

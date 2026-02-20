@@ -2,7 +2,7 @@ import sequelize from "./src/config/db.js";
 
 const checkTables = async () => {
   try {
-    const tables = ["cases", "animals", "users", "consultations", "lab_requests", "lab_results", "farmers", "vets"];
+    const tables = ["cases", "animals", "users", "consultations", "lab_requests", "lab_results", "farmers", "vets", "messages", "notifications"];
     for (const table of tables) {
       const [cols] = await sequelize.query(`DESCRIBE ${table}`);
       console.log(`${table.toUpperCase()} TABLE:`, cols.map(c => c.Field));
