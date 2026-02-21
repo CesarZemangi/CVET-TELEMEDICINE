@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
-import { Send, Users, MessageSquare, Bell } from "lucide-react";
+import { Send, Users, MessageSquare, Bell, CheckCircle, AlertCircle } from "lucide-react";
 import ChatInterface from "../components/common/ChatInterface";
 
 export default function AdminCommunication() {
   const [activeTab, setActiveTab] = useState("broadcast");
-  const [broadcast, setBroadcast] = useState({ title: "", message: "", type: "broadcast" });
-  const [direct, setDirect] = useState({ user_id: "", title: "", message: "", type: "direct" });
+  const [broadcast, setBroadcast] = useState({ title: "", message: "", role: "all" });
+  const [direct, setDirect] = useState({ user_id: "", title: "", message: "" });
   const [users, setUsers] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
 
@@ -27,10 +27,11 @@ export default function AdminCommunication() {
     e.preventDefault();
     try {
       await api.post("/admin/notifications/broadcast", broadcast);
-      setStatus({ type: "success", message: "Broadcast sent successfully!" });
-      setBroadcast({ title: "", message: "", type: "broadcast" });
-    } catch {
-      setStatus({ type: "error", message: "Failed to send broadcast." });
+      setStatus({ type: "success", message: "✓ Broadcast sent successfully!" });
+      setBroadcast({ title: "", message: "", role: "all" });
+      setTimeout(() => setStatus({ type: "", message: "" }), 5000);
+    } catch (err) {
+      setStatus({ type: "error", message: "✗ Failed to send broadcast: " + (err.response?.data?.error || err.message) });
     }
   };
 
@@ -38,70 +39,135 @@ export default function AdminCommunication() {
     e.preventDefault();
     try {
       await api.post("/admin/notifications/direct", direct);
-      setStatus({ type: "success", message: "Direct notification sent successfully!" });
+      setStatus({ type: "success", message: "✓ Direct notification sent successfully!" });
       setDirect({ user_id: "", title: "", message: "", type: "direct" });
-    } catch {
-      setStatus({ type: "error", message: "Failed to send notification." });
+      setTimeout(() => setStatus({ type: "", message: "" }), 5000);
+    } catch (err) {
+      setStatus({ type: "error", message: "✗ Failed to send notification: " + (err.response?.data?.error || err.message) });
     }
   };
 
   return (
     <DashboardSection title="Admin Communication Control">
-      <div className="flex gap-4 mb-6">
-        <button 
-          onClick={() => setActiveTab("broadcast")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${activeTab === "broadcast" ? 'bg-brown-600 text-white border-brown-600' : 'bg-white hover:bg-gray-50'}`}
-        >
-          <Bell className="w-4 h-4" /> Broadcast
-        </button>
-        <button 
-          onClick={() => setActiveTab("direct")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${activeTab === "direct" ? 'bg-brown-600 text-white border-brown-600' : 'bg-white hover:bg-gray-50'}`}
-        >
-          <Users className="w-4 h-4" /> Direct Notify
-        </button>
-        <button 
-          onClick={() => setActiveTab("chats")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${activeTab === "chats" ? 'bg-brown-600 text-white border-brown-600' : 'bg-white hover:bg-gray-50'}`}
-        >
-          <MessageSquare className="w-4 h-4" /> Monitor Chats
-        </button>
-      </div>
-
-      {status.message && (
-        <div className={`p-3 rounded-lg mb-4 ${status.type === "success" ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-          {status.message}
+      <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", borderRadius: "12px", padding: "2rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+          <button 
+            onClick={() => setActiveTab("broadcast")}
+            style={{
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: activeTab === "broadcast" ? "600" : "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              transition: "all 0.3s",
+              backgroundColor: activeTab === "broadcast" ? "#7c3aed" : "#1e293b",
+              color: activeTab === "broadcast" ? "#fff" : "#cbd5e1",
+              boxShadow: activeTab === "broadcast" ? "0 4px 12px rgba(124, 58, 237, 0.4)" : "none"
+            }}
+          >
+            <Bell size={20} /> Broadcast System
+          </button>
+          <button 
+            onClick={() => setActiveTab("direct")}
+            style={{
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: activeTab === "direct" ? "600" : "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              transition: "all 0.3s",
+              backgroundColor: activeTab === "direct" ? "#7c3aed" : "#1e293b",
+              color: activeTab === "direct" ? "#fff" : "#cbd5e1",
+              boxShadow: activeTab === "direct" ? "0 4px 12px rgba(124, 58, 237, 0.4)" : "none"
+            }}
+          >
+            <Users size={20} /> Direct Notify
+          </button>
+          <button 
+            onClick={() => setActiveTab("chats")}
+            style={{
+              padding: "0.75rem 1.5rem",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: activeTab === "chats" ? "600" : "500",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              transition: "all 0.3s",
+              backgroundColor: activeTab === "chats" ? "#7c3aed" : "#1e293b",
+              color: activeTab === "chats" ? "#fff" : "#cbd5e1",
+              boxShadow: activeTab === "chats" ? "0 4px 12px rgba(124, 58, 237, 0.4)" : "none"
+            }}
+          >
+            <MessageSquare size={20} /> Monitor Chats
+          </button>
         </div>
-      )}
 
-      <div className="bg-white rounded-xl shadow-sm border p-6">
+        {status.message && (
+          <div style={{
+            padding: "1rem 1.5rem",
+            borderRadius: "8px",
+            marginBottom: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            backgroundColor: status.type === "success" ? "#064e3b" : "#7f1d1d",
+            color: status.type === "success" ? "#86efac" : "#fca5a5",
+            border: `1px solid ${status.type === "success" ? "#10b981" : "#dc2626"}`
+          }}>
+            {status.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+            {status.message}
+          </div>
+        )}
+
+        <div style={{ backgroundColor: "#1e293b", borderRadius: "12px", padding: "2rem", border: "1px solid #334155" }}>
         {activeTab === "broadcast" && (
           <form onSubmit={handleBroadcast}>
-            <h3 className="text-lg font-bold mb-4">Send System Broadcast</h3>
-            <div className="space-y-4">
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>📢 Send System Broadcast</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Title</label>
                 <input 
                   type="text" 
                   value={broadcast.title}
                   onChange={e => setBroadcast({...broadcast, title: e.target.value})}
-                  className="w-full border rounded-lg px-4 py-2" 
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
                   placeholder="e.g. System Maintenance"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Message</label>
                 <textarea 
                   value={broadcast.message}
                   onChange={e => setBroadcast({...broadcast, message: e.target.value})}
-                  className="w-full border rounded-lg px-4 py-2 h-32" 
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", minHeight: "150px", fontSize: "1rem", fontFamily: "inherit" }}
                   placeholder="Broadcast details..."
                   required
                 />
               </div>
-              <button type="submit" className="bg-brown-600 text-white px-6 py-2 rounded-lg hover:bg-brown-700 flex items-center gap-2">
-                <Send className="w-4 h-4" /> Send to All Users
+              <div>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Target Role</label>
+                <select 
+                  value={broadcast.role}
+                  onChange={e => setBroadcast({...broadcast, role: e.target.value})}
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
+                >
+                  <option value="all">All Users</option>
+                  <option value="farmer">Farmers</option>
+                  <option value="vet">Veterinarians</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
+              <button type="submit" style={{ backgroundColor: "#7c3aed", color: "white", padding: "0.75rem 1.5rem", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.3s", width: "fit-content" }} onMouseEnter={(e) => e.target.style.backgroundColor = "#6d28d9"} onMouseLeave={(e) => e.target.style.backgroundColor = "#7c3aed"}>
+                <Send size={18} /> Send Broadcast
               </button>
             </div>
           </form>
@@ -109,14 +175,14 @@ export default function AdminCommunication() {
 
         {activeTab === "direct" && (
           <form onSubmit={handleDirect}>
-            <h3 className="text-lg font-bold mb-4">Direct Notification</h3>
-            <div className="space-y-4">
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>👤 Direct Notification</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select User</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Select User</label>
                 <select 
                   value={direct.user_id}
                   onChange={e => setDirect({...direct, user_id: e.target.value})}
-                  className="w-full border rounded-lg px-4 py-2"
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
                   required
                 >
                   <option value="">Choose user...</option>
@@ -126,37 +192,38 @@ export default function AdminCommunication() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Title</label>
                 <input 
                   type="text" 
                   value={direct.title}
                   onChange={e => setDirect({...direct, title: e.target.value})}
-                  className="w-full border rounded-lg px-4 py-2" 
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Message</label>
                 <textarea 
                   value={direct.message}
                   onChange={e => setDirect({...direct, message: e.target.value})}
-                  className="w-full border rounded-lg px-4 py-2 h-32" 
+                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", minHeight: "150px", fontSize: "1rem", fontFamily: "inherit" }}
                   required
                 />
               </div>
-              <button type="submit" className="bg-brown-600 text-white px-6 py-2 rounded-lg hover:bg-brown-700 flex items-center gap-2">
-                <Send className="w-4 h-4" /> Send Notification
+              <button type="submit" style={{ backgroundColor: "#7c3aed", color: "white", padding: "0.75rem 1.5rem", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.3s", width: "fit-content" }} onMouseEnter={(e) => e.target.style.backgroundColor = "#6d28d9"} onMouseLeave={(e) => e.target.style.backgroundColor = "#7c3aed"}>
+                <Send size={18} /> Send Notification
               </button>
             </div>
           </form>
         )}
 
         {activeTab === "chats" && (
-          <div style={{ backgroundColor: "#1a1a1a", borderRadius: "8px", padding: "1.5rem" }}>
-            <h3 className="text-lg font-bold mb-4" style={{ color: "#fff" }}>Chat Monitoring (Read-Only)</h3>
+          <div>
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>💬 Chat Monitoring (Read-Only)</h3>
             <ChatInterface readOnly={true} />
           </div>
         )}
+        </div>
       </div>
     </DashboardSection>
   );

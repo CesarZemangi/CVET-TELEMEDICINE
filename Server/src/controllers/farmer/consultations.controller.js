@@ -1,10 +1,23 @@
-import db from "../../config/db.js"
+import Consultation from "../../models/consultation.model.js";
+import Case from "../../models/case.model.js";
 
 export const getConsultations = async (req, res) => {
-  const [rows] = await db.query(
-    "SELECT * FROM consultations WHERE farmer_id = ?",
-    [req.user.id]
-  )
+  try {
+    const farmerId = req.user.id;
 
-  res.json(rows)
+    const consultations = await Consultation.findAll({
+      include: [
+        {
+          model: Case,
+          where: { farmer_id: farmerId },
+          attributes: ['id', 'title', 'description', 'status']
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json(consultations);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }

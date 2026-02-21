@@ -37,6 +37,7 @@ import vetCommRoutes from "./routes/vet/communication.routes.js";
 import vetFeedbackRoutes from "./routes/vet/feedback.routes.js";
 import vetNotificationRoutes from "./routes/vet/notification.routes.js";
 import vetDashboardRoutes from "./routes/vet/dashboard.routes.js";
+import vetMediaRoutes from "./routes/vet/media.routes.js";
 
 import { authLimiter } from "./middleware/rateLimit.middleware.js";
 
@@ -63,7 +64,7 @@ app.use(cors({
 
 // 2. Standard Middleware
 app.use(express.json());
-app.use("/uploads", express.static("storage/uploads"));
+app.use("/uploads", express.static("uploads"));
 
 // 3. Routes
 app.use("/api/auth", authLimiter, authRoutes);
@@ -95,6 +96,7 @@ app.use("/api/vet/analytics", authenticate, authorizeRoles("vet"), vetAnalyticsR
 app.use("/api/vet/communication", authenticate, authorizeRoles("vet"), vetCommRoutes);
 app.use("/api/vet/feedback", authenticate, authorizeRoles("vet"), vetFeedbackRoutes);
 app.use("/api/vet/notifications", authenticate, authorizeRoles("vet"), vetNotificationRoutes);
+app.use("/api/vet/media", authenticate, authorizeRoles("vet"), vetMediaRoutes);
 
 // Global error handler
 app.use(errorHandler);

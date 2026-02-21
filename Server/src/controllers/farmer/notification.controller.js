@@ -1,4 +1,5 @@
 import { Notification, Case, User } from '../../models/associations.js';
+import Message from '../../models/message.model.js';
 import { success, error } from '../../utils/response.js';
 
 export const getNotifications = async (req, res) => {
@@ -46,8 +47,10 @@ export const markAsSeen = async (req, res) => {
 export const createNotification = async (req, res) => {
   try {
     const { user_id, type, reference_id } = req.body;
+    const sender_id = req.user.id;
 
     const notification = await Notification.create({
+      sender_id: sender_id,
       receiver_id: user_id,
       type: type || 'system',
       reference_id,

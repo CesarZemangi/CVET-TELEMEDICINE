@@ -126,12 +126,12 @@
 .chat-icon {
   width: 22px;
   height: 22px;
-  color: #1E90FF;
+  color: #228B22;
 }
 
 .chat-new-btn {
   padding: 8px 12px;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -140,7 +140,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease-out;
-  box-shadow: 0 2px 8px rgba(30, 144, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 139, 34, 0.2);
 }
 
 .chat-new-btn:hover {
@@ -251,13 +251,13 @@
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(30, 144, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(34, 139, 34, 0.15);
 }
 
 .chat-conv-content {
@@ -311,7 +311,7 @@
   min-width: 24px;
   height: 24px;
   padding: 0 6px;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   color: white;
   border-radius: 12px;
   font-size: 12px;
@@ -375,7 +375,7 @@
   display: none;
   background: none;
   border: none;
-  color: #1E90FF;
+  color: #228B22;
   cursor: pointer;
   padding: 4px;
   font-size: 20px;
@@ -390,7 +390,7 @@
   height: 40px;
   padding: 8px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   color: white;
 }
 
@@ -481,7 +481,7 @@
 }
 
 .chat-message.sent .chat-bubble {
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   color: white;
 }
 
@@ -518,6 +518,14 @@
 
 .chat-message.received .chat-time {
   color: #A0AEC0;
+}
+
+.chat-sender-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #A0AEC0;
+  margin: 0 0 6px 0;
+  opacity: 0.8;
 }
 
 .chat-empty-state {
@@ -591,7 +599,7 @@
   width: 40px;
   height: 40px;
   padding: 0;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   border: none;
   border-radius: 12px;
   color: white;
@@ -600,13 +608,13 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease-out;
-  box-shadow: 0 2px 8px rgba(30, 144, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 139, 34, 0.2);
   flex-shrink: 0;
 }
 
 .chat-send-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
 }
 
 .chat-send-btn:active:not(:disabled) {
@@ -658,7 +666,7 @@
 
 .chat-start-btn {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #1E90FF 0%, #20B2AA 100%);
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -668,12 +676,12 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease-out;
-  box-shadow: 0 2px 8px rgba(30, 144, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(34, 139, 34, 0.2);
 }
 
 .chat-start-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(34, 139, 34, 0.3);
 }
 
 /* Modal */

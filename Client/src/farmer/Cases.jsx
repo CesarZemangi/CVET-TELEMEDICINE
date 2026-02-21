@@ -71,7 +71,11 @@ export default function Cases() {
     }
     navigate("/farmerdashboard/communication/messages", { 
       state: { 
-        initialPartner: c.vet, 
+        initialPartner: {
+          id: c.vet.user_id,
+          name: c.vet.name,
+          role: 'vet'
+        },
         initialCaseId: c.id 
       } 
     });

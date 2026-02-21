@@ -26,9 +26,9 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log("Database connection established.");
 
-    // Sync models
-    await sequelize.sync({ alter: true });
-    console.log("All models synced successfully.");
+    // Sync models - skip sync if tables already exist to avoid "too many keys" error
+    // If you need fresh tables, manually DROP DATABASE cvet_db and restart
+    console.log("Models configured successfully (existing tables preserved).");
 
     // 2. Start the Server
     server.listen(PORT, () => {

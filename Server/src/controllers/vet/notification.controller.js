@@ -48,7 +48,8 @@ export const sendNotification = async (req, res) => {
     }
 
     const notification = await Notification.create({
-      receiver_id: singleCase.farmer_id, // Receiver
+      sender_id: sender_id,
+      receiver_id: singleCase.farmer_id,
       type: type || 'update',
       is_read: false
     });

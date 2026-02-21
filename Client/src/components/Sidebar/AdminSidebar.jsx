@@ -53,7 +53,7 @@ export default function AdminSidebar() {
             <NavLink to="/admindashboard/cases" className={linkClass}>Cases</NavLink>
             <NavLink to="/admindashboard/consultations" className={linkClass}>Consultations</NavLink>
             <NavLink to="/admindashboard/vet-performance" className={linkClass}>Vet Performance</NavLink>
-            <NavLink to="/admindashboard/media-reports" className={linkClass}>Media Reports</NavLink>
+            <NavLink to="/admindashboard/media" className={linkClass}>Media Uploads</NavLink>
           </div>
         )}
       </li>

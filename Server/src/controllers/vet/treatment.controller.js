@@ -1,10 +1,15 @@
-import { Prescription, TreatmentPlan, Case, MedicationHistory, Animal, User } from "../../models/associations.js";
+import { Prescription, TreatmentPlan, Case, MedicationHistory, Animal, User, Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
 
 export const getPrescriptions = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+    
     const data = await Prescription.findAll({
-      where: { vet_id: req.user.id },
+      where: { vet_id: vet.id },
       include: [{ model: Case }]
     });
     success(res, data, "Prescriptions fetched");
@@ -21,9 +26,14 @@ export const createPrescription = async (req, res) => {
       return res.status(400).json({ error: "case_id, medicine, dosage and duration are required" });
     }
 
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+
     const prescription = await Prescription.create({
       case_id,
-      vet_id: req.user.id,
+      vet_id: vet.id,
       medicine,
       dosage,
       duration
@@ -43,9 +53,14 @@ export const createTreatmentPlan = async (req, res) => {
       return res.status(400).json({ error: "case_id and plan_details are required" });
     }
 
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+
     const plan = await TreatmentPlan.create({
       case_id,
-      vet_id: req.user.id,
+      vet_id: vet.id,
       plan_details,
       start_date,
       end_date
@@ -59,8 +74,13 @@ export const createTreatmentPlan = async (req, res) => {
 
 export const getTreatmentPlans = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+    
     const data = await TreatmentPlan.findAll({
-      where: { vet_id: req.user.id },
+      where: { vet_id: vet.id },
       include: [{ model: Case }]
     });
     success(res, data, "Treatment plans fetched");
@@ -77,10 +97,15 @@ export const createMedicationHistory = async (req, res) => {
       return res.status(400).json({ error: "animal_id, case_id, medication_name, dosage and start_date are required" });
     }
 
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
     const history = await MedicationHistory.create({
       animal_id,
       case_id,
-      vet_id: req.user.id,
+      vet_id: vet.id,
       medication_name,
       dosage,
       start_date,
@@ -98,8 +123,13 @@ export const createMedicationHistory = async (req, res) => {
 
 export const getMedicationHistory = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+    
     const history = await MedicationHistory.findAll({
-      where: { vet_id: req.user.id },
+      where: { vet_id: vet.id },
       include: [
         { model: Case, attributes: ['id', 'title'] },
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }

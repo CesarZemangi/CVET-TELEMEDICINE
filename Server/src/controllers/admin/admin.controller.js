@@ -1,10 +1,11 @@
-import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal } from "../../models/associations.js";
+import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal, CaseMedia } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
 import SystemLog from "../../models/systemLog.model.js";
 import { fn, col, literal, Op } from "sequelize";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
+import { getIO } from "../../services/socket.service.js";
 
 export const getOverview = async (req, res) => {
   try {
@@ -234,12 +235,23 @@ export const getCases = async (req, res) => {
     const data = await Case.findAll({
       include: [
         { model: User, as: 'farmer', attributes: ['id', 'name'] },
-        { model: User, as: 'vet', attributes: ['id', 'name'] },
+        { 
+          model: Vet, 
+          as: 'vet',
+          attributes: ['id'],
+          include: [{ model: User, attributes: ['id', 'name'] }]
+        },
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json({ data });
+    
+    const formattedData = data.map(c => ({
+      ...c.toJSON(),
+      vet: c.vet ? { ...c.vet.toJSON(), name: c.vet.User?.name } : null
+    }));
+    
+    res.json({ data: formattedData });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -321,22 +333,22 @@ export const broadcastNotification = async (req, res) => {
     
     const notifications = await Promise.all(users.map(u => 
       Notification.create({
-        user_id: u.id,
+        receiver_id: u.id,
         sender_id: req.user.id,
         title,
         message,
         type: 'broadcast',
-        is_read: false,
-        created_by: req.user.id,
-        updated_by: req.user.id
+        is_read: false
       })
     ));
     
-    const io = require('../../socket.js').getIO();
-    if (io) {
+    try {
+      const io = getIO();
       users.forEach(u => {
         io.to(`user_${u.id}`).emit('receive_notification', { title, message, type: 'broadcast' });
       });
+    } catch (socketErr) {
+      console.warn("Socket.io not initialized, notifications saved but not sent in real-time");
     }
     
     res.json({ message: `Broadcast sent to ${notifications.length} users`, data: notifications });
@@ -359,19 +371,19 @@ export const sendDirectNotification = async (req, res) => {
     }
     
     const notification = await Notification.create({
-      user_id,
+      receiver_id: user_id,
       sender_id: req.user.id,
       title,
       message,
       type: 'direct',
-      is_read: false,
-      created_by: req.user.id,
-      updated_by: req.user.id
+      is_read: false
     });
     
-    const io = require('../../socket.js').getIO();
-    if (io) {
+    try {
+      const io = getIO();
       io.to(`user_${user_id}`).emit('receive_notification', { title, message, type: 'direct' });
+    } catch (socketErr) {
+      console.warn("Socket.io not initialized, notification saved but not sent in real-time");
     }
     
     res.json({ message: "Notification sent", data: notification });
@@ -384,13 +396,92 @@ export const getAllChatLogs = async (req, res) => {
   try {
     const logs = await Message.findAll({
       include: [
-        { model: User, as: 'sender', attributes: ['id', 'name', 'role'] },
-        { model: User, as: 'receiver', attributes: ['id', 'name', 'role'] },
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic', 'role'] },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_pic', 'role'] },
         { model: Case, attributes: ['id', 'title'] }
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json({ data: logs });
+    
+    const conversationMap = {};
+    logs.forEach(msg => {
+      const msgData = msg.toJSON();
+      const key = [Math.min(msgData.sender_id, msgData.receiver_id), Math.max(msgData.sender_id, msgData.receiver_id)].join('_');
+      if (!conversationMap[key]) {
+        conversationMap[key] = {
+          sender_id: msgData.sender_id,
+          receiver_id: msgData.receiver_id,
+          sender: msgData.sender,
+          receiver: msgData.receiver,
+          partner: msgData.sender,
+          lastMessage: msgData.message,
+          lastTime: msgData.created_at,
+          case_id: msgData.case_id
+        };
+      }
+    });
+    
+    const conversations = Object.values(conversationMap);
+    res.json({ data: conversations });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getThreadMessages = async (req, res) => {
+  try {
+    const { sender_id, receiver_id } = req.query;
+    
+    if (!sender_id || !receiver_id) {
+      return res.status(400).json({ error: "Sender ID and Receiver ID required" });
+    }
+    
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { sender_id, receiver_id },
+          { sender_id: receiver_id, receiver_id: sender_id }
+        ]
+      },
+      include: [
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] },
+        { model: Case, attributes: ['id', 'title'] }
+      ],
+      order: [['created_at', 'ASC']]
+    });
+    
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllMedia = async (req, res) => {
+  try {
+    const media = await CaseMedia.findAll({
+      include: [
+        {
+          model: Case,
+          attributes: ['id', 'title', 'animal_id'],
+          include: [
+            {
+              model: Vet,
+              as: 'vet',
+              attributes: ['id'],
+              include: [
+                {
+                  model: User,
+                  attributes: ['id', 'name']
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    
+    res.json({ data: media });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

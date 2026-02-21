@@ -1,10 +1,15 @@
-import { LabRequest, LabResult, Case } from "../../models/associations.js";
+import { LabRequest, LabResult, Case, Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
 
 export const getLabRequests = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+
     const requests = await LabRequest.findAll({
-      where: { vet_id: req.user.id },
+      where: { vet_id: vet.id },
       include: [{ model: Case }]
     });
     success(res, requests, "Lab requests fetched");
@@ -21,9 +26,14 @@ export const createLabRequest = async (req, res) => {
       return res.status(400).json({ error: "case_id and test_type are required" });
     }
 
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
     const labRequest = await LabRequest.create({
       case_id,
-      vet_id: req.user.id,
+      vet_id: vet.id,
       test_type,
       notes,
       status: 'pending',
@@ -66,10 +76,15 @@ export const uploadLabResult = async (req, res) => {
 
 export const getLabResults = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+
     const results = await LabResult.findAll({
       include: [{
         model: LabRequest,
-        where: { vet_id: req.user.id },
+        where: { vet_id: vet.id },
         include: [{ model: Case }]
       }]
     });

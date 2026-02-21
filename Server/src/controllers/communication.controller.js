@@ -177,23 +177,15 @@ export const getContacts = async (req, res) => {
   try {
     let users = [];
     if (req.user.role === 'farmer') {
-      // Farmers can see Vets they have cases with
-      const cases = await Case.findAll({ 
-        where: { farmer_id: req.user.id }, 
-        include: [{ model: Vet, as: 'vet', attributes: ['user_id'] }] 
-      });
-      const vetUserIds = [...new Set(cases.map(c => c.vet?.user_id).filter(Boolean))];
+      // Farmers can see all active vets (to be able to message any)
       users = await User.findAll({
-        where: { id: vetUserIds, role: 'vet' },
+        where: { role: 'vet', status: 'active' },
         attributes: ['id', 'name', 'profile_pic', 'role']
       });
     } else if (req.user.role === 'vet') {
-      // Vets can see Farmers they have cases with
-      const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-      const cases = await Case.findAll({ where: { vet_id: vetRecord.id }, attributes: ['farmer_id'] });
-      const farmerIds = [...new Set(cases.map(c => c.farmer_id))];
+      // Vets can see all active farmers (to be able to message any)
       users = await User.findAll({
-        where: { id: farmerIds, role: 'farmer' },
+        where: { role: 'farmer', status: 'active' },
         attributes: ['id', 'name', 'profile_pic', 'role']
       });
     } else if (req.user.role === 'admin') {
@@ -279,9 +271,7 @@ export const adminBroadcastNotification = async (req, res) => {
       title,
       message,
       type: 'broadcast',
-      is_read: false,
-      created_by: req.user.id,
-      updated_by: req.user.id
+      is_read: false
     }));
 
     const createdNotifications = await Notification.bulkCreate(notifications);
@@ -316,9 +306,7 @@ export const adminDirectNotification = async (req, res) => {
       title,
       message,
       type: 'direct',
-      is_read: false,
-      created_by: req.user.id,
-      updated_by: req.user.id
+      is_read: false
     });
 
     const io = getIO();

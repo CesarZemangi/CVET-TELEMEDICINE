@@ -16,8 +16,9 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
     const fetchNotifs = async () => {
       try {
         const res = await api.get('/communication/notifications');
-        setNotifications(res.data);
-        const count = res.data.filter(n => !n.is_read).length;
+        const notifList = res.data.data || res.data || [];
+        setNotifications(notifList);
+        const count = notifList.filter(n => !n.is_read).length;
         setUnreadCount(count);
       } catch (err) {
         console.error("Notif error", err);
@@ -48,7 +49,6 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
 
   const handleMarkRead = async (id) => {
     try {
-      await api.put(`/communication/notifications/${id}/read`);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {

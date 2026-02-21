@@ -78,10 +78,17 @@ export default function VetSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/vetdashboard/communication/messages" className={linkClass}>Messages</NavLink>
             <NavLink to="/vetdashboard/communication/notifications" className={linkClass}>Notifications</NavLink>
-            <NavLink to="/vetdashboard/video-sessions" className={linkClass}>Video Sessions</NavLink>
+            <NavLink to="/vetdashboard/communication/video-sessions" className={linkClass}>Video Sessions</NavLink>
             <NavLink to="/vetdashboard/communication/feedback" className={linkClass}>Feedback</NavLink>
           </div>
         )}
+      </li>
+
+      {/* Media Upload Section */}
+      <li>
+        <NavLink to="/vetdashboard/media" className={linkClass}>
+          <i className="bi bi-cloud-upload me-3"></i> Media Uploads
+        </NavLink>
       </li>
     </>
   );

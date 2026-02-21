@@ -102,6 +102,9 @@ import ChatLogs from "./vet/Communication/Chatlogs"
 import VideoSessions from "./vet/Communication/VideoSessions"
 import Feedback from "./vet/Communication/Feedback"
 
+/* Vet Media */
+import MediaUploads from "./vet/MediaUploads"
+
 /* Admin Pages */
 import AdminUsers from "./pages/AdminUsers"
 import AdminFarmers from "./pages/AdminFarmers"
@@ -113,6 +116,8 @@ import AdminAnalytics from "./pages/AdminAnalytics"
 import AdminVetPerformance from "./pages/AdminVetPerformance"
 import AdminReminders from "./pages/AdminReminders"
 import AdminCommunication from "./pages/AdminCommunication"
+import AdminSettings from "./pages/AdminSettings"
+import AdminMedia from "./pages/AdminMedia"
 
 function RequireAuth({ role, children }) {
 const [isAuthenticated, setIsAuthenticated] = React.useState(null)
@@ -265,6 +270,8 @@ return (
     <Route path="communication/chat-logs" element={<ChatLogs />} />
     <Route path="communication/video-sessions" element={<VideoSessions />} />
     <Route path="communication/feedback" element={<Feedback />} />
+
+    <Route path="media" element={<MediaUploads />} />
   </Route>
 
     <Route path="/admindashboard/*"
@@ -281,11 +288,12 @@ return (
     <Route path="cases" element={<AdminCases />} />
     <Route path="consultations" element={<AdminConsultations />} />
     <Route path="logs" element={<AdminLogs />} />
+    <Route path="settings" element={<AdminSettings />} />
     
     <Route path="analytics" element={<AdminAnalytics />} />
     <Route path="reminders" element={<AdminReminders />} />
     <Route path="vet-performance" element={<AdminVetPerformance />} />
-    <Route path="media-reports" element={<div>Media Reports Page</div>} />
+    <Route path="media" element={<AdminMedia />} />
     <Route path="communication/messages" element={<AdminCommunication />} />
   </Route>
 

@@ -39,6 +39,31 @@ export default function ChatInterface({ readOnly = false }) {
     }
   }, [readOnly]);
 
+  const fetchMessages = useCallback(async (conv) => {
+    try {
+      if (conv.isNew) {
+        setMessages([]);
+        setSelectedConv(conv);
+        return;
+      }
+      
+      let endpoint = "/communication/chatlogs";
+      let params = { partner_id: conv.partner.id, case_id: conv.case_id };
+      
+      if (readOnly) {
+        endpoint = "/admin/chat-logs/thread";
+        params = { sender_id: conv.sender_id, receiver_id: conv.receiver_id };
+      }
+      
+      const res = await api.get(endpoint, { params });
+      const data = res.data.data || res.data;
+      setMessages(data);
+      setSelectedConv(conv);
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+    }
+  }, [readOnly]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
@@ -101,29 +126,11 @@ export default function ChatInterface({ readOnly = false }) {
     return () => {
       socket.off("receive_message");
     };
-  }, [selectedConv, readOnly, location.state, user.id, fetchConversations]);
+  }, [selectedConv, readOnly, location.state, user.id, fetchConversations, fetchMessages]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const fetchMessages = async (conv) => {
-    try {
-      if (conv.isNew) {
-        setMessages([]);
-        setSelectedConv(conv);
-        return;
-      }
-      const res = await api.get("/communication/chatlogs", {
-        params: { partner_id: conv.partner.id, case_id: conv.case_id }
-      });
-      const data = res.data.data || res.data;
-      setMessages(data);
-      setSelectedConv(conv);
-    } catch (err) {
-      console.error("Error fetching messages:", err);
-    }
-  };
 
   const fetchContacts = async () => {
     try {
@@ -306,9 +313,11 @@ export default function ChatInterface({ readOnly = false }) {
             <div className="chat-messages">
               {messages.length > 0 ? messages.map((msg, idx) => {
                 const isMine = msg.sender_id === user.id;
+                const senderName = msg.sender?.name || 'Unknown';
                 return (
                   <div key={idx} className={`chat-message ${isMine ? 'sent' : 'received'}`}>
                     <div className="chat-bubble">
+                      {!isMine && <p className="chat-sender-name">{senderName}</p>}
                       <p className="chat-text">{msg.message}</p>
                       <span className="chat-time">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

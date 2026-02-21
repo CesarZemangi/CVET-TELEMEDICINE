@@ -1,11 +1,17 @@
 import Consultation from "../../models/consultation.model.js";
 import Case from "../../models/case.model.js";
+import { Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
 
 export const getVetConsultations = async (req, res) => {
   try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return error(res, "Vet record not found", 404);
+    }
+
     const consultations = await Consultation.findAll({
-      where: { vet_id: req.user.id },
+      where: { vet_id: vet.id },
       include: [{ model: Case }]
     });
     success(res, consultations, "Consultations fetched successfully");
@@ -22,9 +28,14 @@ export const createConsultation = async (req, res) => {
       return res.status(400).json({ error: "case_id and mode are required" });
     }
 
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
     // Verify case belongs to this vet
     const singleCase = await Case.findOne({
-      where: { id: case_id, vet_id: req.user.id }
+      where: { id: case_id, vet_id: vet.id }
     });
 
     if (!singleCase) {
@@ -33,7 +44,7 @@ export const createConsultation = async (req, res) => {
 
     const consultation = await Consultation.create({
       case_id,
-      vet_id: req.user.id,
+      vet_id: vet.id,
       mode,
       notes: notes || ""
     });

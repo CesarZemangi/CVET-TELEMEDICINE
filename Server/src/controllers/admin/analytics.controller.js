@@ -102,12 +102,11 @@ export const getReminderAnalytics = async (req, res) => {
 
 export const getVetPerformance = async (req, res) => {
     try {
-        const vets = await User.findAll({
-            where: { role: 'vet' },
-            attributes: ['id', 'name'],
+        const vets = await Vet.findAll({
+            attributes: ['id'],
             include: [{
-                model: Vet,
-                attributes: ['specialization']
+                model: User,
+                attributes: ['id', 'name']
             }]
         });
 
@@ -124,7 +123,7 @@ export const getVetPerformance = async (req, res) => {
 
             for (const c of cases) {
                 const firstMessage = await Message.findOne({
-                    where: { case_id: c.id, sender_id: vet.id },
+                    where: { case_id: c.id, sender_id: vet.User.id },
                     order: [['created_at', 'ASC']]
                 });
 
@@ -140,13 +139,13 @@ export const getVetPerformance = async (req, res) => {
             const consultationCompletionRate = totalAssigned > 0 ? (completedCases / totalAssigned) * 100 : 0;
             
             const videoSessionCount = await Consultation.count({ 
-                where: { vet_id: vet.id } // Assuming consultation model tracks video sessions or similar
+                where: { vet_id: vet.id }
             });
 
             return {
                 vet_id: vet.id,
-                name: vet.name,
-                specialization: vet.Vet?.specialization,
+                name: vet.User.name,
+                specialization: vet.specialization,
                 totalAssigned,
                 completedCases,
                 activeCases,

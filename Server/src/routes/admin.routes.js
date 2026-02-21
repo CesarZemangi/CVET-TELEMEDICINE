@@ -13,7 +13,9 @@ import {
   getConsultations,
   broadcastNotification,
   sendDirectNotification,
-  getAllChatLogs
+  getAllChatLogs,
+  getThreadMessages,
+  getAllMedia
 } from "../controllers/admin/admin.controller.js";
 import {
   getOverviewAnalytics,
@@ -39,6 +41,8 @@ router.get("/profile", getProfile);
 router.post("/notifications/broadcast", broadcastNotification);
 router.post("/notifications/direct", sendDirectNotification);
 router.get("/chat-logs", getAllChatLogs);
+router.get("/chat-logs/thread", getThreadMessages);
+router.get("/media", getAllMedia);
 
 // Analytics
 router.get("/analytics/overview", getOverviewAnalytics);
