@@ -48,12 +48,13 @@ export const getMedicationHistory = async (req, res) => {
 
     const query = {
       include: [
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] },
         {
           model: Case,
           where: { farmer_id: userId },
+          attributes: ['id', 'title'],
           include: [
-            { model: Animal, attributes: ['tag_number', 'species'] },
-            { model: User, as: 'vet', attributes: ['name'] }
+            { model: User, as: 'vet', attributes: ['id', 'name'] }
           ]
         }
       ],

@@ -27,16 +27,33 @@ export default function AdminLayout() {
         />
       )}
       
-      <div style={{ 
-        position: isMobile ? "fixed" : "relative",
-        zIndex: isMobile ? 1100 : "auto",
-        transform: isMobile && !sidebarOpen ? "translateX(-100%)" : "translateX(0)",
-        transition: "transform 0.3s ease",
-        width: "260px",
-        height: "100vh"
-      }}>
-        <Sidebar onClose={() => setSidebarOpen(false)} />
-      </div>
+      {!isMobile && (
+        <div style={{ 
+          position: "fixed",
+          left: 0,
+          top: 0,
+          width: "260px",
+          height: "100vh",
+          zIndex: 1090
+        }}>
+          <Sidebar onClose={() => setSidebarOpen(false)} />
+        </div>
+      )}
+
+      {isMobile && (
+        <div style={{ 
+          position: "fixed",
+          left: 0,
+          top: 0,
+          zIndex: 1100,
+          transform: !sidebarOpen ? "translateX(-100%)" : "translateX(0)",
+          transition: "transform 0.3s ease",
+          width: "260px",
+          height: "100vh"
+        }}>
+          <Sidebar onClose={() => setSidebarOpen(false)} />
+        </div>
+      )}
 
       <div
         className="flex-grow-1 d-flex flex-column overflow-auto"

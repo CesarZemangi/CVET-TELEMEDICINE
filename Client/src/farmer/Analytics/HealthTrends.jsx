@@ -26,15 +26,13 @@ ChartJS.register(
 
 export default function HealthTrends() {
   const [healthData, setHealthData] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get("/farmer/analytics/health-trends")
       .then(res => {
         setHealthData(res.data?.data || []);
       })
-      .catch(err => console.error("Health Trends Fetch Error:", err))
-      .finally(() => setLoading(false));
+      .catch(err => console.error("Health Trends Fetch Error:", err));
   }, []);
 
   const barData = {

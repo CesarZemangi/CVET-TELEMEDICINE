@@ -12,6 +12,9 @@ export default function VetCases() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("my-cases");
+  const [showConsultModal, setShowConsultModal] = useState(false);
+  const [consultCaseId, setConsultCaseId] = useState(null);
+  const [consultData, setConsultData] = useState({ mode: "chat", notes: "" });
 
   const fetchData = async () => {
     try {
@@ -36,7 +39,7 @@ export default function VetCases() {
       await assignCase(id)
       alert("Case accepted successfully")
       fetchData()
-    } catch (error) {
+    } catch {
       alert("Failed to assign case")
     }
   }

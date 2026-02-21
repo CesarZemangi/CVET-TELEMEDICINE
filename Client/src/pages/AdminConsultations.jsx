@@ -4,14 +4,13 @@ import api from '../services/api';
 export default function AdminConsultations() {
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const fetchConsultations = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/consultations`);
-      setConsultations(Array.isArray(res.data) ? res.data : []);
+      const consultationsData = res.data.data || res.data;
+      setConsultations(Array.isArray(consultationsData) ? consultationsData : []);
     } catch (err) {
       console.error("Error fetching consultations:", err);
     } finally {

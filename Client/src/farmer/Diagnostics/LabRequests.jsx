@@ -12,7 +12,6 @@ import {
 ChartJS.register(ArcElement, Tooltip, Legend, Title)
 
 export default function LabRequests() {
-  const [statusFilter, setStatusFilter] = useState("All")
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -30,9 +29,7 @@ export default function LabRequests() {
     fetchRequests()
   }, [])
 
-  const filteredRequests = requests.filter(req =>
-    statusFilter === "All" ? true : req.status === statusFilter
-  )
+  const filteredRequests = requests
 
   const getStatusClass = (status) => {
     switch(status?.toLowerCase()) {

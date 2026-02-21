@@ -1,4 +1,4 @@
-import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder } from "../../models/associations.js";
+import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
@@ -234,11 +234,12 @@ export const getCases = async (req, res) => {
     const data = await Case.findAll({
       include: [
         { model: User, as: 'farmer', attributes: ['id', 'name'] },
-        { model: User, as: 'vet', attributes: ['id', 'name'] }
+        { model: User, as: 'vet', attributes: ['id', 'name'] },
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json(data);
+    res.json({ data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -253,7 +254,7 @@ export const getConsultations = async (req, res) => {
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json(data);
+    res.json({ data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -282,7 +283,7 @@ export const getSystemLogs = async (req, res) => {
     const data = await SystemLog.findAll({
       order: [['created_at', 'DESC']]
     });
-    res.json(data);
+    res.json({ data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -303,12 +304,20 @@ export const broadcastNotification = async (req, res) => {
   try {
     const { title, message, role } = req.body;
     
+    if (!title || !message) {
+      return res.status(400).json({ error: "Title and message are required" });
+    }
+    
     const where = {};
     if (role && role !== 'all') {
       where.role = role;
     }
     
     const users = await User.findAll({ where });
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: "No users found for this role" });
+    }
     
     const notifications = await Promise.all(users.map(u => 
       Notification.create({
@@ -323,7 +332,14 @@ export const broadcastNotification = async (req, res) => {
       })
     ));
     
-    res.json({ message: `Broadcast sent to ${notifications.length} users` });
+    const io = require('../../socket.js').getIO();
+    if (io) {
+      users.forEach(u => {
+        io.to(`user_${u.id}`).emit('receive_notification', { title, message, type: 'broadcast' });
+      });
+    }
+    
+    res.json({ message: `Broadcast sent to ${notifications.length} users`, data: notifications });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -332,6 +348,15 @@ export const broadcastNotification = async (req, res) => {
 export const sendDirectNotification = async (req, res) => {
   try {
     const { user_id, title, message } = req.body;
+    
+    if (!user_id || !title || !message) {
+      return res.status(400).json({ error: "User ID, title, and message are required" });
+    }
+    
+    const targetUser = await User.findByPk(user_id);
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
     
     const notification = await Notification.create({
       user_id,
@@ -344,7 +369,12 @@ export const sendDirectNotification = async (req, res) => {
       updated_by: req.user.id
     });
     
-    res.json({ message: "Notification sent", notification });
+    const io = require('../../socket.js').getIO();
+    if (io) {
+      io.to(`user_${user_id}`).emit('receive_notification', { title, message, type: 'direct' });
+    }
+    
+    res.json({ message: "Notification sent", data: notification });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -360,7 +390,7 @@ export const getAllChatLogs = async (req, res) => {
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json(logs);
+    res.json({ data: logs });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

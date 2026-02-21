@@ -5,7 +5,7 @@ import DashboardSection from "../../components/dashboard/DashboardSection"
 export default function Messages() {
   return (
     <DashboardSection title="Vet Messages">
-      <div className="p-4 bg-gray-50/30">
+      <div className="p-4" style={{ backgroundColor: "#1a1a1a" }}>
         <ChatInterface />
       </div>
     </DashboardSection>

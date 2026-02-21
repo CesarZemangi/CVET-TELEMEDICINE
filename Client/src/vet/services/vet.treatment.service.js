@@ -24,7 +24,7 @@ export const createTreatmentPlan = async (data) => {
 
 export const getMedicationHistory = async () => {
   const response = await api.get(`${API_URL}/medication-history`)
-  return response.data
+  return response.data?.data || response.data
 }
 
 export const createMedicationHistory = async (data) => {

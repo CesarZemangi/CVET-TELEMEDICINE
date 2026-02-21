@@ -7,14 +7,13 @@ export default function AdminCases() {
   const [loading, setLoading] = useState(true);
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const fetchCases = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/cases`);
-      setCases(Array.isArray(res.data) ? res.data : []);
+      const casesData = res.data.data || res.data;
+      setCases(Array.isArray(casesData) ? casesData : []);
     } catch (err) {
       console.error("Error fetching cases:", err);
     } finally {

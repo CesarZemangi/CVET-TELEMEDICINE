@@ -4,18 +4,44 @@ import api from '../services/api';
 export default function AdminLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const fetchLogs = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/admin/logs`);
-      setLogs(Array.isArray(res.data) ? res.data : []);
+      const logsData = res.data.data || res.data;
+      setLogs(Array.isArray(logsData) ? logsData : []);
     } catch (err) {
       console.error("Error fetching logs:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportLogs = async () => {
+    try {
+      const res = await api.get(`/admin/logs`);
+      const logsData = res.data.data || res.data;
+      
+      const csv = [
+        'Timestamp,Action,Admin ID,Status',
+        ...logsData.map(log => 
+          `"${new Date(log.created_at).toLocaleString()}","${log.action}",${log.user_id},"SUCCESS"`
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `system-logs-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exporting logs:", err);
+      alert('Failed to export logs');
     }
   };
 
@@ -30,7 +56,7 @@ export default function AdminLogs() {
           <h4 className="fw-bold">System Audit Logs</h4>
           <p className="text-muted small">Real-time tracking of critical system actions and admin interventions.</p>
         </div>
-        <button className="btn btn-outline-secondary btn-sm"><i className="bi bi-download me-2"></i>Export Logs</button>
+        <button className="btn btn-outline-secondary btn-sm" onClick={exportLogs}><i className="bi bi-download me-2"></i>Export Logs</button>
       </div>
 
       <div className="card border-0 shadow-sm">

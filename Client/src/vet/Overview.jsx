@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from "react"
 import { getVetDashboardData, getVetRecentActivity } from "./services/vet.dashboard.service"
 import { getCases } from "./services/vet.cases.service"
-import { getAppointments } from "./services/vet.appointments.service"
 
 export default function VetOverview() {
   const [data, setData] = useState(null)
   const [cases, setCases] = useState([])
-  const [appointments, setAppointments] = useState([])
   const [activity, setActivity] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [dashResult, casesResult, apptResult, activityResult] = await Promise.all([
+        const [dashResult, casesResult, activityResult] = await Promise.all([
           getVetDashboardData(),
           getCases(),
-          getAppointments(),
           getVetRecentActivity()
         ])
         setData(dashResult)
         setCases(casesResult)
-        setAppointments(apptResult)
         setActivity(activityResult)
       } catch (error) {
         console.error("Error fetching vet data:", error)

@@ -29,6 +29,7 @@ import path from "path";
 // Vet routes
 import vetCaseRoutes from "./routes/vet/cases.routes.js";
 import vetAppointmentRoutes from "./routes/vet/appointments.routes.js";
+import vetConsultationRoutes from "./routes/vet/consultations.routes.js";
 import vetDiagRoutes from "./routes/vet/diagnostics.routes.js";
 import vetTreatRoutes from "./routes/vet/treatment.routes.js";
 import vetAnalyticsRoutes from "./routes/vet/analytics.routes.js";
@@ -87,6 +88,7 @@ app.use("/api/farmer/notifications", authenticate, authorizeRoles("farmer"), far
 app.use("/api/vet/dashboard", authenticate, authorizeRoles("vet"), vetDashboardRoutes);
 app.use("/api/vet/cases", authenticate, authorizeRoles("vet"), vetCaseRoutes);
 app.use("/api/vet/appointments", authenticate, authorizeRoles("vet"), vetAppointmentRoutes);
+app.use("/api/vet/consultations", authenticate, authorizeRoles("vet"), vetConsultationRoutes);
 app.use("/api/vet/diagnostics", authenticate, authorizeRoles("vet"), vetDiagRoutes);
 app.use("/api/vet/treatment", authenticate, authorizeRoles("vet"), vetTreatRoutes);
 app.use("/api/vet/analytics", authenticate, authorizeRoles("vet"), vetAnalyticsRoutes);

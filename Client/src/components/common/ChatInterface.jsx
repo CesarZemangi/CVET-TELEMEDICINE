@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../../services/api";
 import socket from "../../services/socket";
@@ -25,18 +25,19 @@ export default function ChatInterface({ readOnly = false }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     try {
       const endpoint = readOnly ? "/admin/chat-logs" : "/communication/conversations";
       const res = await api.get(endpoint);
-      setConversations(res.data);
-      return res.data;
+      const data = res.data.data || res.data;
+      setConversations(data);
+      return data;
     } catch (err) {
       console.error("Error fetching conversations:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [readOnly]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -100,7 +101,7 @@ export default function ChatInterface({ readOnly = false }) {
     return () => {
       socket.off("receive_message");
     };
-  }, [selectedConv, readOnly, location.state, user.id]);
+  }, [selectedConv, readOnly, location.state, user.id, fetchConversations]);
 
   useEffect(() => {
     scrollToBottom();
@@ -116,7 +117,8 @@ export default function ChatInterface({ readOnly = false }) {
       const res = await api.get("/communication/chatlogs", {
         params: { partner_id: conv.partner.id, case_id: conv.case_id }
       });
-      setMessages(res.data);
+      const data = res.data.data || res.data;
+      setMessages(data);
       setSelectedConv(conv);
     } catch (err) {
       console.error("Error fetching messages:", err);
@@ -126,7 +128,8 @@ export default function ChatInterface({ readOnly = false }) {
   const fetchContacts = async () => {
     try {
       const res = await api.get("/communication/contacts");
-      setContacts(res.data);
+      const data = res.data.data || res.data;
+      setContacts(data);
       setShowNewChatModal(true);
     } catch (err) {
       console.error("Error fetching contacts:", err);

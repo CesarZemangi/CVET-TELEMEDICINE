@@ -16,15 +16,13 @@ ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Le
 
 export default function CaseStatistics() {
   const [caseStats, setCaseStats] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get("/vet/analytics/case-statistics")
       .then(res => {
         setCaseStats(res.data || []);
       })
-      .catch(err => console.error("Vet Case Stats Error:", err))
-      .finally(() => setLoading(false));
+      .catch(err => console.error("Vet Case Stats Error:", err));
   }, []);
 
   const pieData = {

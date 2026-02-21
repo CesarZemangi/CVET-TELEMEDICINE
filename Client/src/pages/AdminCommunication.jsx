@@ -29,7 +29,7 @@ export default function AdminCommunication() {
       await api.post("/admin/notifications/broadcast", broadcast);
       setStatus({ type: "success", message: "Broadcast sent successfully!" });
       setBroadcast({ title: "", message: "", type: "broadcast" });
-    } catch (err) {
+    } catch {
       setStatus({ type: "error", message: "Failed to send broadcast." });
     }
   };
@@ -40,7 +40,7 @@ export default function AdminCommunication() {
       await api.post("/admin/notifications/direct", direct);
       setStatus({ type: "success", message: "Direct notification sent successfully!" });
       setDirect({ user_id: "", title: "", message: "", type: "direct" });
-    } catch (err) {
+    } catch {
       setStatus({ type: "error", message: "Failed to send notification." });
     }
   };
@@ -152,8 +152,8 @@ export default function AdminCommunication() {
         )}
 
         {activeTab === "chats" && (
-          <div>
-            <h3 className="text-lg font-bold mb-4">Chat Monitoring (Read-Only)</h3>
+          <div style={{ backgroundColor: "#1a1a1a", borderRadius: "8px", padding: "1.5rem" }}>
+            <h3 className="text-lg font-bold mb-4" style={{ color: "#fff" }}>Chat Monitoring (Read-Only)</h3>
             <ChatInterface readOnly={true} />
           </div>
         )}

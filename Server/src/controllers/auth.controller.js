@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import { generateToken } from "../utils/jwt.js";
 import User from "../models/user.model.js";
+import Farmer from "../models/farmer.model.js";
+import Vet from "../models/vet.model.js";
 
 export const login = async (req, res) => {
   try {
@@ -57,6 +59,22 @@ export const register = async (req, res) => {
       password: hashedPassword,
       role: role || 'farmer'
     });
+
+    if (user.role === 'vet') {
+      await Vet.create({
+        user_id: user.id,
+        specialization: null,
+        license_number: null,
+        experience_years: 0
+      });
+    } else if (user.role === 'farmer') {
+      await Farmer.create({
+        user_id: user.id,
+        farm_name: null,
+        location: null,
+        livestock_count: 0
+      });
+    }
 
     return res.status(201).json({
       message: "User registered successfully",

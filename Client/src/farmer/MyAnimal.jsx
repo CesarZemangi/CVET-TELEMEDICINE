@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
+import * as bootstrap from "bootstrap";
 
 export default function MyAnimals() {
   const [animals, setAnimals] = useState([]);

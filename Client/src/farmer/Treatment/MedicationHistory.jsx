@@ -11,7 +11,8 @@ export default function MedicationHistory() {
     try {
       setLoading(true);
       const res = await api.get("/farmer/treatment/medications");
-      setMedications(res.data);
+      const data = res.data.data || res.data;
+      setMedications(data);
       setError(null);
     } catch (err) {
       console.error("Error fetching medication history:", err);
@@ -44,11 +45,11 @@ export default function MedicationHistory() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th className="ps-4">Date</th>
+                    <th className="ps-4">Start Date</th>
                     <th>Animal</th>
-                    <th>Medicine</th>
+                    <th>Medication</th>
                     <th>Dosage</th>
-                    <th>Duration</th>
+                    <th>End Date</th>
                     <th>Administered By</th>
                     <th className="pe-4">Notes</th>
                   </tr>
@@ -58,16 +59,18 @@ export default function MedicationHistory() {
                     medications.map((med) => (
                       <tr key={med.id}>
                         <td className="ps-4">
-                          {new Date(med.created_at).toLocaleDateString()}
+                          {new Date(med.start_date).toLocaleDateString()}
                         </td>
                         <td>
-                          <span className="fw-medium">{med.Case?.Animal?.tag_number}</span>
+                          <span className="fw-medium">{med.Animal?.tag_number}</span>
                           <br />
-                          <small className="text-muted">{med.Case?.Animal?.species}</small>
+                          <small className="text-muted">{med.Animal?.species}</small>
                         </td>
-                        <td className="fw-bold text-brown">{med.medicine}</td>
+                        <td className="fw-bold text-brown">{med.medication_name}</td>
                         <td>{med.dosage}</td>
-                        <td>{med.duration}</td>
+                        <td>
+                          {med.end_date ? new Date(med.end_date).toLocaleDateString() : "-"}
+                        </td>
                         <td>Dr. {med.Case?.vet?.name || "Unknown"}</td>
                         <td className="pe-4">
                           <small className="text-wrap" style={{ maxWidth: '200px', display: 'block' }}>

@@ -1,7 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import "./styles/theme.css"
+import "./Styles/theme.css"
 
 import "bootstrap/dist/css/bootstrap.min.css"
 import "bootstrap/dist/js/bootstrap.bundle.min.js"
@@ -50,14 +50,14 @@ import PharmacyOrders from "./farmer/Medications/PharmacyOrders"
 import HealthTrends from "./farmer/Analytics/HealthTrends"
 import TreatmentStats from "./farmer/Analytics/TreatmentStats"
 import ReportsExport from "./farmer/Analytics/ReportsExport"
-import LivestockPerformance from "./farmer/Analytics/LivestockPerformance"
+import LivestockPerformance from "./farmer/Analytics/LiveStockPerformance"
 import TreatmentEffectivenessFarmer from "./farmer/Analytics/TreatmentEffectiveness"
 import ConsultationStats from "./farmer/Analytics/ConsulationStats"
 
 /* Farmer Communication */
 import Messages from "./farmer/Communication/Messages"
 import Notifications from "./farmer/Communication/Notifications"
-import ChatLogsFarmer from "./farmer/Communication/ChatLogs"
+import ChatLogsFarmer from "./farmer/Communication/Chatlogs"
 import VideoSessionsFarmer from "./farmer/Communication/VideoSessions"
 import FeedbackFarmer from "./farmer/Communication/Feedback"
 
@@ -98,7 +98,7 @@ import ExportReports from "./vet/Analytics/ExportReports"
 /* Vet Communication */
 import VetMessages from "./vet/Communication/Messages"
 import VetNotifications from "./vet/Communication/Notifications"
-import ChatLogs from "./vet/Communication/ChatLogs"
+import ChatLogs from "./vet/Communication/Chatlogs"
 import VideoSessions from "./vet/Communication/VideoSessions"
 import Feedback from "./vet/Communication/Feedback"
 

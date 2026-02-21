@@ -28,17 +28,22 @@ export const getVets = async (req, res) => {
     const vets = await Vet.findAll({
       include: [{
         model: User,
-        where: { status: 'active' },
-        attributes: ['name']
+        where: { status: 'active', role: 'vet' },
+        attributes: ['name', 'role']
       }],
-      attributes: ['id', 'user_id']
+      attributes: ['id', 'user_id'],
+      raw: true,
+      subQuery: false
     });
     
-    // Flatten for frontend
+    if (!vets || vets.length === 0) {
+      return res.json([]);
+    }
+    
     const formatted = vets.map(v => ({
-      id: v.id, // This is Vet.id
+      id: v.id,
       user_id: v.user_id,
-      name: v.User?.name
+      name: v['User.name']
     }));
 
     res.json(formatted);

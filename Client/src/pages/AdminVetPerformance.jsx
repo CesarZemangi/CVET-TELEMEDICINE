@@ -12,6 +12,7 @@ export default function AdminVetPerformance() {
         setPerformance(res.data);
       } catch (err) {
         console.error("Error fetching vet performance:", err);
+        setPerformance({ metrics: [], systemAverageResponseTime: 0, topPerformers: [] });
       } finally {
         setLoading(false);
       }
@@ -20,6 +21,22 @@ export default function AdminVetPerformance() {
   }, []);
 
   if (loading) return <div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>;
+
+  if (!performance || !performance.metrics || performance.metrics.length === 0) {
+    return (
+      <div className="container-fluid py-4">
+        <div className="mb-4">
+          <h4 className="fw-bold">Veterinary Performance Metrics</h4>
+          <p className="text-muted small">Tracking responsiveness and workload efficiency across the veterinary team.</p>
+        </div>
+        <div className="card border-0 shadow-sm">
+          <div className="card-body text-center py-5">
+            <p className="text-muted">No veterinarian data available.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-fluid py-4">
@@ -31,7 +48,7 @@ export default function AdminVetPerformance() {
       <div className="row g-4 mb-4">
         <div className="col-md-4">
           <div className="card border-0 shadow-sm bg-primary text-white p-3 text-center">
-            <h3 className="fw-bold mb-0">{performance?.systemAverageResponseTime}m</h3>
+            <h3 className="fw-bold mb-0">{performance.systemAverageResponseTime || 0}m</h3>
             <p className="small mb-0 text-uppercase opacity-75">System Avg Response Time</p>
           </div>
         </div>
@@ -56,7 +73,7 @@ export default function AdminVetPerformance() {
                 </tr>
               </thead>
               <tbody>
-                {performance?.metrics.map(v => (
+                {performance.metrics.map(v => (
                   <tr key={v.vet_id}>
                     <td className="ps-4 fw-bold">{v.name}</td>
                     <td><small className="badge bg-light text-dark">{v.specialization || 'General'}</small></td>

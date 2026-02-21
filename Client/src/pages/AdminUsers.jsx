@@ -4,8 +4,6 @@ import api from '../services/api';
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
 
   const fetchUsers = async () => {
     setLoading(true);

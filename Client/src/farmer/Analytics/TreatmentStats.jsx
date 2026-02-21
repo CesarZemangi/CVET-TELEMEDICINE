@@ -12,15 +12,13 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function TreatmentStats() {
   const [stats, setStats] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.get("/farmer/analytics/treatment-stats")
       .then(res => {
         setStats(res.data?.data || []);
       })
-      .catch(err => console.error("Treatment Stats Error:", err))
-      .finally(() => setLoading(false));
+      .catch(err => console.error("Treatment Stats Error:", err));
   }, []);
 
   const total = stats.reduce((acc, curr) => acc + curr.count, 0);

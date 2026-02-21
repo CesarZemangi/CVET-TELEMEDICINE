@@ -117,7 +117,7 @@ export const getConversations = async (req, res) => {
       unread_count: parseInt(c.unread_count) || 0
     }));
 
-    res.json(formattedConversations);
+    res.json({ data: formattedConversations });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -201,7 +201,7 @@ export const getContacts = async (req, res) => {
         attributes: ['id', 'name', 'profile_pic', 'role']
       });
     }
-    res.json(users);
+    res.json({ data: users });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -248,7 +248,7 @@ export const getNotifications = async (req, res) => {
       where: { receiver_id: req.user.id },
       order: [['created_at', 'DESC']]
     });
-    res.json(notifications);
+    res.json({ data: notifications });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -256,21 +256,42 @@ export const getNotifications = async (req, res) => {
 
 export const adminBroadcastNotification = async (req, res) => {
   try {
-    const { type } = req.body;
-    const users = await User.findAll({ attributes: ['id'] });
+    const { title, message, role } = req.body;
+    
+    if (!message || !title) {
+      return res.status(400).json({ error: "Title and message are required" });
+    }
+    
+    const where = {};
+    if (role && role !== 'all') {
+      where.role = role;
+    }
+    
+    const users = await User.findAll({ where, attributes: ['id'] });
+    
+    if (users.length === 0) {
+      return res.status(404).json({ error: "No users found for this role" });
+    }
     
     const notifications = users.map(u => ({
       receiver_id: u.id,
-      type: type || 'broadcast',
-      is_read: false
+      sender_id: req.user.id,
+      title,
+      message,
+      type: 'broadcast',
+      is_read: false,
+      created_by: req.user.id,
+      updated_by: req.user.id
     }));
 
-    await Notification.bulkCreate(notifications);
+    const createdNotifications = await Notification.bulkCreate(notifications);
     
     const io = getIO();
-    io.emit('receive_notification', { type: type || 'broadcast' });
+    users.forEach(u => {
+      io.to(`user_${u.id}`).emit('receive_notification', { title, message, type: 'broadcast' });
+    });
     
-    res.json({ message: "Broadcast sent" });
+    res.json({ message: `Broadcast sent to ${createdNotifications.length} users`, data: createdNotifications });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -278,11 +299,26 @@ export const adminBroadcastNotification = async (req, res) => {
 
 export const adminDirectNotification = async (req, res) => {
   try {
-    const { user_id, type } = req.body;
+    const { user_id, title, message } = req.body;
+    
+    if (!user_id || !message || !title) {
+      return res.status(400).json({ error: "User ID, title, and message are required" });
+    }
+    
+    const targetUser = await User.findByPk(user_id);
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
     const notification = await Notification.create({
       receiver_id: user_id,
-      type: type || 'direct',
-      is_read: false
+      sender_id: req.user.id,
+      title,
+      message,
+      type: 'direct',
+      is_read: false,
+      created_by: req.user.id,
+      updated_by: req.user.id
     });
 
     const io = getIO();
@@ -290,7 +326,7 @@ export const adminDirectNotification = async (req, res) => {
     const unreadCount = await Notification.count({ where: { receiver_id: user_id, is_read: false } });
     io.to(`user_${user_id}`).emit('update_notification_count', { count: unreadCount });
 
-    res.json({ message: "Direct notification sent" });
+    res.json({ message: "Direct notification sent", data: notification });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

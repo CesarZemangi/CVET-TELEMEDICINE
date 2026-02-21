@@ -63,6 +63,7 @@ Prescription.belongsTo(Case, { foreignKey: 'case_id' });
 Prescription.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 TreatmentPlan.belongsTo(Case, { foreignKey: 'case_id' });
 TreatmentPlan.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
+Case.hasMany(MedicationHistory, { foreignKey: 'case_id' });
 
 // Feedback Associations
 Feedback.belongsTo(Case, { foreignKey: 'case_id' });

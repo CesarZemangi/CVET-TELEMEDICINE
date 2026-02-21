@@ -35,7 +35,7 @@ export const getCases = async (req, res) => {
       return caseJson;
     });
 
-    const response = getPagingData({ ...data, rows }, page, limit);
+    const response = getPagingData({ count: data.count, rows }, page, limit);
     res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
