@@ -71,7 +71,7 @@ export default function MedicationHistory() {
                         <td>
                           {med.end_date ? new Date(med.end_date).toLocaleDateString() : "-"}
                         </td>
-                        <td>Dr. {med.Case?.vet?.name || "Unknown"}</td>
+                        <td>Dr. {med.Case?.vet?.User?.name || "Unknown"}</td>
                         <td className="pe-4">
                           <small className="text-wrap" style={{ maxWidth: '200px', display: 'block' }}>
                             {med.notes || "-"}

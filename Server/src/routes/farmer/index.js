@@ -10,6 +10,7 @@ import analyticsRoutes from "./analytics.routes.js"
 import communicationRoutes from "./communication.routes.js"
 import notificationRoutes from "./notification.routes.js"
 import feedbackRoutes from "./feedback.routes.js"
+import appointmentsRoutes from "./appointments.routes.js"
 
 const router = express.Router()
 
@@ -23,5 +24,6 @@ router.use("/analytics", analyticsRoutes)
 router.use("/messages", communicationRoutes)
 router.use("/notifications", notificationRoutes)
 router.use("/feedback", feedbackRoutes)
+router.use("/appointments", appointmentsRoutes)
 
 export default router

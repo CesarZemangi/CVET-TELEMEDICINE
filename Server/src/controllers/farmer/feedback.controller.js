@@ -1,5 +1,6 @@
-import { Feedback, Case } from '../../models/associations.js'; 
+import { Feedback, Case, Vet, User } from '../../models/associations.js'; 
 import { success, error } from '../../utils/response.js';
+import { logAction } from '../../utils/dbLogger.js';
 
 export const createFeedback = async (req, res) => {
   try {
@@ -30,6 +31,8 @@ export const createFeedback = async (req, res) => {
       updated_by: farmer_id
     });
 
+    await logAction(farmer_id, `Farmer submitted feedback for case #${case_id}: Rating ${rating}/5`);
+
     success(res, feedback, 'Feedback submitted successfully');
   } catch (err) {
     error(res, err.message);
@@ -39,7 +42,26 @@ export const createFeedback = async (req, res) => {
 export const getFeedbackByCase = async (req, res) => {
   try {
     const { case_id } = req.params;
-    const feedback = await Feedback.findAll({ where: { case_id } });
+    const feedback = await Feedback.findAll({ 
+      where: { case_id },
+      include: [
+        {
+          model: Vet,
+          as: 'vet',
+          attributes: ['id', 'specialization'],
+          include: [{
+            model: User,
+            attributes: ['id', 'name', 'email']
+          }]
+        },
+        {
+          model: User,
+          as: 'farmer',
+          attributes: ['id', 'name', 'email']
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
     success(res, feedback, 'Feedback retrieved successfully');
   } catch (err) {
     error(res, err.message);
@@ -51,7 +73,22 @@ export const getFeedbackByFarmer = async (req, res) => {
     const farmer_id = req.user.id;
     const feedback = await Feedback.findAll({ 
       where: { farmer_id },
-      include: [{ model: Case, attributes: ['title'] }]
+      include: [
+        { 
+          model: Case, 
+          attributes: ['id', 'title', 'description']
+        },
+        {
+          model: Vet,
+          as: 'vet',
+          attributes: ['id', 'specialization'],
+          include: [{
+            model: User,
+            attributes: ['id', 'name', 'email']
+          }]
+        }
+      ],
+      order: [['created_at', 'DESC']]
     });
     success(res, feedback, 'Farmer feedback retrieved successfully');
   } catch (err) {

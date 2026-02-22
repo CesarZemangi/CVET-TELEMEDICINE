@@ -6,6 +6,7 @@ import SystemLog from "../../models/systemLog.model.js";
 import { fn, col, literal, Op } from "sequelize";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { getIO } from "../../services/socket.service.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getOverview = async (req, res) => {
   try {
@@ -341,6 +342,8 @@ export const broadcastNotification = async (req, res) => {
         is_read: false
       })
     ));
+
+    await logAction(req.user.id, `Admin broadcast notification to ${notifications.length} ${role || 'all'} users: "${title}"`);
     
     try {
       const io = getIO();
@@ -378,6 +381,8 @@ export const sendDirectNotification = async (req, res) => {
       type: 'direct',
       is_read: false
     });
+
+    await logAction(req.user.id, `Admin sent direct notification to user #${user_id}: "${title}"`);
     
     try {
       const io = getIO();

@@ -3,6 +3,7 @@ import { generateToken } from "../utils/jwt.js";
 import User from "../models/user.model.js";
 import Farmer from "../models/farmer.model.js";
 import Vet from "../models/vet.model.js";
+import { logAction } from "../utils/dbLogger.js";
 
 export const login = async (req, res) => {
   try {
@@ -23,6 +24,8 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user);
+
+    await logAction(user.id, `User ${user.name} (${user.email}) logged in`);
 
     return res.status(200).json({
       message: "Login successful",
@@ -76,6 +79,8 @@ export const register = async (req, res) => {
       });
     }
 
+    await logAction(user.id, `New user ${user.name} (${user.email}) registered with role ${user.role}`);
+
     return res.status(201).json({
       message: "User registered successfully",
       user: { id: user.id, email: user.email, role: user.role }
@@ -96,6 +101,8 @@ export const updateProfile = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     await user.update({ name, phone, sms_opt_in });
+
+    await logAction(user.id, `User ${user.name} updated their profile`);
 
     return res.json({
       message: "Profile updated successfully",

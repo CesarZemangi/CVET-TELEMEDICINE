@@ -1,5 +1,6 @@
 import { LabRequest, LabResult, Case, Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getLabRequests = async (req, res) => {
   try {
@@ -41,6 +42,8 @@ export const createLabRequest = async (req, res) => {
       updated_by: req.user.id
     });
 
+    await logAction(req.user.id, `Vet created lab request for case #${case_id}: ${test_type}`);
+
     success(res, labRequest, "Lab request created successfully");
   } catch (err) {
     error(res, err.message);
@@ -62,11 +65,12 @@ export const uploadLabResult = async (req, res) => {
       updated_by: req.user.id
     });
 
-    // Update lab request status
     await LabRequest.update(
       { status: 'completed', updated_by: req.user.id },
       { where: { id: lab_request_id } }
     );
+
+    await logAction(req.user.id, `Vet uploaded lab result for request #${lab_request_id}`);
 
     success(res, labResult, "Lab result uploaded successfully");
   } catch (err) {

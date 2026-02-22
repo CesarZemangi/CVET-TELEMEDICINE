@@ -1,5 +1,6 @@
 import Animal from "../../models/animal.model.js"
 import { success, error } from "../../utils/response.js"
+import { logAction } from "../../utils/dbLogger.js"
 
 export const getAnimals = async (req, res) => {
   try {
@@ -28,6 +29,8 @@ export const createAnimal = async (req, res) => {
       updated_by: req.user.id
     })
 
+    await logAction(req.user.id, `Farmer added animal: ${species} ${tag_number}`)
+
     success(res, animal, "Animal added")
   } catch (err) {
     error(res, err.message)
@@ -49,6 +52,8 @@ export const updateAnimal = async (req, res) => {
       where: { id: req.params.id, farmer_id: req.user.id }
     })
 
+    await logAction(req.user.id, `Farmer updated animal #${req.params.id}`)
+
     success(res, null, "Animal updated")
   } catch (err) {
     error(res, err.message)
@@ -60,6 +65,8 @@ export const deleteAnimal = async (req, res) => {
     await Animal.destroy({
       where: { id: req.params.id, farmer_id: req.user.id }
     })
+
+    await logAction(req.user.id, `Farmer deleted animal #${req.params.id}`)
 
     success(res, null, "Animal deleted")
   } catch (err) {

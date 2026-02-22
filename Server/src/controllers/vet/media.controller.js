@@ -12,13 +12,19 @@ export const uploadMedia = async (req, res) => {
       return error(res, "case_id and file are required", 400);
     }
 
+    // Validate case_id is a number
+    const caseId = parseInt(case_id, 10);
+    if (isNaN(caseId)) {
+      return error(res, "case_id must be a valid number", 400);
+    }
+
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });
     if (!vet) {
       return error(res, "Vet record not found", 404);
     }
 
     const singleCase = await Case.findOne({
-      where: { id: case_id, vet_id: vet.id }
+      where: { id: caseId, vet_id: vet.id }
     });
 
     if (!singleCase) {
@@ -26,17 +32,15 @@ export const uploadMedia = async (req, res) => {
     }
 
     const media = await CaseMedia.create({
-      case_id,
-      file_name: file.originalname,
-      file_type: file.mimetype,
-      file_path: `/uploads/${file.filename}`,
-      file_size: file.size,
-      uploaded_by: req.user.id
+      case_id: caseId,
+      media_type: file.mimetype,
+      file_path: `/uploads/${file.filename}`
     });
 
     success(res, media, "Media uploaded successfully", 201);
   } catch (err) {
-    error(res, err.message);
+    console.error('Media upload error:', err);
+    error(res, err.message, 500);
   }
 };
 

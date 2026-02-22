@@ -8,5 +8,6 @@ import * as feedbackController from '../../controllers/farmer/feedback.controlle
 
 router.post('/', authenticate, authorizeRole('farmer'), feedbackController.createFeedback);
 router.get('/my', authenticate, authorizeRole('farmer'), feedbackController.getFeedbackByFarmer);
+router.get('/case/:case_id', authenticate, authorizeRole('farmer'), feedbackController.getFeedbackByCase);
 
 export default router; // This fixes the "does not provide an export named default" error

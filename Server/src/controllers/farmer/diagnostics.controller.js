@@ -1,4 +1,5 @@
 import { LabRequest, LabResult, Case, Animal } from "../../models/associations.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getLabRequests = async (req, res) => {
   try {
@@ -46,6 +47,8 @@ export const createLabRequest = async (req, res) => {
       created_by: userId,
       updated_by: userId
     });
+
+    await logAction(userId, `Farmer requested lab test for case #${case_id}: ${test_type}`);
 
     res.status(201).json(labRequest);
   } catch (err) {

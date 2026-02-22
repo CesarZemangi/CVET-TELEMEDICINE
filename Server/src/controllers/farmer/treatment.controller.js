@@ -1,4 +1,5 @@
-import { Prescription, TreatmentPlan, Case, Animal, User, MedicationHistory } from "../../models/associations.js";
+import { Prescription, TreatmentPlan, Case, Animal, User, MedicationHistory, Vet } from "../../models/associations.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getPrescriptions = async (req, res) => {
   try {
@@ -54,7 +55,14 @@ export const getMedicationHistory = async (req, res) => {
           where: { farmer_id: userId },
           attributes: ['id', 'title'],
           include: [
-            { model: User, as: 'vet', attributes: ['id', 'name'] }
+            {
+              model: Vet,
+              as: 'vet',
+              attributes: [],
+              include: [
+                { model: User, attributes: ['id', 'name'] }
+              ]
+            }
           ]
         }
       ],

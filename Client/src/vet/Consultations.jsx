@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getVetConsultations, createConsultation } from "../services/consultation";
-import { getVetCases } from "../services/cases";
+import { getCasesForDropdown } from "./services/vet.cases.service";
 
 export default function VetConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -16,12 +16,12 @@ export default function VetConsultations() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [consData, casesData] = await Promise.all([
+      const [consData, casesDropdown] = await Promise.all([
         getVetConsultations(),
-        getVetCases()
+        getCasesForDropdown()
       ]);
       setConsultations(consData?.data || consData || []);
-      setCases(casesData?.data || casesData || []);
+      setCases(casesDropdown?.data || []);
     } catch (err) {
       console.error("Error fetching consultations:", err);
     } finally {
@@ -116,9 +116,9 @@ export default function VetConsultations() {
                       onChange={e => setFormData({...formData, case_id: e.target.value})}
                     >
                       <option value="">Select a case</option>
-                      {cases.filter(c => c.status === 'open').map(c => (
+                      {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} (ID: {c.id})
+                          {c.title} (ID: {c.id}, Status: {c.status})
                         </option>
                       ))}
                     </select>

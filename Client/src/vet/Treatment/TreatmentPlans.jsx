@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { getTreatmentPlans, createTreatmentPlan } from "../services/vet.treatment.service";
-import { getCases } from "../services/vet.cases.service";
+import { getCasesForDropdown } from "../services/vet.cases.service";
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
 export default function TreatmentPlans() {
@@ -19,9 +19,9 @@ export default function TreatmentPlans() {
     try {
       setLoading(true);
       const plansData = await getTreatmentPlans();
-      const myCases = await getCases();
+      const casesDropdown = await getCasesForDropdown();
       setPlans(plansData?.data || plansData || []);
-      setCases(myCases?.data || myCases || []);
+      setCases(casesDropdown?.data || []);
     } catch (err) {
       console.error("Error fetching treatment plans:", err);
     } finally {

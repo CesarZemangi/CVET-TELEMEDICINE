@@ -1,5 +1,6 @@
 import { Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getCases = async (req, res) => {
   try {
@@ -78,6 +79,8 @@ export const createCase = async (req, res) => {
       updated_by: req.user.id
     });
 
+    await logAction(req.user.id, `Farmer created case #${newCase.id}: ${title}`);
+
     res.status(201).json(newCase);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -138,6 +141,8 @@ export const uploadMedia = async (req, res) => {
         })
       )
     );
+
+    await logAction(req.user.id, `Farmer uploaded ${mediaEntries.length} media file(s) to case #${id}`);
 
     res.status(201).json({ message: "Media uploaded successfully", media: mediaEntries });
   } catch (err) {

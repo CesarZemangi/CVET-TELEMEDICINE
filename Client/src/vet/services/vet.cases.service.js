@@ -7,6 +7,11 @@ export const getCases = async () => {
   return response.data?.data || response.data
 }
 
+export const getCasesForDropdown = async () => {
+  const response = await api.get(`${API_URL}/dropdown`)
+  return response.data
+}
+
 export const getUnassignedCases = async () => {
   const response = await api.get(`${API_URL}/unassigned`)
   return response.data?.data || response.data

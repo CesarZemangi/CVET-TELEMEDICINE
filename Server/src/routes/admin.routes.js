@@ -24,6 +24,7 @@ import {
   getReminderAnalytics,
   getVetPerformance
 } from "../controllers/admin/analytics.controller.js";
+import appointmentsRoutes from "./admin/appointments.routes.js";
 
 const router = express.Router();
 
@@ -50,5 +51,8 @@ router.get("/analytics/cases", getCaseAnalytics);
 router.get("/analytics/messages", getMessageAnalytics);
 router.get("/analytics/reminders", getReminderAnalytics);
 router.get("/analytics/vet-performance", getVetPerformance);
+
+// Appointments
+router.use("/appointments", appointmentsRoutes);
 
 export default router;

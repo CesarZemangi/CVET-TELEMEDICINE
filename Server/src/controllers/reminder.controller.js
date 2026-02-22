@@ -1,5 +1,6 @@
 import { PreventiveReminder, Animal, Reminder } from '../models/associations.js';
 import SystemLog from '../models/systemLog.model.js';
+import { logAction } from '../utils/dbLogger.js';
 
 export const createAdminReminder = async (req, res) => {
   try {
@@ -17,6 +18,8 @@ export const createAdminReminder = async (req, res) => {
       created_by: req.user.id,
       status: 'scheduled'
     });
+
+    await logAction(req.user.id, `Admin created reminder for ${target_role} role: "${title}"`);
 
     res.status(201).json(reminder);
   } catch (error) {
@@ -59,6 +62,8 @@ export const createReminder = async (req, res) => {
       reminder_date,
       status: 'pending'
     });
+
+    await logAction(farmer_id, `Farmer created preventive reminder for animal #${animal_id}: ${reminder_type}`);
 
     res.status(201).json(reminder);
   } catch (error) {

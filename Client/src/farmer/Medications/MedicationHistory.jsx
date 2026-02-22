@@ -61,16 +61,16 @@ export default function MedicationHistory() {
                           {new Date(med.start_date).toLocaleDateString()}
                         </td>
                         <td>
-                          <span className="fw-medium">{med.Case?.Animal?.tag_number}</span>
+                          <span className="fw-medium">{med.Animal?.tag_number}</span>
                           <br />
-                          <small className="text-muted">{med.Case?.Animal?.species}</small>
+                          <small className="text-muted">{med.Animal?.species}</small>
                         </td>
                         <td className="fw-bold text-brown">{med.medication_name}</td>
                         <td>{med.dosage}</td>
                         <td>
                           {med.end_date ? new Date(med.end_date).toLocaleDateString() : "-"}
                         </td>
-                        <td>Dr. {med.Case?.vet?.name || "Unknown"}</td>
+                        <td>Dr. {med.Case?.vet?.User?.name || "Unknown"}</td>
                         <td className="pe-4">
                           <small className="text-wrap" style={{ maxWidth: '200px', display: 'block' }}>
                             {med.notes || "-"}

@@ -11,6 +11,7 @@ import Vet from './vet.model.js';
 import Feedback from './feedback.model.js';
 import FeedInventory from './feedInventory.model.js';
 import MedicationHistory from './medicationHistory.model.js';
+import Appointment from './appointment.model.js';
 
 import Animal from './animal.model.js';
 import Prescription from './prescription.model.js';
@@ -100,9 +101,15 @@ PreventiveReminder.belongsTo(Animal, { as: 'animal', foreignKey: 'animal_id' });
 Notification.belongsTo(User, { foreignKey: 'receiver_id' });
 Notification.belongsTo(Message, { foreignKey: 'reference_id' });
 
+// Appointment Associations
+Appointment.belongsTo(Case, { foreignKey: 'case_id' });
+Appointment.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
+Appointment.belongsTo(User, { as: 'vet', foreignKey: 'vet_id' });
+Case.hasMany(Appointment, { foreignKey: 'case_id' });
+
 export { 
   User, Case, CaseMedia, Consultation, Message, VideoSession, 
   PreventiveReminder, Notification, Farmer, Vet, Animal, 
   Prescription, TreatmentPlan, LabRequest, LabResult,
-  Feedback, FeedInventory, MedicationHistory, Reminder
+  Feedback, FeedInventory, MedicationHistory, Reminder, Appointment
 };

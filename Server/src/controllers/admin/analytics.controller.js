@@ -1,4 +1,7 @@
 import { User, Case, Message, PreventiveReminder, Vet, Consultation } from "../../models/associations.js";
+import LabRequest from "../../models/labRequest.model.js";
+import Feedback from "../../models/feedback.model.js";
+import MedicationHistory from "../../models/medicationHistory.model.js";
 import { fn, col, Op, literal } from "sequelize";
 
 export const getOverviewAnalytics = async (req, res) => {
@@ -103,7 +106,7 @@ export const getReminderAnalytics = async (req, res) => {
 export const getVetPerformance = async (req, res) => {
     try {
         const vets = await Vet.findAll({
-            attributes: ['id'],
+            attributes: ['id', 'specialization'],
             include: [{
                 model: User,
                 attributes: ['id', 'name']
@@ -111,56 +114,133 @@ export const getVetPerformance = async (req, res) => {
         });
 
         const performanceMetrics = await Promise.all(vets.map(async (vet) => {
+            const vetUserId = vet.User.id;
+
+            // Total cases assigned
             const totalAssigned = await Case.count({ where: { vet_id: vet.id } });
-            const completedCases = await Case.count({ where: { vet_id: vet.id, status: 'closed' } });
-            const activeCases = await Case.count({ where: { vet_id: vet.id, status: 'open' } });
-            
-            // Average response time
-            // Logic: Measure difference between Case creation and first vet message
-            const cases = await Case.findAll({ where: { vet_id: vet.id } });
-            let totalResponseTime = 0;
-            let casesWithResponse = 0;
 
-            for (const c of cases) {
-                const firstMessage = await Message.findOne({
-                    where: { case_id: c.id, sender_id: vet.User.id },
-                    order: [['created_at', 'ASC']]
+            // Closed cases
+            const completedCases = await Case.count({ 
+                where: { vet_id: vet.id, status: 'closed' } 
+            });
+
+            // Open cases
+            const activeCases = await Case.count({ 
+                where: { vet_id: vet.id, status: 'open' } 
+            });
+
+            // Average resolution time (in hours) - from case creation to closed_at
+            let avgResolutionHours = 0;
+            try {
+                const resolutionQuery = `
+                    SELECT AVG(TIMESTAMPDIFF(HOUR, created_at, COALESCE(closed_at, NOW()))) as avg_hours
+                    FROM cases
+                    WHERE vet_id = ? AND status = 'closed'
+                `;
+                const resolutionData = await Case.sequelize.query(resolutionQuery, {
+                    replacements: [vet.id],
+                    type: 'SELECT'
                 });
-
-                if (firstMessage) {
-                    const diff = new Date(firstMessage.created_at) - new Date(c.created_at);
-                    totalResponseTime += diff;
-                    casesWithResponse++;
-                }
+                avgResolutionHours = Math.round(resolutionData?.[0]?.avg_hours || 0);
+            } catch (e) {
+                avgResolutionHours = 0;
             }
 
-            const avgResponseTime = casesWithResponse > 0 ? (totalResponseTime / casesWithResponse) / (1000 * 60) : 0; // in minutes
+            // Average feedback rating
+            const feedbackData = await Feedback.findOne({
+                attributes: [
+                    [fn('AVG', col('rating')), 'avg_rating'],
+                    [fn('COUNT', col('id')), 'feedback_count']
+                ],
+                where: {
+                    vet_id: vet.id
+                },
+                raw: true
+            });
+            const avgRating = feedbackData?.avg_rating ? parseFloat(feedbackData.avg_rating).toFixed(2) : 0;
+            const feedbackCount = feedbackData?.feedback_count || 0;
 
-            const consultationCompletionRate = totalAssigned > 0 ? (completedCases / totalAssigned) * 100 : 0;
-            
-            const videoSessionCount = await Consultation.count({ 
+            // Total lab requests created by vet
+            const totalLabRequests = await LabRequest.count({
                 where: { vet_id: vet.id }
             });
+
+            // Total prescriptions (medications) created by vet
+            const totalPrescriptions = await MedicationHistory.count({
+                where: { vet_id: vet.id }
+            });
+
+            // Total consultations
+            const totalConsultations = await Consultation.count({
+                where: { vet_id: vet.id }
+            });
+
+            // Average response time (time from case creation to first vet message in minutes)
+            let avgResponseTime = 0;
+            try {
+                const responseTimeQuery = `
+                    SELECT AVG(TIMESTAMPDIFF(MINUTE, c.created_at, m.created_at)) as avg_response_minutes
+                    FROM (
+                        SELECT case_id, MIN(created_at) as first_message_time
+                        FROM messages
+                        WHERE sender_id = ? AND case_id IS NOT NULL
+                        GROUP BY case_id
+                    ) as m
+                    JOIN cases c ON m.case_id = c.id
+                    WHERE c.vet_id = ?
+                `;
+                const responseTimeResults = await Case.sequelize.query(responseTimeQuery, {
+                    replacements: [vetUserId, vet.id],
+                    type: 'SELECT'
+                });
+                avgResponseTime = Math.round(responseTimeResults?.[0]?.avg_response_minutes || 0);
+            } catch (e) {
+                avgResponseTime = 0;
+            }
+
+            // Closed case rate percentage
+            const caseClosureRate = totalAssigned > 0 ? ((completedCases / totalAssigned) * 100).toFixed(2) : 0;
 
             return {
                 vet_id: vet.id,
                 name: vet.User.name,
-                specialization: vet.specialization,
+                specialization: vet.specialization || 'N/A',
                 totalAssigned,
                 completedCases,
                 activeCases,
+                caseClosureRate: parseFloat(caseClosureRate),
+                avgResolutionHours: Math.round(avgResolutionHours),
                 avgResponseTime: Math.round(avgResponseTime),
-                consultationCompletionRate: Math.round(consultationCompletionRate),
-                videoSessionCount
+                avgRating: parseFloat(avgRating),
+                feedbackCount,
+                totalLabRequests,
+                totalPrescriptions,
+                totalConsultations
             };
         }));
 
-        // Sort by completion rate descending
-        const sortedMetrics = performanceMetrics.sort((a, b) => b.consultationCompletionRate - a.consultationCompletionRate);
+        // Sort by closure rate descending
+        const sortedMetrics = performanceMetrics.sort((a, b) => b.caseClosureRate - a.caseClosureRate);
+
+        // Calculate system-wide averages
+        const systemMetrics = {
+            avgCaseClosureRate: sortedMetrics.length > 0 
+                ? (sortedMetrics.reduce((acc, curr) => acc + curr.caseClosureRate, 0) / sortedMetrics.length).toFixed(2)
+                : 0,
+            avgResolutionHours: sortedMetrics.length > 0
+                ? Math.round(sortedMetrics.reduce((acc, curr) => acc + curr.avgResolutionHours, 0) / sortedMetrics.length)
+                : 0,
+            avgResponseTime: sortedMetrics.length > 0
+                ? Math.round(sortedMetrics.reduce((acc, curr) => acc + curr.avgResponseTime, 0) / sortedMetrics.length)
+                : 0,
+            avgRating: sortedMetrics.length > 0
+                ? (sortedMetrics.reduce((acc, curr) => acc + parseFloat(curr.avgRating || 0), 0) / sortedMetrics.length).toFixed(2)
+                : 0
+        };
 
         res.json({
             metrics: sortedMetrics,
-            systemAverageResponseTime: Math.round(sortedMetrics.reduce((acc, curr) => acc + curr.avgResponseTime, 0) / (sortedMetrics.length || 1)),
+            systemMetrics,
             topPerformers: sortedMetrics.slice(0, 5)
         });
     } catch (err) {

@@ -2,6 +2,7 @@ import Consultation from "../../models/consultation.model.js";
 import Case from "../../models/case.model.js";
 import { Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getVetConsultations = async (req, res) => {
   try {
@@ -48,6 +49,8 @@ export const createConsultation = async (req, res) => {
       mode,
       notes: notes || ""
     });
+
+    await logAction(req.user.id, `Vet created consultation for case #${case_id}: ${mode}`);
 
     success(res, consultation, "Consultation created successfully");
   } catch (err) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { getMedicationHistory, createMedicationHistory } from "../services/vet.treatment.service"
-import { getCases } from "../services/vet.cases.service"
+import { getCasesForDropdown } from "../services/vet.cases.service"
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
 export default function MedicationHistory() {
@@ -23,8 +23,8 @@ export default function MedicationHistory() {
       setLoading(true)
       const historyData = await getMedicationHistory()
       setMedications(historyData)
-      const casesData = await getCases()
-      setCases(casesData?.data || casesData || [])
+      const casesDropdown = await getCasesForDropdown()
+      setCases(casesDropdown?.data || [])
     } catch (err) {
       console.error("Error fetching data:", err)
     } finally {

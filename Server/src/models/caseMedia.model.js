@@ -12,7 +12,7 @@ const CaseMedia = sequelize.define('CaseMedia', {
     allowNull: false
   },
   media_type: { 
-    type: DataTypes.STRING, // e.g., 'image/jpeg', 'video/mp4'
+    type: DataTypes.STRING,
     allowNull: false
   },
   file_path: { 

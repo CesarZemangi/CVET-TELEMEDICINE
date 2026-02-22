@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { getLabRequests, createLabRequest, uploadLabResult } from "../services/vet.diagnostics.service";
-import { getCases } from "../services/vet.cases.service";
+import { getCasesForDropdown } from "../services/vet.cases.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
 
 export default function LabRequests() {
@@ -20,9 +20,9 @@ export default function LabRequests() {
     try {
       setLoading(true);
       const reqs = await getLabRequests();
-      const myCases = await getCases();
+      const casesDropdown = await getCasesForDropdown();
       setRequests(reqs?.data || reqs || []);
-      setCases(myCases?.data || myCases || []);
+      setCases(casesDropdown?.data || []);
     } catch (err) {
       console.error("Error fetching lab requests:", err);
     } finally {

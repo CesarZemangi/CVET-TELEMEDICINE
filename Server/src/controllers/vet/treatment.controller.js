@@ -1,5 +1,6 @@
 import { Prescription, TreatmentPlan, Case, MedicationHistory, Animal, User, Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
+import { logAction } from "../../utils/dbLogger.js";
 
 export const getPrescriptions = async (req, res) => {
   try {
@@ -39,6 +40,8 @@ export const createPrescription = async (req, res) => {
       duration
     });
 
+    await logAction(req.user.id, `Vet created prescription for case #${case_id}: ${medicine} (${dosage})`);
+
     success(res, prescription, "Prescription created successfully");
   } catch (err) {
     error(res, err.message);
@@ -65,6 +68,8 @@ export const createTreatmentPlan = async (req, res) => {
       start_date,
       end_date
     });
+
+    await logAction(req.user.id, `Vet created treatment plan for case #${case_id}`);
 
     success(res, plan, "Treatment plan created successfully");
   } catch (err) {
@@ -115,6 +120,8 @@ export const createMedicationHistory = async (req, res) => {
       updated_by: req.user.id
     });
 
+    await logAction(req.user.id, `Vet created medication history for animal #${animal_id}: ${medication_name} (${dosage})`);
+
     res.status(201).json(history);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -149,7 +156,14 @@ export const getAnimalMedications = async (req, res) => {
       where: { animal_id },
       include: [
         { model: Case, attributes: ['title'] },
-        { model: User, as: 'vet', attributes: ['name'] }
+        {
+          model: Vet,
+          as: 'vet',
+          attributes: [],
+          include: [
+            { model: User, attributes: ['name'] }
+          ]
+        }
       ],
       order: [['created_at', 'DESC']]
     });

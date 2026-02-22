@@ -2,6 +2,7 @@ import { Message, Case, Notification, User, Vet } from "../models/associations.j
 import { Op } from "sequelize";
 import { getIO } from "../services/socket.service.js";
 import sequelize from "../config/db.js";
+import { logAction } from "../utils/dbLogger.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -16,27 +17,63 @@ export const sendMessage = async (req, res) => {
       return res.status(400).json({ error: "Receiver ID is required" });
     }
 
-    // Access validation
-    if (req.user.role === 'farmer') {
-      const isAssigned = await Case.findOne({ 
-        include: [{
-          model: Vet,
-          as: 'vet',
-          where: { user_id: receiver_id }
-        }],
-        where: { farmer_id: sender_id } 
-      });
-      if (!isAssigned) return res.status(403).json({ error: "You can only message assigned vets" });
-    } else if (req.user.role === 'vet') {
-      const isAssigned = await Case.findOne({ 
-        include: [{
-          model: Vet,
-          as: 'vet',
-          where: { user_id: sender_id }
-        }],
-        where: { farmer_id: receiver_id } 
-      });
-      if (!isAssigned) return res.status(403).json({ error: "You can only message farmers assigned through cases" });
+    // Validate receiver exists
+    const receiver = await User.findByPk(receiver_id);
+    if (!receiver) {
+      return res.status(404).json({ error: "Receiver not found" });
+    }
+
+    // If case_id provided, validate it exists and is accessible
+    if (case_id) {
+      const singleCase = await Case.findByPk(case_id);
+      if (!singleCase) {
+        return res.status(404).json({ error: "Case not found" });
+      }
+
+      // Validate access to case
+      if (req.user.role === 'farmer' && singleCase.farmer_id !== sender_id) {
+        return res.status(403).json({ error: "You don't have access to this case" });
+      }
+
+      if (req.user.role === 'vet') {
+        const vet = await Vet.findOne({ where: { user_id: sender_id } });
+        if (!vet || singleCase.vet_id !== vet.id) {
+          return res.status(403).json({ error: "You are not assigned to this case" });
+        }
+      }
+    } else {
+      // No case_id - allow general messaging between assigned parties
+      // Farmer can message any vet they're working with
+      // Vet can message any farmer they're working with
+      if (req.user.role === 'farmer') {
+        const hasConnection = await Case.findOne({
+          include: [{
+            model: Vet,
+            as: 'vet',
+            where: { user_id: receiver_id }
+          }],
+          where: { farmer_id: sender_id }
+        });
+        if (!hasConnection) {
+          return res.status(403).json({ 
+            error: "You have no assigned cases with this vet. Please select a case to message this vet." 
+          });
+        }
+      } else if (req.user.role === 'vet') {
+        const hasConnection = await Case.findOne({
+          include: [{
+            model: Vet,
+            as: 'vet',
+            where: { user_id: sender_id }
+          }],
+          where: { farmer_id: receiver_id }
+        });
+        if (!hasConnection) {
+          return res.status(403).json({ 
+            error: "You have no assigned cases with this farmer. Please select a case to message this farmer." 
+          });
+        }
+      }
     }
 
     const newMessage = await Message.create({
@@ -55,6 +92,8 @@ export const sendMessage = async (req, res) => {
       is_read: false
     });
 
+    await logAction(sender_id, `User sent message to user #${receiver_id}${case_id ? ` on case #${case_id}` : ' (general message)'}`);
+
     // Real-time updates
     const io = getIO();
     const sender = await User.findByPk(sender_id, { attributes: ['id', 'name', 'profile_pic'] });
@@ -68,6 +107,7 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (err) {
+    console.error('Send message error:', err);
     res.status(500).json({ error: err.message });
   }
 };
