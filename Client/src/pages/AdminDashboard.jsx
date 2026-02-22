@@ -13,6 +13,8 @@ export default function AdminDashboard() {
     closed_cases: 0,
     pending_lab_requests: 0,
     total_consultations: 0,
+    total_appointments: 0,
+    pending_appointments: 0,
     scheduled_reminders: 0,
     recent_users: [],
     recent_cases: [],
@@ -121,16 +123,16 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="card border-0 shadow-sm text-white p-0 h-100 overflow-hidden" style={{backgroundColor: '#605ca8'}}>
+          <div className="card border-0 shadow-sm text-white p-0 h-100 overflow-hidden" style={{backgroundColor: '#17a2b8'}}>
             <div className="d-flex align-items-center p-3">
               <div className="flex-grow-1">
-                <h3 className="fw-bold mb-0">{metrics.scheduled_reminders}</h3>
-                <p className="mb-0 opacity-75 small fw-bold text-uppercase">Reminders</p>
+                <h3 className="fw-bold mb-0">{metrics.total_appointments}</h3>
+                <p className="mb-0 opacity-75 small fw-bold text-uppercase">Appointments</p>
               </div>
-              <div className="opacity-25"><i className="bi bi-megaphone-fill" style={{fontSize: '3rem'}}></i></div>
+              <div className="opacity-25"><i className="bi bi-calendar-check-fill" style={{fontSize: '3rem'}}></i></div>
             </div>
-            <a href="/admindashboard/reminders" className="bg-dark bg-opacity-10 py-1 text-center small text-white text-decoration-none">
-              Manage Broadcasts <i className="bi bi-arrow-right-circle ms-1"></i>
+            <a href="/admindashboard/appointments" className="bg-dark bg-opacity-10 py-1 text-center small text-white text-decoration-none">
+              Manage <i className="bi bi-arrow-right-circle ms-1"></i>
             </a>
           </div>
         </div>

@@ -43,6 +43,10 @@ const Appointment = sequelize.define('Appointment', {
   updated_by: { 
     type: DataTypes.INTEGER,
     allowNull: true
+  },
+  closed_at: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, { 
   tableName: 'appointments',

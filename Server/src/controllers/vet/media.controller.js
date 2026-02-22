@@ -1,7 +1,8 @@
 import CaseMedia from '../../models/caseMedia.model.js';
 import Case from '../../models/case.model.js';
-import { Vet } from '../../models/associations.js';
+import { Vet, Animal } from '../../models/associations.js';
 import { success, error } from '../../utils/response.js';
+import { getCasesByVet } from '../../services/case.service.js';
 
 export const uploadMedia = async (req, res) => {
   try {
@@ -62,7 +63,14 @@ export const getMediaByCaseId = async (req, res) => {
     }
 
     const media = await CaseMedia.findAll({
-      where: { case_id }
+      where: { case_id },
+      include: [{
+        model: Case,
+        attributes: ['id', 'title', 'animal_id'],
+        include: [
+          { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+        ]
+      }]
     });
 
     success(res, media, "Media retrieved successfully");
@@ -82,9 +90,12 @@ export const getAllVetMedia = async (req, res) => {
       include: [{
         model: Case,
         where: { vet_id: vet.id },
-        attributes: ['id', 'title', 'animal_id']
+        attributes: ['id', 'title', 'animal_id'],
+        include: [
+          { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+        ]
       }],
-      order: [['created_at', 'DESC']]
+      order: [['uploaded_at', 'DESC']]
     });
 
     success(res, media, "All media retrieved successfully");
@@ -111,6 +122,15 @@ export const deleteMedia = async (req, res) => {
 
     await media.destroy();
     success(res, null, "Media deleted successfully");
+  } catch (err) {
+    error(res, err.message);
+  }
+};
+
+export const getCasesForMedia = async (req, res) => {
+  try {
+    const cases = await getCasesByVet(req.user.id);
+    success(res, cases, "Cases fetched for media");
   } catch (err) {
     error(res, err.message);
   }

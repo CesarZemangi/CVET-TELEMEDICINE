@@ -23,3 +23,8 @@ export const deleteMedia = async (id) => {
   const response = await api.delete(`${API_URL}/${id}`)
   return response.data
 }
+
+export const getCasesForMedia = async () => {
+  const response = await api.get(`${API_URL}/cases`)
+  return response.data?.data || response.data || []
+}

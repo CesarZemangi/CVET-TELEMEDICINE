@@ -7,11 +7,13 @@ import {
   createTreatmentPlan,
   createMedicationHistory,
   getAnimalMedications,
-  getMedicationHistory
+  getMedicationHistory,
+  getCasesForTreatment
 } from "../../controllers/vet/treatment.controller.js"
 
 const router = express.Router()
 
+router.get("/cases", auth, getCasesForTreatment)
 router.get("/prescriptions", auth, getPrescriptions)
 router.get("/plans", auth, getTreatmentPlans)
 router.post("/prescriptions", auth, createPrescription)

@@ -12,8 +12,7 @@ const Case = sequelize.define('Case', {
   status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open', allowNull: false },
   priority: { type: DataTypes.ENUM('low', 'medium', 'high', 'critical'), defaultValue: 'medium', allowNull: false },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
-  updated_by: { type: DataTypes.INTEGER, allowNull: false },
-  closed_at: { type: DataTypes.DATE, allowNull: true }
+  updated_by: { type: DataTypes.INTEGER, allowNull: false }
 }, { 
   tableName: 'cases', 
   timestamps: true,

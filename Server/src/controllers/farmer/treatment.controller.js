@@ -9,9 +9,17 @@ export const getPrescriptions = async (req, res) => {
         { 
           model: Case, 
           where: { farmer_id: userId },
+          attributes: ['id', 'title', 'status', 'animal_id', 'vet_id'],
           include: [
-            { model: Animal, attributes: ['tag_number', 'species'] },
-            { model: User, as: 'vet', attributes: ['name'] }
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] },
+            { 
+              model: Vet, 
+              as: 'vet',
+              attributes: ['id', 'user_id'],
+              include: [
+                { model: User, attributes: ['id', 'name'] }
+              ]
+            }
           ]
         }
       ],
@@ -31,7 +39,8 @@ export const getTreatmentPlans = async (req, res) => {
         { 
           model: Case, 
           where: { farmer_id: userId },
-          include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
         }
       ],
       order: [['created_at', 'DESC']]
@@ -58,7 +67,7 @@ export const getMedicationHistory = async (req, res) => {
             {
               model: Vet,
               as: 'vet',
-              attributes: [],
+              attributes: ['id', 'user_id'],
               include: [
                 { model: User, attributes: ['id', 'name'] }
               ]

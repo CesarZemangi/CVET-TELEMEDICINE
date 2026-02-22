@@ -2,11 +2,13 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import auth from '../../middleware/auth.middleware.js';
 import {
   uploadMedia,
   getMediaByCaseId,
   getAllVetMedia,
-  deleteMedia
+  deleteMedia,
+  getCasesForMedia
 } from '../../controllers/vet/media.controller.js';
 
 const router = express.Router();
@@ -45,6 +47,7 @@ const upload = multer({
   }
 });
 
+router.get('/cases', auth, getCasesForMedia);
 router.post('/upload', upload.single('file'), uploadMedia);
 router.get('/case/:case_id', getMediaByCaseId);
 router.get('/', getAllVetMedia);

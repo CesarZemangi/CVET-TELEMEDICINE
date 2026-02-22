@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { getPrescriptions, createPrescription } from "../services/vet.treatment.service";
-import { getCasesForDropdown } from "../services/vet.cases.service";
+import { getPrescriptions, createPrescription, getCasesForTreatment } from "../services/vet.treatment.service";
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
 export default function Prescriptions() {
@@ -19,9 +18,9 @@ export default function Prescriptions() {
     try {
       setLoading(true);
       const presData = await getPrescriptions();
-      const casesDropdown = await getCasesForDropdown();
+      const casesDropdown = await getCasesForTreatment();
       setPrescriptions(presData?.data || presData || []);
-      setCases(casesDropdown?.data || []);
+      setCases(casesDropdown?.data || casesDropdown || []);
     } catch (err) {
       console.error("Error fetching prescriptions:", err);
     } finally {

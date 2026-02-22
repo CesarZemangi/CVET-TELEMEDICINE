@@ -10,7 +10,7 @@ export default function Appointments() {
       try {
         setLoading(true);
         const res = await api.get("/vet/appointments");
-        setAppointments(res.data);
+        setAppointments(res.data?.data || res.data || []);
       } catch (err) {
         console.error("Error fetching appointments:", err);
       } finally {
@@ -42,7 +42,7 @@ export default function Appointments() {
             <div className="spinner-border text-primary" role="status"></div>
           </div>
         ) : appointments.map((appt) => {
-          const dateInfo = formatDate(appt.created_at);
+          const dateInfo = formatDate(appt.appointment_date);
           return (
             <div key={appt.id} className="col-12">
               <div className="card border-0 shadow-sm">
@@ -53,7 +53,7 @@ export default function Appointments() {
                       <div className="small text-info text-uppercase" style={{ fontSize: "0.6rem" }}>{dateInfo.month}</div>
                     </div>
                     <div>
-                      <h6 className="fw-bold mb-1">{appt.Case?.farmer?.name || "Farmer"}</h6>
+                      <h6 className="fw-bold mb-1">{appt.farmer?.name || "Farmer"}</h6>
                       <p className="text-muted small mb-0">
                         <i className="bi bi-clock me-2"></i> {dateInfo.time} - {appt.Case?.title || 'General Checkup'}
                       </p>

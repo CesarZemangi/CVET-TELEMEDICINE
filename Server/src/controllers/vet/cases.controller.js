@@ -1,6 +1,7 @@
 import { Case, User, Animal, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { logAction } from "../../utils/dbLogger.js";
+import { getCasesByVet, getCaseWithDetails } from "../../services/case.service.js";
 
 export const getCases = async (req, res) => {
   try {
@@ -122,15 +123,7 @@ export const updatePriority = async (req, res) => {
 
 export const getVetCasesForDropdown = async (req, res) => {
   try {
-    const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    if (!vetRecord) return res.status(403).json({ error: "Vet profile not found" });
-
-    const cases = await Case.findAll({
-      where: { vet_id: vetRecord.id },
-      attributes: ['id', 'title', 'status', 'priority'],
-      order: [['created_at', 'DESC']],
-      raw: true
-    });
+    const cases = await getCasesByVet(req.user.id);
 
     res.json({ 
       data: cases,

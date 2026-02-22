@@ -104,7 +104,7 @@ Notification.belongsTo(Message, { foreignKey: 'reference_id' });
 // Appointment Associations
 Appointment.belongsTo(Case, { foreignKey: 'case_id' });
 Appointment.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
-Appointment.belongsTo(User, { as: 'vet', foreignKey: 'vet_id' });
+Appointment.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 Case.hasMany(Appointment, { foreignKey: 'case_id' });
 
 export { 

@@ -5,11 +5,13 @@ import {
   approveAppointment,
   rejectAppointment,
   completeAppointment,
-  rescheduleAppointment
+  rescheduleAppointment,
+  getCasesForAppointments
 } from "../../controllers/vet/appointments.controller.js"
 
 const router = express.Router()
 
+router.get("/cases", auth, getCasesForAppointments)
 router.get("/", auth, getVetAppointments)
 router.put("/:id/approve", auth, approveAppointment)
 router.put("/:id/reject", auth, rejectAppointment)

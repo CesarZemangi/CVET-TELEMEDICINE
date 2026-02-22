@@ -1,6 +1,7 @@
 import { Prescription, TreatmentPlan, Case, MedicationHistory, Animal, User, Vet } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
 import { logAction } from "../../utils/dbLogger.js";
+import { getCasesByVet } from "../../services/case.service.js";
 
 export const getPrescriptions = async (req, res) => {
   try {
@@ -11,7 +12,15 @@ export const getPrescriptions = async (req, res) => {
     
     const data = await Prescription.findAll({
       where: { vet_id: vet.id },
-      include: [{ model: Case }]
+      include: [
+        {
+          model: Case,
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
+        }
+      ]
     });
     success(res, data, "Prescriptions fetched");
   } catch (err) {
@@ -86,7 +95,15 @@ export const getTreatmentPlans = async (req, res) => {
     
     const data = await TreatmentPlan.findAll({
       where: { vet_id: vet.id },
-      include: [{ model: Case }]
+      include: [
+        {
+          model: Case,
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
+        }
+      ]
     });
     success(res, data, "Treatment plans fetched");
   } catch (err) {
@@ -170,5 +187,14 @@ export const getAnimalMedications = async (req, res) => {
     res.json(history);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const getCasesForTreatment = async (req, res) => {
+  try {
+    const cases = await getCasesByVet(req.user.id);
+    success(res, cases, "Cases fetched for treatment");
+  } catch (err) {
+    error(res, err.message);
   }
 };

@@ -1,4 +1,4 @@
-import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal, CaseMedia } from "../../models/associations.js";
+import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal, CaseMedia, Appointment } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
@@ -18,6 +18,8 @@ export const getOverview = async (req, res) => {
     const closed_cases = await Case.count({ where: { status: 'closed' } });
     const pending_lab_requests = await LabRequest.count({ where: { status: 'pending' } });
     const total_consultations = await Consultation.count();
+    const total_appointments = await Appointment.count();
+    const pending_appointments = await Appointment.count({ where: { status: 'pending' } });
     const scheduled_reminders = await Reminder.count({ where: { status: 'scheduled' } });
 
     const total_messages = await Message.count();
@@ -75,6 +77,8 @@ export const getOverview = async (req, res) => {
       closed_cases,
       pending_lab_requests,
       total_consultations,
+      total_appointments,
+      pending_appointments,
       scheduled_reminders,
       total_messages,
       unread_notifications,
@@ -244,16 +248,25 @@ export const getCases = async (req, res) => {
         },
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      raw: false,
+      subQuery: false
     });
     
-    const formattedData = data.map(c => ({
-      ...c.toJSON(),
-      vet: c.vet ? { ...c.vet.toJSON(), name: c.vet.User?.name } : null
-    }));
+    const formattedData = data.map(c => {
+      const caseJson = c.toJSON();
+      return {
+        ...caseJson,
+        vet: caseJson.vet ? { ...caseJson.vet, name: caseJson.vet.User?.name } : null
+      };
+    });
     
-    res.json({ data: formattedData });
+    res.json({ 
+      data: formattedData,
+      count: data.length
+    });
   } catch (err) {
+    console.error('Get cases error:', err);
     res.status(500).json({ error: err.message });
   }
 };

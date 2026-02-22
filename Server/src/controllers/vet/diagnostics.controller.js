@@ -1,6 +1,7 @@
-import { LabRequest, LabResult, Case, Vet } from "../../models/associations.js";
+import { LabRequest, LabResult, Case, Vet, Animal } from "../../models/associations.js";
 import { success, error } from "../../utils/response.js";
 import { logAction } from "../../utils/dbLogger.js";
+import { getCasesByVet } from "../../services/case.service.js";
 
 export const getLabRequests = async (req, res) => {
   try {
@@ -11,7 +12,15 @@ export const getLabRequests = async (req, res) => {
 
     const requests = await LabRequest.findAll({
       where: { vet_id: vet.id },
-      include: [{ model: Case }]
+      include: [
+        {
+          model: Case,
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
+        }
+      ]
     });
     success(res, requests, "Lab requests fetched");
   } catch (err) {
@@ -89,10 +98,25 @@ export const getLabResults = async (req, res) => {
       include: [{
         model: LabRequest,
         where: { vet_id: vet.id },
-        include: [{ model: Case }]
+        include: [{
+          model: Case,
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
+        }]
       }]
     });
     success(res, results, "Lab results fetched");
+  } catch (err) {
+    error(res, err.message);
+  }
+};
+
+export const getCasesForDiagnostics = async (req, res) => {
+  try {
+    const cases = await getCasesByVet(req.user.id);
+    success(res, cases, "Cases fetched for diagnostics");
   } catch (err) {
     error(res, err.message);
   }

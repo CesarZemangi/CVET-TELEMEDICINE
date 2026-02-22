@@ -19,9 +19,11 @@ import farmerCommRoutes from "./routes/farmer/communication.routes.js";
 import farmerFeedbackRoutes from "./routes/farmer/feedback.routes.js";
 import farmerNotificationRoutes from "./routes/farmer/notification.routes.js";
 import farmerDashboardRoutes from "./routes/farmer/dashboard.routes.js";
+import farmerAppointmentRoutes from "./routes/farmer/appointments.routes.js";
 
 // Admin routes
 import adminRoutes from "./routes/admin.routes.js";
+import adminAppointmentRoutes from "./routes/admin/appointments.routes.js";
 import communicationRoutes from "./routes/communication.routes.js";
 import reminderRoutes from "./routes/reminder.routes.js";
 import path from "path";
@@ -70,6 +72,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/user", authenticate, userRoutes);
 app.use("/api/admin", authenticate, authorizeRoles("admin"), adminRoutes);
+app.use("/api/admin/appointments", authenticate, authorizeRoles("admin"), adminAppointmentRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/communication", authenticate, communicationRoutes);
 
@@ -84,6 +87,7 @@ app.use("/api/farmer/nutrition", authenticate, authorizeRoles("farmer"), farmerN
 app.use("/api/farmer/communication", authenticate, authorizeRoles("farmer"), farmerCommRoutes);
 app.use("/api/farmer/feedback", authenticate, authorizeRoles("farmer"), farmerFeedbackRoutes);
 app.use("/api/farmer/notifications", authenticate, authorizeRoles("farmer"), farmerNotificationRoutes);
+app.use("/api/farmer/appointments", authenticate, authorizeRoles("farmer"), farmerAppointmentRoutes);
 
 // Vet
 app.use("/api/vet/dashboard", authenticate, authorizeRoles("vet"), vetDashboardRoutes);

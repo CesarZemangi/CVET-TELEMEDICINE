@@ -1,4 +1,4 @@
-import { Appointment, Case, User, Vet } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 
 export const createAppointmentRequest = async (req, res) => {
@@ -74,12 +74,18 @@ export const getFarmerAppointments = async (req, res) => {
       include: [
         {
           model: Case,
-          attributes: ['id', 'title', 'description']
+          attributes: ['id', 'title', 'description', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
         },
         {
-          model: User,
+          model: Vet,
           as: 'vet',
-          attributes: ['id', 'name', 'phone']
+          attributes: ['id', 'user_id'],
+          include: [
+            { model: User, attributes: ['id', 'name', 'phone'] }
+          ]
         }
       ],
       order: [['appointment_date', 'DESC']],
@@ -132,5 +138,48 @@ export const cancelAppointment = async (req, res) => {
   } catch (err) {
     console.error('Cancel appointment error:', err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const getCasesForAppointments = async (req, res) => {
+  try {
+    const farmer_id = req.user.id;
+
+    const cases = await Case.findAll({
+      where: { farmer_id },
+      attributes: ['id', 'title', 'status', 'priority', 'animal_id'],
+      include: [
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json({
+      data: cases,
+      count: cases.length
+    });
+  } catch (error) {
+    console.error("Error getting cases for appointments:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getVetsForAppointments = async (req, res) => {
+  try {
+    const vets = await Vet.findAll({
+      attributes: ['id', 'user_id'],
+      include: [
+        { model: User, attributes: ['id', 'name', 'phone', 'email'] }
+      ],
+      order: [[User, 'name', 'ASC']]
+    });
+
+    res.json({
+      data: vets,
+      count: vets.length
+    });
+  } catch (error) {
+    console.error("Error getting vets for appointments:", error);
+    res.status(500).json({ error: error.message });
   }
 };

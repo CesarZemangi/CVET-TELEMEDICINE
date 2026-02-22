@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getAllVetMedia, deleteMedia, getMediaByCaseId } from "./services/vet.media.service";
-import { getCases } from "./services/vet.cases.service";
+import { getAllVetMedia, deleteMedia, getCasesForMedia } from "./services/vet.media.service";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
 import { Trash2, Download } from "lucide-react";
@@ -18,7 +17,7 @@ export default function MediaUploads() {
       setLoading(true);
       const [mediaData, casesData] = await Promise.all([
         getAllVetMedia(),
-        getCases()
+        getCasesForMedia()
       ]);
       setMedia(mediaData || []);
       setCases(casesData || []);
@@ -71,7 +70,7 @@ export default function MediaUploads() {
       try {
         await deleteMedia(id);
         fetchData();
-      } catch (err) {
+      } catch {
         alert("Failed to delete file");
       }
     }

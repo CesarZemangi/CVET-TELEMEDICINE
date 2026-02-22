@@ -1,4 +1,4 @@
-import { Appointment, Case, User } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { fn, col } from "sequelize";
 
@@ -17,7 +17,10 @@ export const getAllAppointments = async (req, res) => {
       include: [
         {
           model: Case,
-          attributes: ['id', 'title', 'description']
+          attributes: ['id', 'title', 'description', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
         },
         {
           model: User,
@@ -25,9 +28,12 @@ export const getAllAppointments = async (req, res) => {
           attributes: ['id', 'name', 'email', 'phone']
         },
         {
-          model: User,
+          model: Vet,
           as: 'vet',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'user_id'],
+          include: [
+            { model: User, attributes: ['id', 'name', 'email', 'phone'] }
+          ]
         }
       ],
       order: [['appointment_date', 'DESC']]
@@ -113,7 +119,10 @@ export const getAppointmentDetails = async (req, res) => {
       include: [
         {
           model: Case,
-          attributes: ['id', 'title', 'description', 'status', 'priority']
+          attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
         },
         {
           model: User,
@@ -121,9 +130,12 @@ export const getAppointmentDetails = async (req, res) => {
           attributes: ['id', 'name', 'email', 'phone']
         },
         {
-          model: User,
+          model: Vet,
           as: 'vet',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'user_id'],
+          include: [
+            { model: User, attributes: ['id', 'name', 'email', 'phone'] }
+          ]
         }
       ]
     });

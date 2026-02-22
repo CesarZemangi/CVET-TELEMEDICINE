@@ -16,11 +16,12 @@ export const getCases = async (req, res) => {
           attributes: ['id'],
           include: [{ model: User, attributes: ['id', 'name'] }]
         },
-        { model: Animal, attributes: ['id', 'tag_number'] }
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
       limit,
       offset,
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      subQuery: false
     });
 
     // Flatten vet info for frontend
@@ -81,7 +82,28 @@ export const createCase = async (req, res) => {
 
     await logAction(req.user.id, `Farmer created case #${newCase.id}: ${title}`);
 
-    res.status(201).json(newCase);
+    const createdCase = await Case.findByPk(newCase.id, {
+      include: [
+        { 
+          model: Vet, 
+          as: 'vet', 
+          attributes: ['id'],
+          include: [{ model: User, attributes: ['id', 'name'] }]
+        },
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+      ]
+    });
+
+    const caseJson = createdCase.toJSON();
+    if (caseJson.vet) {
+      caseJson.vet = {
+        id: caseJson.vet.id,
+        name: caseJson.vet.User?.name,
+        user_id: caseJson.vet.User?.id
+      };
+    }
+
+    res.status(201).json(caseJson);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

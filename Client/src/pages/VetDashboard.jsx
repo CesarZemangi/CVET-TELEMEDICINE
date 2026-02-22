@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import MetricCard from "../components/dashboard/MetricCard";
 import ChartWrapper from "../components/dashboard/ChartWrapper";
 import api from "../services/api";
 
 export default function VetDashboard() {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     incomingCases: 0,
     appointmentsToday: 0,
@@ -12,6 +14,8 @@ export default function VetDashboard() {
     statusDistribution: [],
     weeklyActivity: []
   });
+  const [vetCases, setVetCases] = useState([]);
+  const [selectedCaseId, setSelectedCaseId] = useState("");
 
   const [caseData, setCaseData] = useState({
     labels: ["No Data"],
@@ -33,8 +37,12 @@ export default function VetDashboard() {
   useEffect(() => {
     const fetchVetData = async () => {
       try {
-        const res = await api.get("/vet/dashboard");
-        const data = res.data;
+        const [dashboardRes, casesRes] = await Promise.all([
+          api.get("/vet/dashboard"),
+          api.get("/vet/cases")
+        ]);
+        
+        const data = dashboardRes.data;
         setMetrics(data);
 
         // Update Case Status Chart
@@ -59,6 +67,10 @@ export default function VetDashboard() {
             }]
           });
         }
+
+        // Set cases for media upload
+        const casesArray = casesRes.data?.data?.rows || casesRes.data?.data || [];
+        setVetCases(Array.isArray(casesArray) ? casesArray : []);
       } catch (err) {
         console.error("Vet Dashboard Error:", err);
       }
@@ -105,7 +117,7 @@ export default function VetDashboard() {
         </div>
       </div>
 
-      <div className="row g-4">
+      <div className="row g-4 mb-4">
         <div className="col-lg-8">
           <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
             <h5 className="fw-bold mb-4">Weekly Consultation Activity</h5>
@@ -124,6 +136,47 @@ export default function VetDashboard() {
             <div style={{ height: "250px" }}>
               <ChartWrapper type="doughnut" data={caseData} />
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Media Uploads Section */}
+      <div className="card border-0 shadow-sm p-4">
+        <h5 className="fw-bold mb-4">Media Uploads</h5>
+        <p className="text-muted mb-3">Upload and manage media files for your cases</p>
+        
+        <div className="row mb-3">
+          <div className="col-md-5">
+            <label className="form-label small fw-bold">Select Case</label>
+            <select 
+              className="form-select" 
+              value={selectedCaseId}
+              onChange={(e) => setSelectedCaseId(e.target.value)}
+            >
+              <option value="">Choose a case...</option>
+              {vetCases.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.title} (ID: {c.id})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-5">
+            <label className="form-label small fw-bold">Select File</label>
+            <input 
+              type="file" 
+              className="form-control" 
+              accept="image/*,.pdf,video/*,audio/*"
+              disabled
+            />
+          </div>
+          <div className="col-md-2 d-flex align-items-end">
+            <button
+              className="btn btn-primary w-100"
+              onClick={() => navigate("/vetdashboard/media")}
+            >
+              Manage Media
+            </button>
           </div>
         </div>
       </div>

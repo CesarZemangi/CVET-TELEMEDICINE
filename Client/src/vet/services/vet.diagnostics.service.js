@@ -2,6 +2,11 @@ import api from "../../services/api"
 
 const API_URL = "/vet/diagnostics"
 
+export const getCasesForDiagnostics = async () => {
+  const response = await api.get(`${API_URL}/cases`)
+  return response.data?.data || response.data || []
+}
+
 export const getLabRequests = async () => {
   const response = await api.get(`${API_URL}/lab-requests`)
   return response.data?.data || response.data

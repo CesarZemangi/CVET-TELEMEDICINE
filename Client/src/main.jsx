@@ -24,6 +24,7 @@ import AdminDashboard from "./pages/AdminDashboard"
 import Animals from "./farmer/Animals"
 import Cases from "./farmer/Cases"
 import Consultations from "./farmer/Consultations"
+import FarmerAppointments from "./farmer/Appointments"
 import Settings from "./farmer/Settings"
 
 /* Farmer Diagnostics */
@@ -112,6 +113,7 @@ import AdminVets from "./pages/AdminVets"
 import AdminLogs from "./pages/AdminLogs"
 import AdminCases from "./pages/AdminCases"
 import AdminConsultations from "./pages/AdminConsultations"
+import AdminAppointments from "./pages/AdminAppointments"
 import AdminAnalytics from "./pages/AdminAnalytics"
 import AdminVetPerformance from "./pages/AdminVetPerformance"
 import AdminReminders from "./pages/AdminReminders"
@@ -193,6 +195,7 @@ return (
     <Route path="animals" element={<Animals />} />
     <Route path="cases" element={<Cases />} />
     <Route path="consultations" element={<Consultations />} />
+    <Route path="appointments" element={<FarmerAppointments />} />
     <Route path="settings" element={<Settings />} />
 
     <Route path="diagnostics/lab-requests" element={<LabRequests />} />
@@ -287,6 +290,7 @@ return (
     <Route path="vets" element={<AdminVets />} />
     <Route path="cases" element={<AdminCases />} />
     <Route path="consultations" element={<AdminConsultations />} />
+    <Route path="appointments" element={<AdminAppointments />} />
     <Route path="logs" element={<AdminLogs />} />
     <Route path="settings" element={<AdminSettings />} />
     

@@ -1,4 +1,4 @@
-import { Appointment, Case, User, Vet } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 
 export const getVetAppointments = async (req, res) => {
@@ -13,7 +13,10 @@ export const getVetAppointments = async (req, res) => {
       include: [
         {
           model: Case,
-          attributes: ['id', 'title', 'description']
+          attributes: ['id', 'title', 'description', 'animal_id'],
+          include: [
+            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+          ]
         },
         {
           model: User,
@@ -211,6 +214,32 @@ export const rescheduleAppointment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error rescheduling appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getCasesForAppointments = async (req, res) => {
+  try {
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
+    const cases = await Case.findAll({
+      where: { vet_id: vet.id },
+      attributes: ['id', 'title', 'status', 'priority', 'animal_id'],
+      include: [
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    res.json({
+      data: cases,
+      count: cases.length
+    });
+  } catch (error) {
+    console.error("Error getting cases for appointments:", error);
     res.status(500).json({ error: error.message });
   }
 };

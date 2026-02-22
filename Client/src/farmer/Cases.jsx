@@ -27,7 +27,8 @@ export default function Cases() {
     try {
       setLoading(true);
       const data = await getCases();
-      setCases(data?.data || data || []);
+      const casesArray = data?.data || data?.rows || (Array.isArray(data) ? data : []);
+      setCases(casesArray);
     } catch (err) {
       console.error("Error fetching farmer cases:", err);
     } finally {
@@ -94,7 +95,10 @@ export default function Cases() {
         symptoms: "",
         priority: "medium"
       });
-      fetchCases();
+      setTimeout(() => {
+        fetchCases();
+      }, 500);
+      alert("Case reported successfully!");
     } catch (err) {
       alert("Failed to report case: " + (err.response?.data?.error || err.message));
     }

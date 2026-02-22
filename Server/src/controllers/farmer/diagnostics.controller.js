@@ -9,7 +9,8 @@ export const getLabRequests = async (req, res) => {
         { 
           model: Case, 
           where: { farmer_id: userId },
-          include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+          attributes: ['id', 'title', 'status', 'animal_id'],
+          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
         }
       ],
       order: [['created_at', 'DESC']]
@@ -67,7 +68,8 @@ export const getLabResults = async (req, res) => {
             { 
               model: Case, 
               where: { farmer_id: userId },
-              include: [{ model: Animal, attributes: ['tag_number', 'species'] }]
+              attributes: ['id', 'title', 'status', 'animal_id'],
+              include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
             }
           ]
         }

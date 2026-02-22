@@ -4,11 +4,13 @@ import {
   getLabRequests,
   createLabRequest,
   uploadLabResult,
-  getLabResults
+  getLabResults,
+  getCasesForDiagnostics
 } from "../../controllers/vet/diagnostics.controller.js"
 
 const router = express.Router()
 
+router.get("/cases", auth, getCasesForDiagnostics)
 router.get("/lab-requests", auth, getLabRequests)
 router.get("/lab-results", auth, getLabResults)
 router.post("/lab-requests", auth, createLabRequest)
