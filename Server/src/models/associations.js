@@ -48,6 +48,8 @@ Case.hasMany(TreatmentPlan, { foreignKey: 'case_id' });
 Case.hasMany(Prescription, { foreignKey: 'case_id' });
 Case.hasMany(CaseMedia, { foreignKey: 'case_id' });
 CaseMedia.belongsTo(Case, { foreignKey: 'case_id' });
+CaseMedia.belongsTo(User, { as: 'uploader', foreignKey: 'uploaded_by' });
+CaseMedia.belongsTo(User, { as: 'updater', foreignKey: 'updated_by' });
 
 // Consultation Associations
 Consultation.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
@@ -98,8 +100,10 @@ PreventiveReminder.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
 PreventiveReminder.belongsTo(Animal, { as: 'animal', foreignKey: 'animal_id' });
 
 // Notification Associations
-Notification.belongsTo(User, { foreignKey: 'receiver_id' });
-Notification.belongsTo(Message, { foreignKey: 'reference_id' });
+Notification.belongsTo(User, { as: 'receiver', foreignKey: 'receiver_id' });
+Notification.belongsTo(User, { as: 'sender', foreignKey: 'sender_id' });
+Notification.belongsTo(Message, { as: 'Message', foreignKey: 'reference_id' });
+Notification.belongsTo(Case, { as: 'Case', foreignKey: 'reference_id' });
 
 // Appointment Associations
 Appointment.belongsTo(Case, { foreignKey: 'case_id' });

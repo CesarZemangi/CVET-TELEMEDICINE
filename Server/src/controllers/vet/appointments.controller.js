@@ -218,6 +218,48 @@ export const rescheduleAppointment = async (req, res) => {
   }
 };
 
+export const cancelAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
+    const appointment = await Appointment.findOne({
+      where: { id, vet_id: vet.id }
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (appointment.status === 'cancelled' || appointment.status === 'completed') {
+      return res.status(400).json({ 
+        error: `Cannot cancel appointment with status: ${appointment.status}` 
+      });
+    }
+
+    await appointment.update({
+      status: 'cancelled',
+      notes: reason || appointment.notes,
+      updated_by: req.user.id
+    });
+
+    await logAction(req.user.id, `Vet cancelled appointment #${id}${reason ? `: ${reason}` : ''}`);
+
+    res.json({
+      message: "Appointment cancelled successfully",
+      data: appointment
+    });
+  } catch (error) {
+    console.error("Error cancelling appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getCasesForAppointments = async (req, res) => {
   try {
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });

@@ -41,8 +41,8 @@ router.get("/logs", getSystemLogs);
 router.get("/profile", getProfile);
 router.post("/notifications/broadcast", broadcastNotification);
 router.post("/notifications/direct", sendDirectNotification);
-router.get("/chat-logs", getAllChatLogs);
 router.get("/chat-logs/thread", getThreadMessages);
+router.get("/chat-logs", getAllChatLogs);
 router.get("/media", getAllMedia);
 
 // Analytics

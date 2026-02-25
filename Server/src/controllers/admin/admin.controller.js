@@ -204,18 +204,20 @@ export const getVetStats = async (req, res) => {
       attributes: ['id', 'name', 'email', 'status', 'phone', 'created_at'],
       include: [{
         model: Vet,
-        attributes: ['specialization', 'license_number', 'experience_years']
+        attributes: ['id', 'specialization', 'license_number', 'experience_years']
       }]
     });
 
     const vetStats = await Promise.all(vets.map(async (user) => {
-      const assignedCases = await Case.count({ where: { vet_id: user.id } });
-      const totalConsultations = await Consultation.count({ 
-        where: { vet_id: user.id } 
-      });
+      const vetId = user.Vet?.id;
+      const assignedCases = vetId ? await Case.count({ where: { vet_id: vetId } }) : 0;
+      const totalConsultations = vetId ? await Consultation.count({ 
+        where: { vet_id: vetId } 
+      }) : 0;
 
       return {
         id: user.id,
+        vet_id: vetId,
         name: user.name,
         email: user.email,
         status: user.status,
@@ -275,12 +277,30 @@ export const getConsultations = async (req, res) => {
   try {
     const data = await Consultation.findAll({
       include: [
-        { model: User, as: 'vet', attributes: ['id', 'name'] },
-        { model: Case, attributes: ['id', 'description'] }
+        {
+          model: Vet,
+          as: 'vet',
+          attributes: ['id'],
+          include: [{ model: User, attributes: ['id', 'name'] }]
+        },
+        { 
+          model: Case, 
+          attributes: ['id', 'description'],
+          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
+        }
       ],
       order: [['created_at', 'DESC']]
     });
-    res.json({ data });
+
+    const formattedData = data.map(c => {
+      const cJson = c.toJSON();
+      return {
+        ...cJson,
+        vet: cJson.vet ? { ...cJson.vet, name: cJson.vet.User?.name } : null
+      };
+    });
+
+    res.json(formattedData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

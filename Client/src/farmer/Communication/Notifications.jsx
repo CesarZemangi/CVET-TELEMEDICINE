@@ -31,9 +31,30 @@ export default function Notifications() {
     }
   }
 
+  const handleClearAll = async () => {
+    if (window.confirm("Are you sure you want to clear all notifications?")) {
+      try {
+        await api.delete("/communication/notifications/clear/all");
+        setNotifications([]);
+      } catch (err) {
+        console.error("Error clearing notifications:", err);
+      }
+    }
+  };
+
   return (
     <DashboardSection title="Notifications">
-      <p className="mb-3">Recent alerts and updates regarding your animals and consultations.</p>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <p className="mb-0 text-muted">Recent alerts and updates regarding your animals and consultations.</p>
+        {notifications.length > 0 && (
+          <button 
+            className="btn btn-sm btn-outline-danger"
+            onClick={handleClearAll}
+          >
+            <i className="bi bi-trash me-1"></i>Clear All
+          </button>
+        )}
+      </div>
 
       <div className="mb-4 d-flex gap-2 flex-wrap">
         {[
@@ -71,7 +92,12 @@ export default function Notifications() {
               className="list-group-item d-flex justify-content-between align-items-center p-3"
             >
               <div>
-                <div className="fw-bold text-dark">{note.title}</div>
+                <div className="fw-bold text-dark">
+                  {note.title}
+                  {note.sender && (
+                    <small className="ms-2 text-primary">From: {note.sender.name}</small>
+                  )}
+                </div>
                 <div className="small text-muted">{note.message}</div>
               </div>
               <div className="text-end">

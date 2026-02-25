@@ -76,7 +76,45 @@ export const getLabResults = async (req, res) => {
       ],
       order: [['uploaded_at', 'DESC']]
     });
-    res.json(data);
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const farmerUploadLabResult = async (req, res) => {
+  try {
+    const { lab_request_id, result } = req.body;
+    const userId = req.user.id;
+
+    if (!lab_request_id || !result) {
+      return res.status(400).json({ error: "lab_request_id and result are required" });
+    }
+
+    // Validate the lab request belongs to this farmer's case
+    const labRequest = await LabRequest.findByPk(lab_request_id, {
+      include: [{ model: Case, where: { farmer_id: userId } }]
+    });
+
+    if (!labRequest) {
+      return res.status(403).json({ error: "Access denied or lab request not found" });
+    }
+
+    const labResult = await LabResult.create({
+      lab_request_id,
+      result,
+      created_by: userId,
+      updated_by: userId
+    });
+
+    await LabRequest.update(
+      { status: 'completed', updated_by: userId },
+      { where: { id: lab_request_id } }
+    );
+
+    await logAction(userId, `Farmer uploaded lab result for request #${lab_request_id}`);
+
+    res.status(201).json({ data: labResult, message: "Result uploaded successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -11,10 +11,16 @@ import {
   getCasesForMedia
 } from '../../controllers/vet/media.controller.js';
 
+import fs from 'fs';
+
 const router = express.Router();
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadDir = path.join(__dirname, '../../..', 'uploads');
+const uploadDir = path.join(process.cwd(), 'uploads');
+
+// Ensure upload directory exists
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -48,9 +54,9 @@ const upload = multer({
 });
 
 router.get('/cases', auth, getCasesForMedia);
-router.post('/upload', upload.single('file'), uploadMedia);
-router.get('/case/:case_id', getMediaByCaseId);
-router.get('/', getAllVetMedia);
-router.delete('/:id', deleteMedia);
+router.post('/upload', auth, upload.single('file'), uploadMedia);
+router.get('/case/:case_id', auth, getMediaByCaseId);
+router.get('/', auth, getAllVetMedia);
+router.delete('/:id', auth, deleteMedia);
 
 export default router;

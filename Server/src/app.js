@@ -67,6 +67,7 @@ app.use(cors({
 // 2. Standard Middleware
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
+app.use("/storage", express.static("storage"));
 
 // 3. Routes
 app.use("/api/auth", authLimiter, authRoutes);

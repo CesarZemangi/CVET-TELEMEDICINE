@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 export default function AdminFarmers() {
   const [farmers, setFarmers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchFarmers = async () => {
@@ -20,7 +22,7 @@ export default function AdminFarmers() {
   }, []);
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid py-4">
       <div className="mb-4">
         <h4 className="fw-bold">Farmers Directory</h4>
         <p className="text-muted small">Overview of registered farmers and their livestock data.</p>
@@ -38,7 +40,7 @@ export default function AdminFarmers() {
                   <th>Livestock Count</th>
                   <th>Total Cases</th>
                   <th>Open Cases</th>
-                  <th className="text-end pe-4">Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -49,20 +51,20 @@ export default function AdminFarmers() {
                     <td className="ps-4 fw-bold">{f.name}</td>
                     <td>{f.farm_name}</td>
                     <td>{f.location}</td>
-                    <td><span className="badge bg-primary rounded-pill">{f.livestock_count}</span></td>
+                    <td>{f.livestock_count}</td>
                     <td>{f.totalCases}</td>
-                    <td>
-                      <span className={`badge ${f.openCases > 0 ? 'bg-warning text-dark' : 'bg-light text-muted'}`}>
-                        {f.openCases}
-                      </span>
-                    </td>
-                    <td className="text-end pe-4">
-                      <button className="btn btn-sm btn-outline-primary me-2">View Cases</button>
-                      <button className="btn btn-sm btn-outline-secondary">Contact</button>
+                    <td>{f.openCases}</td>
+                    <td className="text-center">
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => navigate('/admindashboard/communication/messages', { state: { initialPartner: { id: f.id, name: f.name, role: 'farmer' } } })}
+                      >
+                        Contact
+                      </button>
                     </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan="7" className="text-center py-4">No farmers found.</td></tr>
+                  <tr><td colSpan="7" className="text-center py-4 text-muted">No farmers found.</td></tr>
                 )}
               </tbody>
             </table>

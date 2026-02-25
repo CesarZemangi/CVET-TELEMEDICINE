@@ -15,7 +15,8 @@ export const getNotifications = async (req, res) => {
     const notifications = await Notification.findAll({ 
       where, 
       include: [
-        { model: Message, foreignKey: 'reference_id' }
+        { model: Message, foreignKey: 'reference_id' },
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
       ],
       order: [['created_at', 'DESC']] 
     });
@@ -58,6 +59,18 @@ export const createNotification = async (req, res) => {
     });
 
     success(res, notification, 'Notification created successfully');
+  } catch (err) {
+    error(res, err.message);
+  }
+};
+
+export const clearAllNotifications = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    await Notification.destroy({
+      where: { receiver_id: user_id }
+    });
+    success(res, null, 'All notifications cleared');
   } catch (err) {
     error(res, err.message);
   }

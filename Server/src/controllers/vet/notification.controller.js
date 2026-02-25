@@ -6,6 +6,9 @@ export const getVetNotifications = async (req, res) => {
     const vet_id = req.user.id;
     const notifications = await Notification.findAll({
       where: { receiver_id: vet_id },
+      include: [
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
+      ],
       order: [['created_at', 'DESC']]
     });
 
@@ -35,22 +38,38 @@ export const markVetNotificationAsSeen = async (req, res) => {
 
 export const sendNotification = async (req, res) => {
   try {
-    const { case_id, type } = req.body;
+    const { case_id, receiver_id, type, title, message } = req.body;
     const sender_id = req.user.id;
 
-    if (!case_id) {
-      return res.status(400).json({ error: "case_id is required" });
+    if (!case_id && !receiver_id) {
+      return res.status(400).json({ error: "case_id or receiver_id is required" });
     }
 
-    const singleCase = await Case.findByPk(case_id);
-    if (!singleCase) {
-      return res.status(404).json({ error: "Case not found" });
+    let finalReceiverId = receiver_id;
+    let autoMessage = message;
+
+    if (case_id) {
+      const singleCase = await Case.findByPk(case_id);
+      if (!singleCase) {
+        return res.status(404).json({ error: "Case not found" });
+      }
+      finalReceiverId = singleCase.farmer_id;
+      if (!autoMessage) {
+        autoMessage = `Your veterinarian ${req.user.name} sent an update for case: ${singleCase.title}`;
+      }
+    }
+
+    if (!finalReceiverId) {
+      return res.status(400).json({ error: "Receiver could not be determined" });
     }
 
     const notification = await Notification.create({
       sender_id: sender_id,
-      receiver_id: singleCase.farmer_id,
+      receiver_id: finalReceiverId,
+      title: title || 'Case Update',
+      message: autoMessage || `Your veterinarian ${req.user.name} sent you a notification`,
       type: type || 'update',
+      reference_id: case_id || null, 
       is_read: false
     });
 
@@ -62,17 +81,29 @@ export const sendNotification = async (req, res) => {
 
 export const getSentNotifications = async (req, res) => {
   try {
-    // Note: Since we removed sender_id from Notification, 
-    // we can't easily find 'sent' notifications anymore without re-adding sender_id.
-    // For now, I'll just return an empty list or return all where type is 'update'?
-    // Actually, I'll just return all for now to avoid breaking the UI too much,
-    // though it's technically incorrect.
+    const sender_id = req.user.id;
     const notifications = await Notification.findAll({
-      where: { type: 'update' },
+      where: { sender_id: sender_id },
+      include: [
+        { model: User, as: 'receiver', attributes: ['id', 'name'] },
+        { model: Case, as: 'Case', attributes: ['id', 'title'] }
+      ],
       order: [['created_at', 'DESC']]
     });
 
     success(res, notifications, 'Sent notifications retrieved successfully');
+  } catch (err) {
+    error(res, err.message);
+  }
+};
+
+export const clearAllNotifications = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    await Notification.destroy({
+      where: { receiver_id: user_id }
+    });
+    success(res, null, 'All notifications cleared');
   } catch (err) {
     error(res, err.message);
   }

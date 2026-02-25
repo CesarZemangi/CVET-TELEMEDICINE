@@ -178,7 +178,8 @@ export const getChatlogs = async (req, res) => {
         ]
       },
       include: [
-        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_pic'] }
       ],
       order: [['created_at', 'ASC']]
     });
@@ -207,7 +208,7 @@ export const getChatlogs = async (req, res) => {
       });
     }
 
-    res.json(messages);
+    res.json({ data: messages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -278,9 +279,23 @@ export const getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.findAll({
       where: { receiver_id: req.user.id },
+      include: [
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
+      ],
       order: [['created_at', 'DESC']]
     });
     res.json({ data: notifications });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const clearAllNotifications = async (req, res) => {
+  try {
+    await Notification.destroy({
+      where: { receiver_id: req.user.id }
+    });
+    res.json({ message: "All notifications cleared" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -362,15 +377,60 @@ export const adminDirectNotification = async (req, res) => {
 
 export const adminViewAllChatlogs = async (req, res) => {
   try {
-    const logs = await Message.findAll({
+    // Group messages by user pairs to show conversations
+    const conversations = await sequelize.query(`
+      SELECT 
+        m1.id, m1.sender_id, m1.receiver_id, m1.message, m1.created_at, m1.case_id,
+        u1.name as sender_name, u2.name as receiver_name
+      FROM messages m1
+      JOIN (
+        SELECT 
+          LEAST(sender_id, receiver_id) as user1,
+          GREATEST(sender_id, receiver_id) as user2,
+          MAX(created_at) as latest
+        FROM messages
+        GROUP BY user1, user2
+      ) m2 ON (LEAST(m1.sender_id, m1.receiver_id) = m2.user1 AND GREATEST(m1.sender_id, m1.receiver_id) = m2.user2 AND m1.created_at = m2.latest)
+      JOIN users u1 ON m1.sender_id = u1.id
+      JOIN users u2 ON m1.receiver_id = u2.id
+      ORDER BY m1.created_at DESC
+      LIMIT 100
+    `, { type: sequelize.QueryTypes.SELECT });
+
+    const formatted = conversations.map(c => ({
+      ...c,
+      sender: { id: c.sender_id, name: c.sender_name },
+      receiver: { id: c.receiver_id, name: c.receiver_name }
+    }));
+
+    res.json({ data: formatted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const adminGetChatThread = async (req, res) => {
+  try {
+    const { sender_id, receiver_id } = req.query;
+    if (!sender_id || !receiver_id) {
+      return res.status(400).json({ error: "Both sender_id and receiver_id are required" });
+    }
+
+    const messages = await Message.findAll({
+      where: {
+        [Op.or]: [
+          { sender_id, receiver_id },
+          { sender_id: receiver_id, receiver_id: sender_id }
+        ]
+      },
       include: [
-        { model: User, as: 'sender', attributes: ['name', 'role'] },
-        { model: User, as: 'receiver', attributes: ['name', 'role'] }
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_pic'] }
       ],
-      order: [['created_at', 'DESC']],
-      limit: 100
+      order: [['created_at', 'ASC']]
     });
-    res.json(logs);
+
+    res.json({ data: messages });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

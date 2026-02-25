@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import MetricCard from "../components/dashboard/MetricCard";
-import ChartWrapper from "../components/dashboard/ChartWrapper";
 import api from "../services/api";
 
 export default function VetDashboard() {
@@ -11,172 +9,175 @@ export default function VetDashboard() {
     appointmentsToday: 0,
     ongoingTreatments: 0,
     reportsSubmitted: 0,
-    statusDistribution: [],
-    weeklyActivity: []
-  });
-  const [vetCases, setVetCases] = useState([]);
-  const [selectedCaseId, setSelectedCaseId] = useState("");
-
-  const [caseData, setCaseData] = useState({
-    labels: ["No Data"],
-    datasets: [{
-      data: [1],
-      backgroundColor: ["#f0f0f0"]
-    }]
+    totalConsultations: 0
   });
 
-  const [performanceData, setPerformanceData] = useState({
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    datasets: [{
-      label: "Cases Handled",
-      data: [0, 0, 0, 0, 0, 0, 0],
-      backgroundColor: "#1E90FF"
-    }]
-  });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchVetData = async () => {
       try {
-        const [dashboardRes, casesRes] = await Promise.all([
-          api.get("/vet/dashboard"),
-          api.get("/vet/cases")
-        ]);
+        const res = await api.get("/vet/dashboard");
+        if (res.data && res.data.data) {
+          setMetrics(res.data.data);
+        }
         
-        const data = dashboardRes.data;
-        setMetrics(data);
-
-        // Update Case Status Chart
-        if (data.statusDistribution && data.statusDistribution.length > 0) {
-          setCaseData({
-            labels: data.statusDistribution.map(s => s.status),
-            datasets: [{
-              data: data.statusDistribution.map(s => s.count),
-              backgroundColor: ["#1E90FF", "#FFD700", "#228B22", "#DC3545"]
-            }]
-          });
+        const activityRes = await api.get("/vet/dashboard/activity");
+        if (activityRes.data && activityRes.data.data) {
+          setRecentActivity(activityRes.data.data);
         }
-
-        // Update Performance Chart
-        if (data.weeklyActivity && data.weeklyActivity.length > 0) {
-          setPerformanceData({
-            labels: data.weeklyActivity.map(a => a.day),
-            datasets: [{
-              label: "Consultations Completed",
-              data: data.weeklyActivity.map(a => a.count),
-              backgroundColor: "#1E90FF"
-            }]
-          });
-        }
-
-        // Set cases for media upload
-        const casesArray = casesRes.data?.data?.rows || casesRes.data?.data || [];
-        setVetCases(Array.isArray(casesArray) ? casesArray : []);
       } catch (err) {
         console.error("Vet Dashboard Error:", err);
+      } finally {
+        setLoading(false);
       }
     };
-
     fetchVetData();
   }, []);
 
+  if (loading) return (
+    <div className="d-flex justify-content-center align-items-center vh-100 text-primary">
+      <div className="spinner-border" role="status"></div>
+    </div>
+  );
+
   return (
-    <div className="container-fluid px-0 py-2">
+    <div className="container-fluid py-4 bg-light min-vh-100">
       <div className="mb-4">
-        <h3 className="fw-bold mb-1" style={{ color: "var(--text-dark)" }}>Veterinary Overview</h3>
-        <p className="text-muted">Manage your clinical cases and upcoming consultations efficiently.</p>
+        <h3 className="fw-bold text-dark">Veterinary Dashboard</h3>
+        <p className="text-muted small text-uppercase tracking-wider">Comprehensive overview of your clinical cases and activities.</p>
       </div>
 
-      <div className="row g-4 mb-4">
+      <div className="row g-3 mb-5">
         <div className="col-md-3">
-          <MetricCard 
-            label="Active Cases" 
-            value={metrics.incomingCases} 
-            icon="bi-clipboard2-pulse" 
-          />
+          <div 
+            className="card border-0 shadow-sm p-4 bg-white h-100"
+            onClick={() => navigate("/vetdashboard/cases")}
+            style={{ cursor: "pointer" }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="text-muted small fw-bold">Active Cases</span>
+              <i className="bi bi-clipboard2-pulse text-primary fs-4"></i>
+            </div>
+            <h2 className="fw-bold mb-0">{metrics.incomingCases}</h2>
+          </div>
         </div>
         <div className="col-md-3">
-          <MetricCard 
-            label="Appointments" 
-            value={metrics.appointmentsToday} 
-            icon="bi-calendar-check" 
-          />
+          <div 
+            className="card border-0 shadow-sm p-4 bg-white h-100"
+            onClick={() => navigate("/vetdashboard/consultations")}
+            style={{ cursor: "pointer" }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="text-muted small fw-bold">Consultations</span>
+              <i className="bi bi-calendar-event text-success fs-4"></i>
+            </div>
+            <h2 className="fw-bold mb-0">{metrics.appointmentsToday}</h2>
+          </div>
         </div>
         <div className="col-md-3">
-          <MetricCard 
-            label="In Treatment" 
-            value={metrics.ongoingTreatments} 
-            icon="bi-capsule" 
-          />
+          <div 
+            className="card border-0 shadow-sm p-4 bg-white h-100"
+            onClick={() => navigate("/vetdashboard/cases")}
+            style={{ cursor: "pointer" }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="text-muted small fw-bold">Ongoing Treatments</span>
+              <i className="bi bi-capsule text-warning fs-4"></i>
+            </div>
+            <h2 className="fw-bold mb-0">{metrics.ongoingTreatments}</h2>
+          </div>
         </div>
         <div className="col-md-3">
-          <MetricCard 
-            label="Lab Reports" 
-            value={metrics.reportsSubmitted} 
-            icon="bi-file-earmark-medical" 
-          />
+          <div 
+            className="card border-0 shadow-sm p-4 bg-white h-100"
+            onClick={() => navigate("/vetdashboard/diagnostics/lab-results")}
+            style={{ cursor: "pointer" }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="text-muted small fw-bold">Lab Reports</span>
+              <i className="bi bi-file-earmark-medical text-info fs-4"></i>
+            </div>
+            <h2 className="fw-bold mb-0">{metrics.reportsSubmitted}</h2>
+          </div>
         </div>
       </div>
 
-      <div className="row g-4 mb-4">
+      <div className="row g-4">
         <div className="col-lg-8">
-          <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
-            <h5 className="fw-bold mb-4">Weekly Consultation Activity</h5>
-            <div style={{ height: "300px" }}>
-              <ChartWrapper 
-                type="bar" 
-                data={performanceData} 
-                options={{ maintainAspectRatio: false }} 
-              />
+          <div className="card border-0 shadow-sm overflow-hidden">
+            <div className="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+              <h6 className="mb-0 fw-bold">Recent Activity Logs</h6>
+              <button 
+                className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                onClick={() => navigate("/vetdashboard/communication/notifications")}
+              >
+                View All
+              </button>
+            </div>
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="ps-4">Activity Description</th>
+                      <th className="text-end pe-4">Date & Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recentActivity.length > 0 ? (
+                      recentActivity.map((act, idx) => (
+                        <tr key={idx}>
+                          <td className="ps-4">
+                            <div className="d-flex align-items-center">
+                              <div className="bg-light p-2 rounded-circle me-3">
+                                <i className="bi bi-lightning-charge text-primary small"></i>
+                              </div>
+                              <span className="fw-medium text-dark">{act.message}</span>
+                            </div>
+                          </td>
+                          <td className="text-end pe-4 text-muted small">
+                            {new Date(act.date).toLocaleString()}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="2" className="text-center py-4 text-muted">No recent activity recorded.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
-        <div className="col-lg-4">
-          <div className="card border-0 shadow-sm p-4 dashboard-card h-100">
-            <h5 className="fw-bold mb-4">Case Status distribution</h5>
-            <div style={{ height: "250px" }}>
-              <ChartWrapper type="doughnut" data={caseData} />
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Media Uploads Section */}
-      <div className="card border-0 shadow-sm p-4">
-        <h5 className="fw-bold mb-4">Media Uploads</h5>
-        <p className="text-muted mb-3">Upload and manage media files for your cases</p>
-        
-        <div className="row mb-3">
-          <div className="col-md-5">
-            <label className="form-label small fw-bold">Select Case</label>
-            <select 
-              className="form-select" 
-              value={selectedCaseId}
-              onChange={(e) => setSelectedCaseId(e.target.value)}
-            >
-              <option value="">Choose a case...</option>
-              {vetCases.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.title} (ID: {c.id})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="col-md-5">
-            <label className="form-label small fw-bold">Select File</label>
-            <input 
-              type="file" 
-              className="form-control" 
-              accept="image/*,.pdf,video/*,audio/*"
-              disabled
-            />
-          </div>
-          <div className="col-md-2 d-flex align-items-end">
-            <button
-              className="btn btn-primary w-100"
-              onClick={() => navigate("/vetdashboard/media")}
-            >
-              Manage Media
-            </button>
+        <div className="col-lg-4">
+          <div className="card border-0 shadow-sm p-4 h-100">
+            <h6 className="fw-bold mb-4">Quick Actions</h6>
+            <div className="d-grid gap-2">
+              <button 
+                className="btn btn-primary d-flex align-items-center justify-content-center gap-2 py-2"
+                onClick={() => navigate("/vetdashboard/consultations")}
+              >
+                <i className="bi bi-plus-circle"></i> New Consultation
+              </button>
+              <button 
+                className="btn btn-light d-flex align-items-center justify-content-center gap-2 py-2"
+                onClick={() => navigate("/vetdashboard/diagnostics/lab-requests")}
+              >
+                <i className="bi bi-file-earmark-plus"></i> Submit Lab Report
+              </button>
+              <hr />
+              <button 
+                className="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2"
+                onClick={() => navigate("/vetdashboard/communication/video-sessions")}
+              >
+                <i className="bi bi-person-video3"></i> Join Video Call
+              </button>
+            </div>
           </div>
         </div>
       </div>

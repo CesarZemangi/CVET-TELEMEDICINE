@@ -1,8 +1,4 @@
-import Case from "../../models/case.model.js";
-import Consultation from "../../models/consultation.model.js";
-import LabRequest from "../../models/labRequest.model.js";
-import Animal from "../../models/animal.model.js";
-import { Vet } from "../../models/associations.js";
+import { Case, Consultation, LabRequest, Animal, Vet } from "../../models/associations.js";
 import { Op, fn, col, literal } from "sequelize";
 
 export const getDashboardData = async (req, res) => {
@@ -32,7 +28,7 @@ export const getDashboardData = async (req, res) => {
     // Lab Requests submitted by this vet
     const labRequestsCount = await LabRequest.count({
       where: {
-        requested_by: vetId
+        vet_id: vetId
       }
     });
 
@@ -71,13 +67,15 @@ export const getDashboardData = async (req, res) => {
     });
 
     res.json({
-      incomingCases: incomingCasesCount,
-      appointmentsToday: appointmentsCount,
-      ongoingTreatments: ongoingTreatmentsCount,
-      reportsSubmitted: labRequestsCount,
-      totalConsultations: totalConsultations,
-      statusDistribution,
-      weeklyActivity
+      data: {
+        incomingCases: incomingCasesCount,
+        appointmentsToday: appointmentsCount,
+        ongoingTreatments: ongoingTreatmentsCount,
+        reportsSubmitted: labRequestsCount,
+        totalConsultations: totalConsultations,
+        statusDistribution,
+        weeklyActivity
+      }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -110,7 +108,7 @@ export const getRecentActivity = async (req, res) => {
       date: c.created_at
     }));
 
-    res.json(activity);
+    res.json({ data: activity });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

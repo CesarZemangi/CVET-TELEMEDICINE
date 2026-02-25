@@ -10,7 +10,8 @@ export const getConsultations = async (req, res) => {
         {
           model: Case,
           where: { farmer_id: farmerId },
-          attributes: ['id', 'title', 'description', 'status']
+          attributes: ['id', 'title', 'description', 'status'],
+          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
         }
       ],
       order: [['created_at', 'DESC']]

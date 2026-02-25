@@ -6,11 +6,19 @@ import { getCasesByVet } from '../../services/case.service.js';
 
 export const uploadMedia = async (req, res) => {
   try {
-    const { case_id } = req.body;
+    const { case_id, description } = req.body;
     const file = req.file;
 
-    if (!case_id || !file) {
-      return error(res, "case_id and file are required", 400);
+    if (!case_id) {
+      return error(res, "case_id is required", 400);
+    }
+
+    if (!file) {
+      return error(res, "file is required", 400);
+    }
+
+    if (!req.user || !req.user.id) {
+      return error(res, "Session user ID not available", 401);
     }
 
     // Validate case_id is a number
@@ -19,24 +27,37 @@ export const uploadMedia = async (req, res) => {
       return error(res, "case_id must be a valid number", 400);
     }
 
+    const singleCase = await Case.findByPk(caseId);
+    if (!singleCase) {
+      return error(res, "Case not found", 404);
+    }
+
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });
     if (!vet) {
       return error(res, "Vet record not found", 404);
     }
 
-    const singleCase = await Case.findOne({
-      where: { id: caseId, vet_id: vet.id }
-    });
-
-    if (!singleCase) {
-      return error(res, "Case not found or not assigned to you", 403);
+    if (singleCase.vet_id !== vet.id) {
+      return error(res, "Case not assigned to you", 403);
     }
 
-    const media = await CaseMedia.create({
+    console.log('User from req:', req.user);
+    console.log('File details:', file);
+    console.log('Case ID:', caseId);
+
+    const mediaData = {
       case_id: caseId,
-      media_type: file.mimetype,
-      file_path: `/uploads/${file.filename}`
-    });
+      uploaded_by: req.user.id,
+      updated_by: req.user.id,
+      file_name: file.originalname,
+      file_path: `/uploads/${file.filename}`,
+      file_type: file.mimetype,
+      file_size: file.size,
+      description: description || null
+    };
+    console.log('Attempting to create CaseMedia with:', mediaData);
+
+    const media = await CaseMedia.create(mediaData);
 
     success(res, media, "Media uploaded successfully", 201);
   } catch (err) {
@@ -95,7 +116,7 @@ export const getAllVetMedia = async (req, res) => {
           { model: Animal, attributes: ['id', 'tag_number', 'species'] }
         ]
       }],
-      order: [['uploaded_at', 'DESC']]
+      order: [['created_at', 'DESC']]
     });
 
     success(res, media, "All media retrieved successfully");

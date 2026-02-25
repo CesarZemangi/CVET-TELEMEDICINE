@@ -8,6 +8,11 @@ export default function VetSettings() {
     phone: user.phone || '',
     sms_opt_in: user.sms_opt_in ?? true
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -20,6 +25,38 @@ export default function VetSettings() {
       setMessage('Profile updated successfully!');
     } catch (err) {
       setMessage('Failed to update: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setLoading(true);
+    setMessage('');
+    try {
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        setMessage('All password fields are required');
+        setLoading(false);
+        return;
+      }
+      
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setMessage('New passwords do not match');
+        setLoading(false);
+        return;
+      }
+
+      await api.post('/auth/change-password', passwordData);
+      setMessage('Password changed successfully! Please login again.');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      setTimeout(() => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }, 2000);
+    } catch (err) {
+      setMessage('Failed to change password: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -87,19 +124,51 @@ export default function VetSettings() {
         </div>
 
         <div className="col-lg-6">
-          <div className="card shadow-sm">
+          <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
               <h6 className="fw-semibold mb-3">
-                Availability
+                Security Settings
               </h6>
 
-              <select className="form-select mb-3">
-                <option>Available</option>
-                <option>Busy</option>
-              </select>
+              <div className="mb-3">
+                <label className="form-label small fw-bold">Current Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  placeholder="Enter your current password"
+                />
+              </div>
 
-              <button className="btn btn-success">
-                Update Status
+              <div className="mb-3">
+                <label className="form-label small fw-bold">New Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  placeholder="Enter new password"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label small fw-bold">Confirm Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <button 
+                className="btn btn-primary px-4 fw-bold" 
+                onClick={handleChangePassword}
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Password'}
               </button>
             </div>
           </div>

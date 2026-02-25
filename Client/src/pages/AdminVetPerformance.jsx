@@ -48,7 +48,7 @@ export default function AdminVetPerformance() {
       <div className="row g-4 mb-4">
         <div className="col-md-4">
           <div className="card border-0 shadow-sm bg-primary text-white p-3 text-center">
-            <h3 className="fw-bold mb-0">{performance.systemAverageResponseTime || 0}m</h3>
+            <h3 className="fw-bold mb-0">{performance.systemMetrics?.avgResponseTime || 0}m</h3>
             <p className="small mb-0 text-uppercase opacity-75">System Avg Response Time</p>
           </div>
         </div>
@@ -68,13 +68,13 @@ export default function AdminVetPerformance() {
                   <th className="text-center">Assigned</th>
                   <th className="text-center">Completed</th>
                   <th className="text-center">Avg Response</th>
-                  <th className="text-center">Videos</th>
+                  <th className="text-center">Consultations</th>
                   <th>Success Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {performance.metrics.map(v => (
-                  <tr key={v.vet_id}>
+                  <tr key={v.vet_id} className={location.state?.vetId === v.vet_id ? 'table-primary' : ''}>
                     <td className="ps-4 fw-bold">{v.name}</td>
                     <td><small className="badge bg-light text-dark">{v.specialization || 'General'}</small></td>
                     <td className="text-center">{v.totalAssigned}</td>
@@ -84,16 +84,16 @@ export default function AdminVetPerformance() {
                         {v.avgResponseTime} min
                       </span>
                     </td>
-                    <td className="text-center">{v.videoSessionCount}</td>
+                    <td className="text-center">{v.totalConsultations}</td>
                     <td style={{width: '150px'}}>
                       <div className="d-flex align-items-center">
                         <div className="progress flex-grow-1" style={{height: '6px'}}>
                           <div 
-                            className={`progress-bar ${v.consultationCompletionRate > 80 ? 'bg-success' : 'bg-primary'}`} 
-                            style={{width: `${v.consultationCompletionRate}%`}}
+                            className={`progress-bar ${v.caseClosureRate > 80 ? 'bg-success' : 'bg-primary'}`} 
+                            style={{width: `${v.caseClosureRate}%`}}
                           ></div>
                         </div>
-                        <span className="ms-2 small fw-bold">{v.consultationCompletionRate}%</span>
+                        <span className="ms-2 small fw-bold">{v.caseClosureRate}%</span>
                       </div>
                     </td>
                   </tr>

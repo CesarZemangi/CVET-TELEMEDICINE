@@ -46,6 +46,20 @@ export default function AdminReminders() {
     }
   };
 
+  const handleDeleteReminder = async (id) => {
+    if (window.confirm("Are you sure you want to delete this reminder?")) {
+      try {
+        // Note: Delete endpoint might need to be implemented in the API service
+        // For now, we'll just show the intent
+        console.log("Delete reminder:", id);
+        // await api.delete(`/admin/reminders/${id}`);
+        // fetchReminders();
+      } catch (err) {
+        alert("Failed to delete reminder: " + err.message);
+      }
+    }
+  };
+
   return (
     <div className="container-fluid py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -92,8 +106,12 @@ export default function AdminReminders() {
                       </span>
                     </td>
                     <td className="text-end pe-4">
-                      <button className="btn btn-sm btn-outline-danger border-0">
-                        <i className="bi bi-trash"></i>
+                      <button 
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleDeleteReminder(reminder.id)}
+                        title="Delete reminder"
+                      >
+                        <i className="bi bi-trash me-1"></i>Delete
                       </button>
                     </td>
                   </tr>

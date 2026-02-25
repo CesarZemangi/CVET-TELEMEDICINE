@@ -6,6 +6,7 @@ import {
   rejectAppointment,
   completeAppointment,
   rescheduleAppointment,
+  cancelAppointment,
   getCasesForAppointments
 } from "../../controllers/vet/appointments.controller.js"
 
@@ -16,6 +17,7 @@ router.get("/", auth, getVetAppointments)
 router.put("/:id/approve", auth, approveAppointment)
 router.put("/:id/reject", auth, rejectAppointment)
 router.put("/:id/complete", auth, completeAppointment)
+router.put("/:id/cancel", auth, cancelAppointment)
 router.put("/:id/reschedule", auth, rescheduleAppointment)
 
 export default router

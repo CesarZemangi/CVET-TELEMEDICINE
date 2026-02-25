@@ -6,10 +6,12 @@ import { getCases } from "../services/vet.cases.service";
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [cases, setCases] = useState([])
+  const [farmers, setFarmers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({
     case_id: "",
+    receiver_id: "",
     title: "",
     message: "",
     type: "update"
@@ -22,8 +24,10 @@ export default function Notifications() {
       setNotifications(res.data?.data || res.data || []);
       const casesData = await getCases();
       setCases(casesData?.data || casesData || []);
+      const contactsRes = await api.get("/communication/contacts");
+      setFarmers(contactsRes.data?.data || contactsRes.data || []);
     } catch (err) {
-      console.error("Error fetching notifications:", err);
+      console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
     }
@@ -38,7 +42,7 @@ export default function Notifications() {
     try {
       await api.post("/vet/notifications/send", formData);
       setShowAddModal(false);
-      setFormData({ case_id: "", title: "", message: "", type: "update" });
+      setFormData({ case_id: "", receiver_id: "", title: "", message: "", type: "update" });
       fetchData();
     } catch (err) {
       alert("Failed to send notification: " + (err.response?.data?.error || err.message));
@@ -80,7 +84,7 @@ export default function Notifications() {
                   <p className="small text-muted mb-2">{note.message}</p>
                   <div className="d-flex justify-content-between align-items-center">
                     <small className="text-muted">
-                      To: {note.User?.name || "Farmer"} | Case: {note.Case?.title || "N/A"}
+                      To: {note.receiver?.name || "Farmer"} | Case: {note.Case?.title || "N/A"}
                     </small>
                     <small className="text-muted">
                       {new Date(note.created_at).toLocaleString()}
@@ -106,15 +110,39 @@ export default function Notifications() {
                 </div>
                 <div className="modal-body">
                   <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Case</label>
+                    <label className="form-label small fw-bold">Select Farmer</label>
                     <select 
                       className="form-select" 
-                      required 
+                      value={formData.receiver_id} 
+                      onChange={e => setFormData({...formData, receiver_id: e.target.value, case_id: ""})}
+                    >
+                      <option value="">Choose a farmer...</option>
+                      {farmers.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold">Select Case (Optional if Farmer selected)</label>
+                    <select 
+                      className="form-select" 
+                      required={!formData.receiver_id}
                       value={formData.case_id} 
-                      onChange={e => setFormData({...formData, case_id: e.target.value})}
+                      onChange={e => {
+                        const cid = e.target.value;
+                        const c = cases.find(x => x.id == cid);
+                        setFormData({
+                          ...formData, 
+                          case_id: cid, 
+                          receiver_id: c ? c.farmer_id : formData.receiver_id
+                        });
+                      }}
                     >
                       <option value="">Choose a case...</option>
-                      {cases.map(c => (
+                      {(formData.receiver_id 
+                        ? cases.filter(c => c.farmer_id == formData.receiver_id) 
+                        : cases
+                      ).map(c => (
                         <option key={c.id} value={c.id}>
                           {c.title} ({c.Animal?.tag_number})
                         </option>
@@ -157,7 +185,10 @@ export default function Notifications() {
                   </div>
                 </div>
                 <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button type="button" className="btn btn-light" onClick={() => {
+                    setShowAddModal(false);
+                    setFormData({ case_id: "", receiver_id: "", title: "", message: "", type: "update" });
+                  }}>Cancel</button>
                   <button type="submit" className="btn btn-primary px-4">Send</button>
                 </div>
               </form>

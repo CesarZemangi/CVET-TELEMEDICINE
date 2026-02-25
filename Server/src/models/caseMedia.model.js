@@ -9,22 +9,54 @@ const CaseMedia = sequelize.define('CaseMedia', {
   },
   case_id: { 
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'cases',
+      key: 'id'
+    }
   },
-  media_type: { 
+  uploaded_by: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  file_name: {
     type: DataTypes.STRING,
     allowNull: false
   },
   file_path: { 
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(500),
     allowNull: false
   },
-  uploaded_at: { 
+  file_type: { 
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  file_size: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  created_at: { 
     type: DataTypes.DATE, 
     defaultValue: DataTypes.NOW 
+  },
+  updated_by: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, { 
-  tableName: 'case_media', 
+  tableName: 'media_uploads', 
   timestamps: false 
 });
 

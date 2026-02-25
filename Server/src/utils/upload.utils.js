@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const dir = 'storage/uploads/case-media/';
+    const dir = path.join(process.cwd(), 'storage/uploads/case-media/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

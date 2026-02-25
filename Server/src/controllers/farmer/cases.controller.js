@@ -1,3 +1,4 @@
+import path from 'path';
 import { Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { logAction } from "../../utils/dbLogger.js";
@@ -154,14 +155,23 @@ export const uploadMedia = async (req, res) => {
       return res.status(400).json({ error: "No files uploaded" });
     }
 
+    console.log('Farmer Upload - User:', req.user);
+    console.log('Farmer Upload - Files:', req.files.length);
+
     const mediaEntries = await Promise.all(
-      req.files.map(file => 
-        CaseMedia.create({
+      req.files.map(file => {
+        const mediaData = {
           case_id: id,
-          media_type: file.mimetype,
-          file_path: file.path.replace(/\\/g, '/')
-        })
-      )
+          uploaded_by: req.user.id,
+          updated_by: req.user.id,
+          file_name: file.originalname,
+          file_path: '/' + path.relative(process.cwd(), file.path).replace(/\\/g, '/'),
+          file_type: file.mimetype,
+          file_size: file.size
+        };
+        console.log('Farmer Upload - Creating entry:', mediaData);
+        return CaseMedia.create(mediaData);
+      })
     );
 
     await logAction(req.user.id, `Farmer uploaded ${mediaEntries.length} media file(s) to case #${id}`);

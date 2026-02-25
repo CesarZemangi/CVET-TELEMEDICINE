@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { Pie, Line } from "react-chartjs-2"
-import { getLabResults } from "../services/farmer.diagnostics.service"
+import { getLabResults, getLabRequests, uploadLabResult } from "../services/farmer.diagnostics.service"
 import {
   Chart as ChartJS,
   ArcElement,
@@ -18,15 +18,28 @@ ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearSca
 export default function LabResults() {
   const [filter, setFilter] = useState("All")
   const [results, setResults] = useState([])
+  const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState(null)
+  const [uploadResult, setUploadResult] = useState('')
+  const [message, setMessage] = useState('')
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await getLabResults();
-      setResults(data?.data || data || []);
+      const [resultsData, requestsData] = await Promise.all([
+        getLabResults(),
+        getLabRequests()
+      ]);
+      console.log("Results Data:", resultsData);
+      console.log("Requests Data:", requestsData);
+      setResults(Array.isArray(resultsData?.data) ? resultsData.data : Array.isArray(resultsData) ? resultsData : []);
+      setRequests(Array.isArray(requestsData?.data) ? requestsData.data : Array.isArray(requestsData) ? requestsData : []);
     } catch (err) {
-      console.error("Error fetching lab results:", err);
+      console.error("Error fetching lab data:", err);
+      setResults([]);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -35,6 +48,30 @@ export default function LabResults() {
   useEffect(() => {
     fetchData();
   }, [])
+
+  const handleUpload = async () => {
+    if (!selectedRequest || !uploadResult.trim()) {
+      setMessage("Please select a lab request and enter results");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      setMessage('');
+      await uploadLabResult({
+        lab_request_id: selectedRequest.id,
+        result: uploadResult
+      });
+      setMessage('Lab result uploaded successfully!');
+      setUploadResult('');
+      setSelectedRequest(null);
+      fetchData();
+    } catch (err) {
+      setMessage('Failed to upload: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setUploading(false);
+    }
+  }
 
   const abnormalKeywords = ["High", "Parasites", "Positive", "Bacterial", "Elevated", "dermatitis", "infection"]
 
@@ -88,11 +125,88 @@ export default function LabResults() {
     }
   }
 
+  const pendingRequests = requests.filter(r => r.status === 'pending')
+
   return (
     <div className="container-fluid py-2">
       <div className="mb-4">
         <h4 className="fw-bold">Lab Results</h4>
-        <p className="text-muted small">View diagnostic lab results for your livestock.</p>
+        <p className="text-muted small">Upload your clinic lab results and view diagnostic findings for your livestock.</p>
+      </div>
+
+      {message && (
+        <div className={`alert ${message.includes('success') ? 'alert-success' : 'alert-danger'} border-0 shadow-sm mb-4`}>
+          {message}
+        </div>
+      )}
+
+      <div className="card border-0 shadow-sm mb-4">
+        <div className="card-header bg-light">
+          <h6 className="mb-0 fw-bold">
+            <i className="bi bi-cloud-upload me-2"></i>Upload Lab Results
+          </h6>
+        </div>
+        <div className="card-body">
+          {pendingRequests.length > 0 ? (
+            <>
+              <div className="mb-3">
+                <label className="form-label small fw-bold">Select Lab Request *</label>
+                <select 
+                  className="form-select"
+                  value={selectedRequest?.id || ''}
+                  onChange={(e) => {
+                    const req = requests.find(r => r.id === parseInt(e.target.value));
+                    setSelectedRequest(req || null);
+                  }}
+                >
+                  <option value="">Choose a pending lab request...</option>
+                  {pendingRequests.map(req => (
+                    <option key={req.id} value={req.id}>
+                      Case: {req.Case?.title} - {req.test_type}  
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedRequest && (
+                <div className="mb-3 p-3 bg-light rounded">
+                  <p className="text-muted small mb-1">
+                    <strong>Test Type:</strong> {selectedRequest.test_type}
+                  </p>
+                  {selectedRequest.notes && (
+                    <p className="text-muted small mb-0">
+                      <strong>Vet Notes:</strong> {selectedRequest.notes}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="mb-3">
+                <label className="form-label small fw-bold">Lab Results / Findings *</label>
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  placeholder="Enter your lab test results and findings from the clinic..."
+                  value={uploadResult}
+                  onChange={(e) => setUploadResult(e.target.value)}
+                ></textarea>
+              </div>
+
+              <button 
+                className="btn btn-primary"
+                onClick={handleUpload}
+                disabled={uploading || !selectedRequest}
+              >
+                {uploading ? 'Uploading...' : 'Upload Results'}
+              </button>
+            </>
+          ) : (
+            <div className="text-center py-4 text-muted">
+              <i className="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+              <p className="mb-0">No pending lab requests. The vet will create a lab request when needed.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mb-3 d-flex gap-2 flex-wrap">
@@ -105,6 +219,10 @@ export default function LabResults() {
             {f}
           </button>
         ))}
+      </div>
+
+      <div className="mb-4">
+        <h5 className="fw-bold">Completed Lab Results</h5>
       </div>
 
       <div className="row">

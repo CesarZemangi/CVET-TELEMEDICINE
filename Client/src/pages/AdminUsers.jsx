@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -29,6 +31,10 @@ export default function AdminUsers() {
     } catch (err) {
       alert("Error updating status: " + err.message);
     }
+  };
+
+  const handleViewProfile = (user) => {
+    navigate(`/admindashboard/users/${user.id}`, { state: { user } });
   };
 
   return (
@@ -73,7 +79,13 @@ export default function AdminUsers() {
                       >
                         {u.status === 'active' ? 'Deactivate' : 'Activate'}
                       </button>
-                      <button className="btn btn-sm btn-outline-primary">View Profile</button>
+                      <button 
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => handleViewProfile(u)}
+                        title="View user profile details"
+                      >
+                        <i className="bi bi-person-circle me-1"></i>View Profile
+                      </button>
                     </td>
                   </tr>
                 )) : (

@@ -27,7 +27,7 @@ export default function ChatInterface({ readOnly = false }) {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const endpoint = readOnly ? "/admin/chat-logs" : "/communication/conversations";
+      const endpoint = readOnly ? "/admin/chatlogs" : "/communication/conversations";
       const res = await api.get(endpoint);
       const data = res.data.data || res.data;
       setConversations(data);
@@ -47,20 +47,33 @@ export default function ChatInterface({ readOnly = false }) {
         return;
       }
       
+      if (!readOnly && (!conv.partner || !conv.partner.id)) {
+        console.error("Invalid conversation object:", conv);
+        return;
+      }
+      
       let endpoint = "/communication/chatlogs";
-      let params = { partner_id: conv.partner.id, case_id: conv.case_id };
+      let params = { partner_id: conv.partner?.id };
       
       if (readOnly) {
-        endpoint = "/admin/chat-logs/thread";
+        endpoint = "/admin/chatlogs/thread";
         params = { sender_id: conv.sender_id, receiver_id: conv.receiver_id };
       }
       
       const res = await api.get(endpoint, { params });
-      const data = res.data.data || res.data;
-      setMessages(data);
+      const data = res.data?.data || res.data || [];
+      
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else {
+        console.error("Invalid messages format:", data);
+        setMessages([]);
+      }
+      
       setSelectedConv(conv);
     } catch (err) {
       console.error("Error fetching messages:", err);
+      setMessages([]);
     }
   }, [readOnly]);
 
@@ -245,13 +258,15 @@ export default function ChatInterface({ readOnly = false }) {
                 const lastMessage = readOnly ? conv.message : conv.lastMessage;
                 const lastTime = readOnly ? conv.created_at : conv.lastTime;
                 const displayPartner = partner || { name: 'Unknown', role: 'user' };
-                const isSelected = selectedConv?.partner.id === displayPartner.id && selectedConv?.case_id === conv.case_id;
+                const isSelected = readOnly 
+                  ? (selectedConv?.sender_id === conv.sender_id && selectedConv?.receiver_id === conv.receiver_id)
+                  : (selectedConv?.partner?.id === displayPartner.id && selectedConv?.case_id === conv.case_id);
 
                 return (
                   <div 
                     key={idx}
                     onClick={() => {
-                      fetchMessages(readOnly ? { partner: displayPartner, case_id: conv.case_id } : conv);
+                      fetchMessages(readOnly ? { ...conv, partner: displayPartner } : conv);
                       if (isMobile) setSidebarOpen(false);
                     }}
                     className={`chat-conversation-item ${isSelected ? 'active' : ''}`}
@@ -261,7 +276,11 @@ export default function ChatInterface({ readOnly = false }) {
                     </div>
                     <div className="chat-conv-content">
                       <div className="chat-conv-header">
-                        <h3 className="chat-conv-name">{displayPartner.name}</h3>
+                        <h3 className="chat-conv-name">
+                          {readOnly 
+                            ? `${conv.sender?.name || 'User'} & ${conv.receiver?.name || 'User'}`
+                            : displayPartner.name}
+                        </h3>
                         <span className="chat-conv-time">
                           {new Date(lastTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                         </span>
@@ -304,20 +323,29 @@ export default function ChatInterface({ readOnly = false }) {
                   <span className="chat-online-dot"></span>
                 </div>
                 <div className="chat-header-info">
-                  <h3 className="chat-header-name">{selectedConv.partner.name}</h3>
-                  <p className="chat-header-status">Online • {selectedConv.partner.role}</p>
+                  <h3 className="chat-header-name">
+                    {readOnly 
+                      ? `${selectedConv.sender?.name || 'Sender'} & ${selectedConv.receiver?.name || 'Receiver'}`
+                      : selectedConv.partner.name}
+                  </h3>
+                  <p className="chat-header-status">
+                    {readOnly ? 'Monitoring Conversation' : `Online • ${selectedConv.partner.role}`}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="chat-messages">
               {messages.length > 0 ? messages.map((msg, idx) => {
-                const isMine = msg.sender_id === user.id;
+                const initiatorId = messages[0]?.sender_id;
+                const isMine = readOnly 
+                  ? msg.sender_id !== initiatorId
+                  : msg.sender_id === user.id;
                 const senderName = msg.sender?.name || 'Unknown';
                 return (
                   <div key={idx} className={`chat-message ${isMine ? 'sent' : 'received'}`}>
                     <div className="chat-bubble">
-                      {!isMine && <p className="chat-sender-name">{senderName}</p>}
+                      <p className="chat-sender-name">{senderName}</p>
                       <p className="chat-text">{msg.message}</p>
                       <span className="chat-time">
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

@@ -16,3 +16,8 @@ export const getLabResults = async () => {
   const response = await api.get(`${API_URL}/lab-results`)
   return response.data
 }
+
+export const uploadLabResult = async (data) => {
+  const response = await api.post(`${API_URL}/lab-results`, data)
+  return response.data
+}

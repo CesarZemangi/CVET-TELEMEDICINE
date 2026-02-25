@@ -117,6 +117,7 @@ import AdminAppointments from "./pages/AdminAppointments"
 import AdminAnalytics from "./pages/AdminAnalytics"
 import AdminVetPerformance from "./pages/AdminVetPerformance"
 import AdminReminders from "./pages/AdminReminders"
+import AdminNotifications from "./pages/AdminNotifications"
 import AdminCommunication from "./pages/AdminCommunication"
 import AdminSettings from "./pages/AdminSettings"
 import AdminMedia from "./pages/AdminMedia"
@@ -299,6 +300,7 @@ return (
     <Route path="vet-performance" element={<AdminVetPerformance />} />
     <Route path="media" element={<AdminMedia />} />
     <Route path="communication/messages" element={<AdminCommunication />} />
+    <Route path="communication/notifications" element={<AdminNotifications />} />
   </Route>
 
   <Route path="*" element={<Navigate to="/" replace />} />
