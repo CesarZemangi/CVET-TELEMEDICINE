@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProfileImage from "../common/ProfileImage";
 import api from "../../services/api";
@@ -7,10 +7,28 @@ import socket from "../../services/socket";
 export default function Topbar({ isMobile = false, onMenuClick = null }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const fileInputRef = useRef(null);
+  const profileMenuRef = useRef(null);
+  const syncUserFromStorage = () => {
+    try {
+      const latest = JSON.parse(localStorage.getItem("user") || "{}");
+      setUser(latest);
+    } catch {
+      setUser({});
+    }
+  };
+
+  const getSettingsRoute = () => {
+    const role = user?.role?.toLowerCase();
+    if (role === "admin") return "/admindashboard/settings";
+    if (role === "vet") return "/vetdashboard/settings";
+    return "/farmerdashboard/settings";
+  };
 
   useEffect(() => {
     const fetchNotifs = async () => {
@@ -46,6 +64,55 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
       socket.off("update_notification_count");
     };
   }, []);
+
+  useEffect(() => {
+    const onClickOutside = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    const onUserUpdated = () => syncUserFromStorage();
+    const onFocus = () => syncUserFromStorage();
+    const onStorage = () => syncUserFromStorage();
+    document.addEventListener("click", onClickOutside);
+    window.addEventListener("user-updated", onUserUpdated);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      document.removeEventListener("click", onClickOutside);
+      window.removeEventListener("user-updated", onUserUpdated);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  const handleProfileImageChoose = (e) => {
+    e.stopPropagation();
+    fileInputRef.current?.click();
+  };
+
+  const handleProfileImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("profile_image", file);
+
+    try {
+      const res = await api.put("/user/profile", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      const updatedUser = { ...user, ...(res.data?.user || {}) };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("user-updated"));
+      setShowProfileMenu(false);
+    } catch (err) {
+      console.error("Profile image upload failed:", err);
+      alert(err.response?.data?.error || "Failed to update profile picture");
+    } finally {
+      e.target.value = "";
+    }
+  };
 
   const handleMarkRead = async (id, e) => {
     if (e) e.stopPropagation();
@@ -174,7 +241,7 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
 
         <div className="vr d-none d-md-block" style={{ height: "30px" }}></div>
 
-        <div className="d-flex align-items-center">
+        <div className="d-flex align-items-center position-relative" ref={profileMenuRef}>
           <div className="text-end me-3 d-none d-sm-block">
             <h6 className="mb-0 fw-bold" style={{ color: "var(--text-dark)" }}>
               {user?.name || "User Name"}
@@ -183,12 +250,56 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
               {user?.role?.toUpperCase() || "PORTAL"}
             </small>
           </div>
-           <ProfileImage
-            src={user?.profilePic}
-            role={user?.role}
-            size="45px"
-            className="shadow-sm border-primary border-opacity-25"
+          <button
+            type="button"
+            className="btn p-0 border-0 bg-transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowProfileMenu((prev) => !prev);
+            }}
+            title="Profile options"
+          >
+            <ProfileImage
+              src={user?.profile_image}
+              role={user?.role}
+              name={user?.name}
+              size="45px"
+              className="shadow-sm border-primary border-opacity-25"
+            />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="d-none"
+            onChange={handleProfileImageUpload}
           />
+          {showProfileMenu && (
+            <div
+              className="position-absolute end-0 mt-2 bg-white border rounded-3 shadow-sm overflow-hidden"
+              style={{ top: "100%", minWidth: "220px", zIndex: 1200 }}
+            >
+              <button
+                type="button"
+                className="dropdown-item py-2"
+                onClick={handleProfileImageChoose}
+              >
+                <i className="bi bi-camera me-2"></i>
+                Change Profile Picture
+              </button>
+              <button
+                type="button"
+                className="dropdown-item py-2"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  navigate(getSettingsRoute());
+                }}
+              >
+                <i className="bi bi-gear me-2"></i>
+                Profile Settings
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

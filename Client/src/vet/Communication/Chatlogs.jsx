@@ -6,7 +6,7 @@ export default function ChatLogs() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    fetch("/api/communication/chatlogs")
+    fetch("/api/v1/communication/chatlogs")
       .then(res => res.json())
       .then(data => setLogs(Array.isArray(data) ? data : (data.logs || [])))
       .catch(err => console.error(err))

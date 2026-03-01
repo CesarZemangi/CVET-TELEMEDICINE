@@ -30,7 +30,7 @@ export default function TreatmentEffectiveness() {
   const [summaryRows, setSummaryRows] = useState([])
 
   useEffect(() => {
-    fetch("/api/treatments/effectiveness")
+    fetch("/api/v1/treatments/effectiveness")
       .then(res => res.json())
       .then(data => {
         setBarStats(data.metrics)

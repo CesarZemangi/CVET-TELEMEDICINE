@@ -1,3 +1,4 @@
+import { Op } from "sequelize";
 import { Case, Vet, User, Animal } from "../models/associations.js";
 
 export const getCaseListForUser = async (role, user_id) => {
@@ -6,8 +7,8 @@ export const getCaseListForUser = async (role, user_id) => {
     
     if (role === 'vet') {
       const vetRecord = await Vet.findOne({ where: { user_id } });
-      if (!vetRecord) return [];
-      whereClause = { vet_id: vetRecord.id };
+      const vetIds = Array.from(new Set([vetRecord?.id, Number(user_id)].filter(Boolean)));
+      whereClause = { vet_id: { [Op.in]: vetIds } };
     } else if (role === 'farmer') {
       whereClause = { farmer_id: user_id };
     }
@@ -29,11 +30,11 @@ export const getCaseListForUser = async (role, user_id) => {
 export const getCasesByVet = async (user_id) => {
   try {
     const vetRecord = await Vet.findOne({ where: { user_id } });
-    if (!vetRecord) return [];
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(user_id)].filter(Boolean)));
     
     const cases = await Case.findAll({
-      where: { vet_id: vetRecord.id },
-      attributes: ['id', 'title', 'status', 'priority', 'animal_id'],
+      where: { vet_id: { [Op.in]: vetIds } },
+      attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id'],
       include: [
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
@@ -72,8 +73,8 @@ export const getCaseWithDetails = async (case_id, user_id, role) => {
     
     if (role === 'vet') {
       const vetRecord = await Vet.findOne({ where: { user_id } });
-      if (!vetRecord) return null;
-      whereClause.vet_id = vetRecord.id;
+      const vetIds = Array.from(new Set([vetRecord?.id, Number(user_id)].filter(Boolean)));
+      whereClause.vet_id = { [Op.in]: vetIds };
     } else if (role === 'farmer') {
       whereClause.farmer_id = user_id;
     }

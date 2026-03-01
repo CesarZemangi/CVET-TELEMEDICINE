@@ -17,8 +17,10 @@ const Case = sequelize.define('Case', {
 }, { 
   tableName: 'cases', 
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  deletedAt: 'deleted_at',
   indexes: [
     { fields: ['status'] },
     { fields: ['priority'] }

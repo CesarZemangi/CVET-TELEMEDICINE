@@ -18,10 +18,12 @@ export default function FarmerDashboard() {
     const fetchDashboardData = async () => {
       try {
         const res = await api.get("/farmer/dashboard");
-        setMetrics(res.data);
+        const payload = res?.data?.data || res?.data || {};
+        setMetrics(prev => ({ ...prev, ...payload }));
         
         const activityRes = await api.get("/farmer/dashboard/activity");
-        setRecentActivity(activityRes.data);
+        const activityPayload = activityRes?.data?.data || activityRes?.data || [];
+        setRecentActivity(Array.isArray(activityPayload) ? activityPayload : []);
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
       } finally {

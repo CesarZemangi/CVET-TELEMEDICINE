@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createAdminReminder, getAdminReminders } from "../services/reminder";
 import DashboardSection from "../components/dashboard/DashboardSection";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function AdminReminders() {
   const [reminders, setReminders] = useState([]);
@@ -124,70 +125,58 @@ export default function AdminReminders() {
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Create System Broadcast</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Reminder Title</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      required 
-                      value={formData.title}
-                      onChange={e => setFormData({...formData, title: e.target.value})}
-                      placeholder="e.g. Vaccination Campaign"
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Target Audience</label>
-                    <select 
-                      className="form-select" 
-                      value={formData.target_role}
-                      onChange={e => setFormData({...formData, target_role: e.target.value})}
-                    >
-                      <option value="farmer">All Farmers</option>
-                      <option value="vet">All Veterinarians</option>
-                      <option value="all">Everyone</option>
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Broadcast Date</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      required 
-                      value={formData.schedule_date}
-                      onChange={e => setFormData({...formData, schedule_date: e.target.value})}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Message Content</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="4" 
-                      required 
-                      value={formData.message}
-                      onChange={e => setFormData({...formData, message: e.target.value})}
-                      placeholder="Enter the detailed announcement here..."
-                    ></textarea>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Send Reminder</button>
-                </div>
-              </form>
-            </div>
-          </div>
+      <FormModalWrapper
+        show={showModal}
+        title="Create System Broadcast"
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        submitLabel="Send Reminder"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Reminder Title</label>
+          <input
+            type="text"
+            className="form-control"
+            required
+            value={formData.title}
+            onChange={e => setFormData({...formData, title: e.target.value})}
+            placeholder="e.g. Vaccination Campaign"
+          />
         </div>
-      )}
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Target Audience</label>
+          <select
+            className="form-select"
+            value={formData.target_role}
+            onChange={e => setFormData({...formData, target_role: e.target.value})}
+          >
+            <option value="farmer">All Farmers</option>
+            <option value="vet">All Veterinarians</option>
+            <option value="all">Everyone</option>
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Broadcast Date</label>
+          <input
+            type="date"
+            className="form-control"
+            required
+            value={formData.schedule_date}
+            onChange={e => setFormData({...formData, schedule_date: e.target.value})}
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Message Content</label>
+          <textarea
+            className="form-control"
+            rows="4"
+            required
+            value={formData.message}
+            onChange={e => setFormData({...formData, message: e.target.value})}
+            placeholder="Enter the detailed announcement here..."
+          ></textarea>
+        </div>
+      </FormModalWrapper>
     </div>
   );
 }

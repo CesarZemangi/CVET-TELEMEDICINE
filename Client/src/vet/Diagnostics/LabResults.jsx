@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { getLabResults } from "../services/vet.diagnostics.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
+import FormModalWrapper from "../../components/common/FormModalWrapper";
 
 export default function LabResults() {
   const [results, setResults] = useState([]);
@@ -70,40 +71,35 @@ export default function LabResults() {
       </div>
 
       {/* View Result Modal */}
-      {showModal && selectedResult && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <div className="modal-header">
-                <h5 className="modal-title fw-bold">Lab Result Details</h5>
-                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-              </div>
-              <div className="modal-body">
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">Case</label>
-                  <p className="fw-medium">{selectedResult.LabRequest?.Case?.title}</p>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">Test Type</label>
-                  <p className="fw-medium">{selectedResult.LabRequest?.test_type}</p>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label small fw-bold text-muted">Findings</label>
-                  <div className="p-3 bg-light rounded border">
-                    {selectedResult.result}
-                  </div>
-                </div>
-                <div className="text-muted small">
-                  Uploaded on: {new Date(selectedResult.uploaded_at).toLocaleString()}
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Close</button>
-              </div>
-            </div>
+      <FormModalWrapper
+        show={showModal && !!selectedResult}
+        title="Lab Result Details"
+        onClose={() => setShowModal(false)}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setShowModal(false);
+        }}
+        submitLabel="Close"
+        cancelLabel="Cancel"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold text-muted">Case</label>
+          <p className="fw-medium">{selectedResult?.LabRequest?.Case?.title}</p>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold text-muted">Test Type</label>
+          <p className="fw-medium">{selectedResult?.LabRequest?.test_type}</p>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold text-muted">Findings</label>
+          <div className="p-3 bg-light rounded border">
+            {selectedResult?.result}
           </div>
         </div>
-      )}
+        <div className="text-muted small">
+          Uploaded on: {selectedResult?.uploaded_at ? new Date(selectedResult.uploaded_at).toLocaleString() : "N/A"}
+        </div>
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

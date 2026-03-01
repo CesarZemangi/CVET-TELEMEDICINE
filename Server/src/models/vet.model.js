@@ -26,7 +26,11 @@ const Vet = sequelize.define('Vet', {
   }
 }, {
   tableName: 'vets',
-  timestamps: false
+  timestamps: true,
+  paranoid: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 export default Vet;

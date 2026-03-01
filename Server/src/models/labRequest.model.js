@@ -13,8 +13,10 @@ const LabRequest = sequelize.define('LabRequest', {
 }, { 
   tableName: 'lab_requests', 
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 export default LabRequest;

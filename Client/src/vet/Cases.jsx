@@ -21,8 +21,12 @@ export default function VetCases() {
       setLoading(true)
       const myData = await getCases()
       const unassignedData = await getUnassignedCases()
-      setMyCases(myData?.data || myData || [])
-      setUnassignedCases(unassignedData?.data || unassignedData || [])
+      
+      const myCasesList = Array.isArray(myData?.data) ? myData.data : (Array.isArray(myData) ? myData : []);
+      const unassignedList = Array.isArray(unassignedData?.data) ? unassignedData.data : (Array.isArray(unassignedData) ? unassignedData : []);
+      
+      setMyCases(myCasesList)
+      setUnassignedCases(unassignedList)
     } catch (error) {
       console.error("Error fetching cases:", error)
     } finally {
@@ -127,10 +131,10 @@ export default function VetCases() {
               <thead className="table-light">
                 <tr>
                   <th>Title</th>
+                  <th>Farmer</th>
                   <th>Animal</th>
                   <th>Priority</th>
                   <th>Status</th>
-                  <th>Date</th>
                   <th className="text-end">Action</th>
                 </tr>
               </thead>
@@ -138,10 +142,14 @@ export default function VetCases() {
               <tbody>
                 {currentCases.length > 0 ? currentCases.map(c => (
                   <tr key={c.id}>
-                    <td><span className="fw-medium">{c.title}</span></td>
                     <td>
-                      <i className="bi bi-tag-fill text-muted me-2"></i>
-                      Animal ID: {c.animal_id}
+                      <span className="fw-medium d-block">{c.title}</span>
+                      <small className="text-muted">Case #{c.id}</small>
+                    </td>
+                    <td>{c.farmer?.name || 'Unknown'}</td>
+                    <td>
+                      <div className="fw-semibold text-dark">{c.Animal?.tag_number || 'N/A'}</div>
+                      <small className="text-muted">{c.Animal?.species || 'N/A'}</small>
                     </td>
                     <td>
                       <span className={`badge ${
@@ -156,7 +164,6 @@ export default function VetCases() {
                         {c.status}
                       </span>
                     </td>
-                    <td>{new Date(c.created_at).toLocaleDateString()}</td>
                     <td className="text-end">
                       {activeTab === 'unassigned' && (
                         <button 
@@ -209,8 +216,8 @@ export default function VetCases() {
 
       {/* Start Consultation Modal */}
       {showConsultModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, overflowY: 'auto' }}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content border-0 shadow-lg">
               <form onSubmit={submitConsultation}>
                 <div className="modal-header border-0 p-4 pb-0">

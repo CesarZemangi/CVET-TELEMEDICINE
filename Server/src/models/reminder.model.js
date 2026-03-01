@@ -10,6 +10,13 @@ const Reminder = sequelize.define('Reminder', {
   status: { type: DataTypes.ENUM('scheduled', 'sent'), defaultValue: 'scheduled' },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
   created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-}, { tableName: 'reminders', timestamps: false });
+}, { 
+  tableName: 'reminders', 
+  timestamps: true,
+  paranoid: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
+});
 
 export default Reminder;

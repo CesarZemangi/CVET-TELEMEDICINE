@@ -33,7 +33,7 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  profile_pic: {
+  profile_image: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -48,8 +48,10 @@ const User = sequelize.define('User', {
 }, { 
   tableName: 'users', // Ensure this matches your phpMyAdmin table name
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
   updatedAt: false,
+  deletedAt: 'deleted_at',
   indexes: [{ fields: ['role'] }]
 });
 

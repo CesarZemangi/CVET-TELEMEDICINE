@@ -21,32 +21,32 @@ import LabResult from './labResult.model.js';
 import Reminder from './reminder.model.js';
 
 // User Associations
-User.hasMany(Case, { foreignKey: 'farmer_id' });
-User.hasMany(Notification, { foreignKey: 'receiver_id' });
-User.hasOne(Farmer, { foreignKey: 'user_id' });
-User.hasOne(Vet, { foreignKey: 'user_id' });
-User.hasMany(Reminder, { foreignKey: 'created_by' });
+User.hasMany(Case, { foreignKey: 'farmer_id', onDelete: 'CASCADE' });
+User.hasMany(Notification, { foreignKey: 'receiver_id', onDelete: 'CASCADE' });
+User.hasOne(Farmer, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+User.hasOne(Vet, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+User.hasMany(Reminder, { foreignKey: 'created_by', onDelete: 'SET NULL' });
 
 // Farmer & Vet Associations back to User
 Farmer.belongsTo(User, { foreignKey: 'user_id' });
 Vet.belongsTo(User, { foreignKey: 'user_id' });
-Vet.hasMany(Case, { foreignKey: 'vet_id' });
+Vet.hasMany(Case, { foreignKey: 'vet_id', onDelete: 'RESTRICT' });
 
 // Animal Associations
 Animal.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
-Animal.hasMany(PreventiveReminder, { foreignKey: 'animal_id' });
-Animal.hasMany(MedicationHistory, { foreignKey: 'animal_id' });
+Animal.hasMany(PreventiveReminder, { foreignKey: 'animal_id', onDelete: 'CASCADE' });
+Animal.hasMany(MedicationHistory, { foreignKey: 'animal_id', onDelete: 'CASCADE' });
 
 // Case Associations
 Case.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
 Case.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 Case.belongsTo(Animal, { foreignKey: 'animal_id' });
-Case.hasMany(Message, { foreignKey: 'case_id' });
-Case.hasMany(VideoSession, { foreignKey: 'case_id' });
-Case.hasMany(LabRequest, { foreignKey: 'case_id' });
-Case.hasMany(TreatmentPlan, { foreignKey: 'case_id' });
-Case.hasMany(Prescription, { foreignKey: 'case_id' });
-Case.hasMany(CaseMedia, { foreignKey: 'case_id' });
+Case.hasMany(Message, { foreignKey: 'case_id', onDelete: 'CASCADE' });
+Case.hasMany(VideoSession, { foreignKey: 'case_id', onDelete: 'CASCADE' });
+Case.hasMany(LabRequest, { foreignKey: 'case_id', onDelete: 'CASCADE' });
+Case.hasMany(TreatmentPlan, { foreignKey: 'case_id', onDelete: 'CASCADE' });
+Case.hasMany(Prescription, { foreignKey: 'case_id', onDelete: 'CASCADE' });
+Case.hasMany(CaseMedia, { foreignKey: 'case_id', onDelete: 'CASCADE' });
 CaseMedia.belongsTo(Case, { foreignKey: 'case_id' });
 CaseMedia.belongsTo(User, { as: 'uploader', foreignKey: 'uploaded_by' });
 CaseMedia.belongsTo(User, { as: 'updater', foreignKey: 'updated_by' });
@@ -58,7 +58,7 @@ Consultation.belongsTo(Case, { foreignKey: 'case_id' });
 // Lab Associations
 LabRequest.belongsTo(Case, { foreignKey: 'case_id' });
 LabRequest.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
-LabRequest.hasOne(LabResult, { foreignKey: 'lab_request_id' });
+LabRequest.hasOne(LabResult, { foreignKey: 'lab_request_id', onDelete: 'CASCADE' });
 LabResult.belongsTo(LabRequest, { foreignKey: 'lab_request_id' });
 
 // Treatment Associations
@@ -66,7 +66,7 @@ Prescription.belongsTo(Case, { foreignKey: 'case_id' });
 Prescription.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 TreatmentPlan.belongsTo(Case, { foreignKey: 'case_id' });
 TreatmentPlan.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
-Case.hasMany(MedicationHistory, { foreignKey: 'case_id' });
+Case.hasMany(MedicationHistory, { foreignKey: 'case_id', onDelete: 'CASCADE' });
 
 // Feedback Associations
 Feedback.belongsTo(Case, { foreignKey: 'case_id' });
@@ -109,7 +109,7 @@ Notification.belongsTo(Case, { as: 'Case', foreignKey: 'reference_id' });
 Appointment.belongsTo(Case, { foreignKey: 'case_id' });
 Appointment.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
 Appointment.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
-Case.hasMany(Appointment, { foreignKey: 'case_id' });
+Case.hasMany(Appointment, { foreignKey: 'case_id', onDelete: 'CASCADE' });
 
 export { 
   User, Case, CaseMedia, Consultation, Message, VideoSession, 

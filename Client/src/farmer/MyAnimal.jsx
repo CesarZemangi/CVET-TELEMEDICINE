@@ -11,7 +11,8 @@ export default function MyAnimals() {
     try {
       setLoading(true);
       const res = await api.get("/farmer/animals");
-      setAnimals(res.data?.data || res.data || []);
+      const result = res.data?.data;
+      setAnimals(Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : []));
     } catch (err) {
       console.error("Error fetching animals:", err);
     } finally {

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react"
-import { Pie, Line } from "react-chartjs-2"
+import React, { useEffect, useState } from "react"
+import { Pie, Line, Bar } from "react-chartjs-2"
 import { getFeedInventory, addFeedInventory } from "../services/farmer.nutrition.service"
+import FormModalWrapper from "../../components/common/FormModalWrapper"
 import {
   Chart as ChartJS,
   ArcElement,
   LineElement,
+  BarElement,
   PointElement,
   CategoryScale,
   LinearScale,
@@ -16,6 +18,7 @@ import {
 ChartJS.register(
   ArcElement,
   LineElement,
+  BarElement,
   PointElement,
   CategoryScale,
   LinearScale,
@@ -32,7 +35,8 @@ export default function FeedingInventory() {
   const [formData, setFormData] = useState({
     feed_name: "",
     quantity: "",
-    unit: "kg"
+    unit: "kg",
+    low_stock_threshold: 10
   })
 
   const fetchInventory = async () => {
@@ -42,9 +46,11 @@ export default function FeedingInventory() {
       const mappedData = data.map(item => ({
         id: item.id,
         item: item.feed_name,
-        quantity: `${item.quantity} ${item.unit || 'kg'}`,
-        status: item.quantity < 50 ? "Low Stock" : "Available",
-        date: new Date(item.created_at).toLocaleDateString()
+        quantity: item.quantity,
+        displayQuantity: `${item.quantity} ${item.unit || 'kg'}`,
+        status: parseFloat(item.quantity) < parseFloat(item.low_stock_threshold || 10) ? "Low Stock" : "Available",
+        date: new Date(item.created_at).toLocaleDateString(),
+        low_stock_threshold: item.low_stock_threshold
       }))
       setInventory(mappedData)
     } catch (error) {
@@ -63,7 +69,7 @@ export default function FeedingInventory() {
     try {
       await addFeedInventory(formData);
       setShowModal(false);
-      setFormData({ feed_name: "", quantity: "", unit: "kg" });
+      setFormData({ feed_name: "", quantity: "", unit: "kg", low_stock_threshold: 10 });
       fetchInventory();
     } catch (err) {
       alert("Failed to add feed: " + (err.response?.data?.message || err.message));
@@ -95,26 +101,43 @@ export default function FeedingInventory() {
     ]
   }
 
-  // Timeline chart: feed restock/flag dates
-  const lineData = {
-    labels: inventory.map(feed => feed.date),
+  // Bar chart: item quantities
+  const barData = {
+    labels: inventory.map(feed => feed.item),
     datasets: [
       {
-        label: "Feed Items Logged",
-        data: inventory.map(() => 1),
-        borderColor: "#A0522D",
-        backgroundColor: "#CD853F",
-        tension: 0.3,
-        fill: true
+        label: "Current Quantity",
+        data: inventory.map(feed => parseFloat(feed.quantity)),
+        backgroundColor: "rgba(34, 139, 34, 0.6)",
+        borderColor: "#228B22",
+        borderWidth: 1
       }
     ]
   }
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { position: "bottom" },
       title: { display: false }
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Feed Items',
+          font: { weight: 'bold' }
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Quantity Levels',
+          font: { weight: 'bold' }
+        },
+        beginAtZero: true
+      }
     }
   }
 
@@ -134,7 +157,7 @@ export default function FeedingInventory() {
       </div>
 
       {/* Conditional alert */}
-      {(lowStockCount > 2 || pendingCount > 1) && (
+      {(lowStockCount > 0 || pendingCount > 0) && (
         <div className="alert alert-warning fw-bold">
           ⚠️ {lowStockCount} items are low stock and {pendingCount} pending orders. Review feed supply!
         </div>
@@ -167,7 +190,7 @@ export default function FeedingInventory() {
                     <li key={feed.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
                       <div>
                         <div className="fw-bold">{feed.item}</div>
-                        <small className="text-muted">{feed.quantity}</small>
+                        <small className="text-muted">{feed.displayQuantity} (Threshold: {feed.low_stock_threshold})</small>
                       </div>
                       <div className="text-end">
                         <div className={getStatusClass(feed.status)} style={{fontSize: '0.75rem'}}>{feed.status}</div>
@@ -189,80 +212,80 @@ export default function FeedingInventory() {
              <div className="card-body">
                 <h6>Status Summary</h6>
                 <div style={{ height: "200px" }}>
-                  <Pie data={pieData} options={options} />
+                  <Pie data={pieData} options={{...options, scales: undefined}} />
                 </div>
              </div>
            </div>
            
            <div className="card border-0 shadow-sm">
              <div className="card-body">
-                <h6>Inventory Timeline</h6>
+                <h6>Inventory Levels</h6>
                 <div style={{ height: "200px" }}>
-                  <Line data={lineData} options={{ ...options, maintainAspectRatio: false }} />
+                  <Bar data={barData} options={options} />
                 </div>
              </div>
            </div>
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg">
-              <form onSubmit={handleAddFeed}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Register Feed Inventory</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Feed Name</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      required 
-                      value={formData.feed_name}
-                      onChange={e => setFormData({...formData, feed_name: e.target.value})}
-                      placeholder="e.g. Maize Bran, Silage"
-                    />
-                  </div>
-                  <div className="row">
-                    <div className="col-md-8 mb-3">
-                      <label className="form-label small fw-bold">Quantity</label>
-                      <input 
-                        type="number" 
-                        step="0.01"
-                        className="form-control" 
-                        required 
-                        value={formData.quantity}
-                        onChange={e => setFormData({...formData, quantity: e.target.value})}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="col-md-4 mb-3">
-                      <label className="form-label small fw-bold">Unit</label>
-                      <select 
-                        className="form-select" 
-                        value={formData.unit}
-                        onChange={e => setFormData({...formData, unit: e.target.value})}
-                      >
-                        <option value="kg">kg</option>
-                        <option value="tons">tons</option>
-                        <option value="bags">bags</option>
-                        <option value="liters">liters</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Inventory</button>
-                </div>
-              </form>
-            </div>
+      <FormModalWrapper
+        show={showModal}
+        title="Register Feed Inventory"
+        onClose={() => setShowModal(false)}
+        onSubmit={handleAddFeed}
+        submitLabel="Save Inventory"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Feed Name</label>
+          <input
+            type="text"
+            className="form-control"
+            required
+            value={formData.feed_name}
+            onChange={e => setFormData({...formData, feed_name: e.target.value})}
+            placeholder="e.g. Maize Bran, Silage"
+          />
+        </div>
+        <div className="row">
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Quantity</label>
+            <input
+              type="number"
+              step="0.01"
+              className="form-control"
+              required
+              value={formData.quantity}
+              onChange={e => setFormData({...formData, quantity: e.target.value})}
+              placeholder="0.00"
+            />
+          </div>
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Low Stock Threshold</label>
+            <input
+              type="number"
+              step="0.01"
+              className="form-control"
+              required
+              value={formData.low_stock_threshold}
+              onChange={e => setFormData({...formData, low_stock_threshold: e.target.value})}
+              placeholder="10.00"
+            />
           </div>
         </div>
-      )}
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Unit</label>
+          <select
+            className="form-select"
+            value={formData.unit}
+            onChange={e => setFormData({...formData, unit: e.target.value})}
+          >
+            <option value="kg">kg</option>
+            <option value="tons">tons</option>
+            <option value="bags">bags</option>
+            <option value="liters">liters</option>
+          </select>
+        </div>
+      </FormModalWrapper>
     </div>
   )
 }

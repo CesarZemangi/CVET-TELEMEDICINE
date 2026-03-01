@@ -66,42 +66,53 @@ app.use(cors({
 
 // 2. Standard Middleware
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(process.cwd(), "dist", "uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/storage", express.static("storage"));
 
 // 3. Routes
-app.use("/api/auth", authLimiter, authRoutes);
-app.use("/api/user", authenticate, userRoutes);
-app.use("/api/admin", authenticate, authorizeRoles("admin"), adminRoutes);
-app.use("/api/admin/appointments", authenticate, authorizeRoles("admin"), adminAppointmentRoutes);
-app.use("/api/reminders", reminderRoutes);
-app.use("/api/communication", authenticate, communicationRoutes);
+app.use("/api/v1/auth", authLimiter, authRoutes);
+app.use("/api/v1/user", authenticate, userRoutes);
+app.use("/api/v1/admin", authenticate, authorizeRoles("admin"), adminRoutes);
+app.use("/api/v1/admin/appointments", authenticate, authorizeRoles("admin"), adminAppointmentRoutes);
+app.use("/api/v1/reminders", reminderRoutes);
+app.use("/api/v1/communication", authenticate, communicationRoutes);
 
-app.use("/api/farmer/dashboard", authenticate, authorizeRoles("farmer"), farmerDashboardRoutes);
+app.use("/api/v1/farmer/dashboard", authenticate, authorizeRoles("farmer"), farmerDashboardRoutes);
 // Farmer
-app.use("/api/farmer/animals", authenticate, authorizeRoles("farmer"), farmerAnimalRoutes);
-app.use("/api/farmer/cases", authenticate, authorizeRoles("farmer"), farmerCaseRoutes);
-app.use("/api/farmer/consultations", authenticate, authorizeRoles("farmer"), farmerConsultRoutes);
-app.use("/api/farmer/diagnostics", authenticate, authorizeRoles("farmer"), farmerDiagRoutes);
-app.use("/api/farmer/treatment", authenticate, authorizeRoles("farmer"), farmerTreatRoutes);
-app.use("/api/farmer/nutrition", authenticate, authorizeRoles("farmer"), farmerNutriRoutes);
-app.use("/api/farmer/communication", authenticate, authorizeRoles("farmer"), farmerCommRoutes);
-app.use("/api/farmer/feedback", authenticate, authorizeRoles("farmer"), farmerFeedbackRoutes);
-app.use("/api/farmer/notifications", authenticate, authorizeRoles("farmer"), farmerNotificationRoutes);
-app.use("/api/farmer/appointments", authenticate, authorizeRoles("farmer"), farmerAppointmentRoutes);
+app.use("/api/v1/farmer/animals", authenticate, authorizeRoles("farmer"), farmerAnimalRoutes);
+app.use("/api/v1/farmer/cases", authenticate, authorizeRoles("farmer"), farmerCaseRoutes);
+app.use("/api/v1/farmer/consultations", authenticate, authorizeRoles("farmer"), farmerConsultRoutes);
+app.use("/api/v1/farmer/diagnostics", authenticate, authorizeRoles("farmer"), farmerDiagRoutes);
+app.use("/api/v1/farmer/treatment", authenticate, authorizeRoles("farmer"), farmerTreatRoutes);
+app.use("/api/v1/farmer/nutrition", authenticate, authorizeRoles("farmer"), farmerNutriRoutes);
+app.use("/api/v1/farmer/communication", authenticate, authorizeRoles("farmer"), farmerCommRoutes);
+app.use("/api/v1/farmer/feedback", authenticate, authorizeRoles("farmer"), farmerFeedbackRoutes);
+app.use("/api/v1/farmer/notifications", authenticate, authorizeRoles("farmer"), farmerNotificationRoutes);
+app.use("/api/v1/farmer/appointments", authenticate, authorizeRoles("farmer"), farmerAppointmentRoutes);
 
 // Vet
-app.use("/api/vet/dashboard", authenticate, authorizeRoles("vet"), vetDashboardRoutes);
-app.use("/api/vet/cases", authenticate, authorizeRoles("vet"), vetCaseRoutes);
-app.use("/api/vet/appointments", authenticate, authorizeRoles("vet"), vetAppointmentRoutes);
-app.use("/api/vet/consultations", authenticate, authorizeRoles("vet"), vetConsultationRoutes);
-app.use("/api/vet/diagnostics", authenticate, authorizeRoles("vet"), vetDiagRoutes);
-app.use("/api/vet/treatment", authenticate, authorizeRoles("vet"), vetTreatRoutes);
-app.use("/api/vet/analytics", authenticate, authorizeRoles("vet"), vetAnalyticsRoutes);
-app.use("/api/vet/communication", authenticate, authorizeRoles("vet"), vetCommRoutes);
-app.use("/api/vet/feedback", authenticate, authorizeRoles("vet"), vetFeedbackRoutes);
-app.use("/api/vet/notifications", authenticate, authorizeRoles("vet"), vetNotificationRoutes);
-app.use("/api/vet/media", authenticate, authorizeRoles("vet"), vetMediaRoutes);
+app.use("/api/v1/vet/dashboard", authenticate, authorizeRoles("vet"), vetDashboardRoutes);
+app.use("/api/v1/vet/cases", authenticate, authorizeRoles("vet"), vetCaseRoutes);
+app.use("/api/v1/vet/appointments", authenticate, authorizeRoles("vet"), vetAppointmentRoutes);
+app.use("/api/v1/vet/consultations", authenticate, authorizeRoles("vet"), vetConsultationRoutes);
+app.use("/api/v1/vet/diagnostics", authenticate, authorizeRoles("vet"), vetDiagRoutes);
+app.use("/api/v1/vet/treatment", authenticate, authorizeRoles("vet"), vetTreatRoutes);
+app.use("/api/v1/vet/analytics", authenticate, authorizeRoles("vet"), vetAnalyticsRoutes);
+app.use("/api/v1/vet/communication", authenticate, authorizeRoles("vet"), vetCommRoutes);
+app.use("/api/v1/vet/feedback", authenticate, authorizeRoles("vet"), vetFeedbackRoutes);
+app.use("/api/v1/vet/notifications", authenticate, authorizeRoles("vet"), vetNotificationRoutes);
+app.use("/api/v1/vet/media", authenticate, authorizeRoles("vet"), vetMediaRoutes);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: "Route not found",
+    error_code: "ROUTE_NOT_FOUND",
+    path: req.originalUrl
+  });
+});
 
 // Global error handler
 app.use(errorHandler);

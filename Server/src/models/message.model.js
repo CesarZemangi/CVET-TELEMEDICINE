@@ -10,8 +10,10 @@ const Message = sequelize.define('Message', {
 }, { 
   tableName: 'messages', 
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
   updatedAt: false,
+  deletedAt: 'deleted_at',
   indexes: [{ fields: ['case_id'] }]
 });
 

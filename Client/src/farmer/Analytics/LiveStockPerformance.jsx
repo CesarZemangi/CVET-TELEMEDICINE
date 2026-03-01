@@ -30,7 +30,7 @@ export default function LivestockPerformance() {
   const [summaryRows, setSummaryRows] = useState([])
 
   useEffect(() => {
-    fetch("/api/livestock/performance")
+    fetch("/api/v1/livestock/performance")
       .then(res => res.json())
       .then(data => {
         setBarStats(data.byMetric)

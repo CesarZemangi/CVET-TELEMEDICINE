@@ -18,19 +18,38 @@ export default function Notifications() {
   })
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/vet/notifications/sent");
+    setLoading(true);
+    const [notesRes, casesRes, contactsRes] = await Promise.allSettled([
+      api.get("/vet/notifications/sent"),
+      getCases(),
+      api.get("/communication/contacts")
+    ]);
+
+    if (notesRes.status === "fulfilled") {
+      const res = notesRes.value;
       setNotifications(res.data?.data || res.data || []);
-      const casesData = await getCases();
-      setCases(casesData?.data || casesData || []);
-      const contactsRes = await api.get("/communication/contacts");
-      setFarmers(contactsRes.data?.data || contactsRes.data || []);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
+    } else {
+      setNotifications([]);
+      console.error("Error fetching sent notifications:", notesRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesData = casesRes.value;
+      setCases(casesData?.data || casesData || []);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for notifications:", casesRes.reason);
+    }
+
+    if (contactsRes.status === "fulfilled") {
+      const res = contactsRes.value;
+      setFarmers(res.data?.data || res.data || []);
+    } else {
+      setFarmers([]);
+      console.error("Error fetching contacts:", contactsRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -100,8 +119,8 @@ export default function Notifications() {
       </div>
 
       {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
+        <div className="modal d-block position-fixed top-0 start-0 w-100 h-100" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, overflowY: 'auto' }}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content border-0">
               <form onSubmit={handleSubmit}>
                 <div className="modal-header border-0">

@@ -7,13 +7,15 @@ import {
   completeAppointment,
   rescheduleAppointment,
   cancelAppointment,
-  getCasesForAppointments
+  getCasesForAppointments,
+  joinSession
 } from "../../controllers/vet/appointments.controller.js"
 
 const router = express.Router()
 
 router.get("/cases", auth, getCasesForAppointments)
 router.get("/", auth, getVetAppointments)
+router.get("/:id/join-session", auth, joinSession)
 router.put("/:id/approve", auth, approveAppointment)
 router.put("/:id/reject", auth, rejectAppointment)
 router.put("/:id/complete", auth, completeAppointment)

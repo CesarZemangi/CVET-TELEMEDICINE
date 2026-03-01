@@ -1,4 +1,5 @@
 import { Case, User, Animal, Vet } from "../../models/associations.js";
+import { Op } from "sequelize";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { getCasesByVet, getCaseWithDetails } from "../../services/case.service.js";
@@ -9,10 +10,10 @@ export const getCases = async (req, res) => {
     const { limit, offset } = getPagination(page, size);
 
     const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    if (!vetRecord) return res.status(403).json({ error: "Vet profile not found" });
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(req.user.id)].filter(Boolean)));
 
     const data = await Case.findAndCountAll({
-      where: { vet_id: vetRecord.id },
+      where: { vet_id: { [Op.in]: vetIds } },
       include: [
         { model: User, as: 'farmer', attributes: ['id', 'name'] },
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
@@ -32,10 +33,10 @@ export const getCases = async (req, res) => {
 export const getCaseById = async (req, res) => {
   try {
     const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    if (!vetRecord) return res.status(403).json({ error: "Vet profile not found" });
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(req.user.id)].filter(Boolean)));
 
     const singleCase = await Case.findOne({
-      where: { id: req.params.id, vet_id: vetRecord.id },
+      where: { id: req.params.id, vet_id: { [Op.in]: vetIds } },
       include: [
         { model: User, as: 'farmer', attributes: ['id', 'name'] },
         { model: Animal }
@@ -87,7 +88,8 @@ export const closeCase = async (req, res) => {
   try {
     const { id } = req.params;
     const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    const singleCase = await Case.findOne({ where: { id, vet_id: vetRecord.id } });
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(req.user.id)].filter(Boolean)));
+    const singleCase = await Case.findOne({ where: { id, vet_id: { [Op.in]: vetIds } } });
     if (!singleCase) return res.status(404).json({ error: "Case not found" });
 
     await singleCase.update({ 
@@ -108,7 +110,8 @@ export const updatePriority = async (req, res) => {
     const { id } = req.params;
     const { priority } = req.body;
     const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    const singleCase = await Case.findOne({ where: { id, vet_id: vetRecord.id } });
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(req.user.id)].filter(Boolean)));
+    const singleCase = await Case.findOne({ where: { id, vet_id: { [Op.in]: vetIds } } });
     if (!singleCase) return res.status(404).json({ error: "Case not found" });
 
     await singleCase.update({ priority });
@@ -143,11 +146,11 @@ export const getVetCasesForDropdown = async (req, res) => {
 export const getVetCasesSummary = async (req, res) => {
   try {
     const vetRecord = await Vet.findOne({ where: { user_id: req.user.id } });
-    if (!vetRecord) return res.status(403).json({ error: "Vet profile not found" });
+    const vetIds = Array.from(new Set([vetRecord?.id, Number(req.user.id)].filter(Boolean)));
 
-    const totalCases = await Case.count({ where: { vet_id: vetRecord.id } });
-    const openCases = await Case.count({ where: { vet_id: vetRecord.id, status: 'open' } });
-    const closedCases = await Case.count({ where: { vet_id: vetRecord.id, status: 'closed' } });
+    const totalCases = await Case.count({ where: { vet_id: { [Op.in]: vetIds } } });
+    const openCases = await Case.count({ where: { vet_id: { [Op.in]: vetIds }, status: 'open' } });
+    const closedCases = await Case.count({ where: { vet_id: { [Op.in]: vetIds }, status: 'closed' } });
 
     res.json({
       assigned: {

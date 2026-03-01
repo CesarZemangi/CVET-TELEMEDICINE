@@ -21,7 +21,7 @@ export default function Vaccinations() {
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/farmer/vaccinations")
+    fetch("http://localhost:5000/api/v1/farmer/diagnostics/vaccinations")
       .then(res => res.json())
       .then(data => setRecords(data))
       .catch(err => console.error(err));

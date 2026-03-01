@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import api from "../services/api";
 import { getFarmerDashboardData, getRecentActivity } from "./services/farmer.dashboard.service";
 
 export default function FarmerOverview() {
@@ -14,10 +15,14 @@ export default function FarmerOverview() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsData, activityData] = await Promise.all([
-          getFarmerDashboardData(),
-          getRecentActivity()
+        const [statsRes, activityRes] = await Promise.all([
+          api.get("/farmer/dashboard"),
+          api.get("/farmer/dashboard/activity")
         ]);
+        
+        const statsData = statsRes.data?.data || statsRes.data || {};
+        const activityData = activityRes.data?.data || activityRes.data || [];
+        
         setStats(statsData);
         setActivity(activityData);
       } catch (error) {

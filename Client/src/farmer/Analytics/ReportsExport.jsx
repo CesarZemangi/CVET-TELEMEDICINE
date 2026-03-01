@@ -8,7 +8,7 @@ export default function ReportsExport() {
   const [formats, setFormats] = useState([])
 
   useEffect(() => {
-    fetch("/api/reports/metadata")
+    fetch("/api/v1/reports/metadata")
       .then(res => res.json())
       .then(data => {
         setReports(data.reports)
@@ -28,7 +28,7 @@ export default function ReportsExport() {
             className="btn btn-outline-brown"
             onClick={() =>
               fetch(
-                `/api/reports/export?format=${format}&region=${regionFilter}&species=${speciesFilter}`
+                `/api/v1/reports/export?format=${format}&region=${regionFilter}&species=${speciesFilter}`
               )
             }
           >

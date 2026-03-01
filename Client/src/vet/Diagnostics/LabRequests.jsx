@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { getLabRequests, createLabRequest, uploadLabResult, getCasesForDiagnostics } from "../services/vet.diagnostics.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
+import FormModalWrapper from "../../components/common/FormModalWrapper";
 
 export default function LabRequests() {
   const [requests, setRequests] = useState([]);
@@ -16,17 +17,31 @@ export default function LabRequests() {
   const [resultText, setResultText] = useState("");
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const reqs = await getLabRequests();
-      const casesDropdown = await getCasesForDiagnostics();
-      setRequests(reqs?.data || reqs || []);
-      setCases(casesDropdown?.data || casesDropdown || []);
-    } catch (err) {
-      console.error("Error fetching lab requests:", err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const [reqsRes, casesRes] = await Promise.allSettled([
+      getLabRequests(),
+      getCasesForDiagnostics()
+    ]);
+
+    if (reqsRes.status === "fulfilled") {
+      const reqs = reqsRes.value;
+      const reqList = Array.isArray(reqs?.data) ? reqs.data : (Array.isArray(reqs) ? reqs : []);
+      setRequests(reqList);
+    } else {
+      setRequests([]);
+      console.error("Error fetching lab requests:", reqsRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesDropdown = casesRes.value;
+      const casesList = Array.isArray(casesDropdown?.data) ? casesDropdown.data : (Array.isArray(casesDropdown) ? casesDropdown : []);
+      setCases(casesList);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for diagnostics:", casesRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -70,6 +85,12 @@ export default function LabRequests() {
       case "completed": return "badge bg-success"
       default: return "badge bg-secondary"
     }
+  }
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
   }
 
   return (
@@ -137,31 +158,32 @@ export default function LabRequests() {
       </div>
 
       {/* New Request Modal */}
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleCreateRequest}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Request New Lab Test</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Request New Lab Test"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleCreateRequest}
+        submitLabel="Create Request"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Assigned Case</label>
                     <select 
                       className="form-select" 
                       required 
+                      disabled={cases.length === 0}
                       value={newRequest.case_id}
                       onChange={e => setNewRequest({...newRequest, case_id: e.target.value})}
                     >
                       <option value="">Select a case</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} (ID: {c.id})
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
+                    {cases.length === 0 && (
+                      <small className="text-danger">No assigned cases available.</small>
+                    )}
                   </div>
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Test Type</label>
@@ -174,28 +196,16 @@ export default function LabRequests() {
                       onChange={e => setNewRequest({...newRequest, test_type: e.target.value})}
                     />
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Create Request</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
 
       {/* Upload Result Modal */}
-      {showResultModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleUploadResult}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Upload Lab Result</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowResultModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showResultModal}
+        title="Upload Lab Result"
+        onClose={() => setShowResultModal(false)}
+        onSubmit={handleUploadResult}
+        submitLabel="Save Result"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Result Summary</label>
                     <textarea 
@@ -207,16 +217,7 @@ export default function LabRequests() {
                       onChange={e => setResultText(e.target.value)}
                     ></textarea>
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowResultModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-success">Save Result</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

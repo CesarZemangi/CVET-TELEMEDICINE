@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ProfileImage from "../components/common/ProfileImage";
-import axios from "axios";
+import api from "../services/api";
 
 export default function ProfileSettings() {
   // Load initial state from localStorage
@@ -10,9 +10,9 @@ export default function ProfileSettings() {
   });
 
   const [formData, setFormData] = useState({
-    firstName: user.firstName || "",
-    lastName: user.lastName || "",
-    email: user.email || ""
+    name: user.name || "",
+    email: user.email || "",
+    phone: user.phone || ""
   });
   
   const [selectedFile, setSelectedFile] = useState(null);
@@ -29,23 +29,24 @@ export default function ProfileSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append("firstName", formData.firstName);
-    data.append("lastName", formData.lastName);
-    if (selectedFile) data.append("profilePic", selectedFile);
+    data.append("name", formData.name);
+    data.append("email", formData.email);
+    data.append("phone", formData.phone);
+    if (selectedFile) data.append("profile_image", selectedFile);
 
     try {
-      // Use your specific Backend API URL here
-      const res = await axios.put(`http://localhost:5000/api/users/profile/${user._id}`, data);
+      const res = await api.put(`/user/profile`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       
-      const currentUser = JSON.parse(localStorage.getItem("user"));
+      const updatedUser = {
+        ...user,
+        ...res.data.user
+      };
 
-const updatedUser = {
-...currentUser,
-...res.data.user
-};
-
-setUser(updatedUser);
-localStorage.setItem("user", JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      window.dispatchEvent(new Event("user-updated"));
       
       alert("Profile updated successfully!");
       setPreview(null); // Clear preview once saved
@@ -72,7 +73,7 @@ localStorage.setItem("user", JSON.stringify(updatedUser));
                     style={{ width: "120px", height: "120px", objectFit: "cover" }} 
                   />
                 ) : (
-                  <ProfileImage src={user.profilePic} role={user.role} size="120px" />
+                  <ProfileImage src={user.profile_image} role={user.role} size="120px" />
                 )}
                 
                 <label 
@@ -87,22 +88,31 @@ localStorage.setItem("user", JSON.stringify(updatedUser));
             </div>
 
             <div className="row g-3 text-start">
-              <div className="col-md-6">
-                <label className="form-label small fw-bold">First Name</label>
+              <div className="col-md-12">
+                <label className="form-label small fw-bold">Full Name</label>
                 <input 
                    type="text" 
                    className="form-control" 
-                   value={formData.firstName} 
-                   onChange={(e) => setFormData({...formData, firstName: e.target.value})} 
+                   value={formData.name} 
+                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
                 />
               </div>
               <div className="col-md-6">
-                <label className="form-label small fw-bold">Last Name</label>
+                <label className="form-label small fw-bold">Email</label>
+                <input 
+                   type="email" 
+                   className="form-control" 
+                   value={formData.email} 
+                   disabled
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label small fw-bold">Phone</label>
                 <input 
                    type="text" 
                    className="form-control" 
-                   value={formData.lastName} 
-                   onChange={(e) => setFormData({...formData, lastName: e.target.value})} 
+                   value={formData.phone} 
+                   onChange={(e) => setFormData({...formData, phone: e.target.value})} 
                 />
               </div>
               <div className="col-12 mt-4">

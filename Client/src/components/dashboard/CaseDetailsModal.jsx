@@ -4,8 +4,8 @@ const CaseDetailsModal = ({ isOpen, onClose, caseData }) => {
   if (!isOpen || !caseData) return null;
 
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered">
+    <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, overflowY: 'auto' }}>
+      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '15px' }}>
           <div className="modal-header border-0 p-4">
             <h5 className="modal-title fw-bold">Case Details: {caseData.description}</h5>

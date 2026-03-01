@@ -1,7 +1,9 @@
 import path from 'path';
+import { Op } from "sequelize";
 import { Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { logAction } from "../../utils/dbLogger.js";
+import sequelize from "../../config/db.js";
 
 export const getCases = async (req, res) => {
   try {
@@ -46,31 +48,39 @@ export const getCases = async (req, res) => {
 };
 
 export const createCase = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { animal_id, vet_id, title, description, symptoms, priority } = req.body;
 
-    if (!title || !description || !animal_id || !vet_id) {
-      return res.status(400).json({ error: "Title, description, animal_id and vet_id are required" });
-    }
-
     // Validate animal belongs to farmer
     const animal = await Animal.findOne({
-      where: { id: animal_id, farmer_id: req.user.id }
+      where: { id: animal_id, farmer_id: req.user.id },
+      transaction: t
     });
 
     if (!animal) {
+      await t.rollback();
       return res.status(403).json({ error: "Animal not found or does not belong to you" });
     }
 
     // Validate vet exists
-    const vet = await Vet.findByPk(vet_id);
+    const vet = await Vet.findOne({
+      where: {
+        [Op.or]: [
+          { id: vet_id },
+          { user_id: vet_id }
+        ]
+      },
+      transaction: t
+    });
     if (!vet) {
+      await t.rollback();
       return res.status(400).json({ error: "Invalid Vet selected" });
     }
 
     const newCase = await Case.create({
       farmer_id: req.user.id,
-      vet_id,
+      vet_id: vet.id,
       animal_id,
       title,
       description,
@@ -79,9 +89,14 @@ export const createCase = async (req, res) => {
       status: 'open',
       created_by: req.user.id,
       updated_by: req.user.id
-    });
+    }, { transaction: t });
 
-    await logAction(req.user.id, `Farmer created case #${newCase.id}: ${title}`);
+    await logAction(req.user.id, `Farmer created case #${newCase.id}: ${title}`, {
+      actionType: 'create',
+      module: 'cases',
+      entityId: newCase.id,
+      ipAddress: req.ip
+    });
 
     const createdCase = await Case.findByPk(newCase.id, {
       include: [
@@ -92,8 +107,11 @@ export const createCase = async (req, res) => {
           include: [{ model: User, attributes: ['id', 'name'] }]
         },
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
-      ]
+      ],
+      transaction: t
     });
+
+    await t.commit();
 
     const caseJson = createdCase.toJSON();
     if (caseJson.vet) {
@@ -106,6 +124,7 @@ export const createCase = async (req, res) => {
 
     res.status(201).json(caseJson);
   } catch (err) {
+    if (t) await t.rollback();
     res.status(500).json({ error: err.message });
   }
 };
@@ -141,22 +160,23 @@ export const getCaseById = async (req, res) => {
 };
 
 export const uploadMedia = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { id } = req.params;
     const singleCase = await Case.findOne({
-      where: { id, farmer_id: req.user.id }
+      where: { id, farmer_id: req.user.id },
+      transaction: t
     });
 
     if (!singleCase) {
+      await t.rollback();
       return res.status(403).json({ error: "Access denied or case not found" });
     }
 
     if (!req.files || req.files.length === 0) {
+      await t.rollback();
       return res.status(400).json({ error: "No files uploaded" });
     }
-
-    console.log('Farmer Upload - User:', req.user);
-    console.log('Farmer Upload - Files:', req.files.length);
 
     const mediaEntries = await Promise.all(
       req.files.map(file => {
@@ -169,14 +189,82 @@ export const uploadMedia = async (req, res) => {
           file_type: file.mimetype,
           file_size: file.size
         };
-        console.log('Farmer Upload - Creating entry:', mediaData);
-        return CaseMedia.create(mediaData);
+        return CaseMedia.create(mediaData, { transaction: t });
       })
     );
 
-    await logAction(req.user.id, `Farmer uploaded ${mediaEntries.length} media file(s) to case #${id}`);
+    await logAction(req.user.id, `Farmer uploaded ${mediaEntries.length} media file(s) to case #${id}`, {
+      actionType: 'upload',
+      module: 'cases',
+      entityId: id,
+      ipAddress: req.ip
+    });
 
+    await t.commit();
     res.status(201).json({ message: "Media uploaded successfully", media: mediaEntries });
+  } catch (err) {
+    if (t) await t.rollback();
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, symptoms, priority } = req.body;
+
+    const singleCase = await Case.findOne({
+      where: { id, farmer_id: req.user.id }
+    });
+
+    if (!singleCase) {
+      return res.status(404).json({ error: "Case not found or access denied" });
+    }
+
+    if (singleCase.status !== 'open') {
+      return res.status(403).json({ error: "Cannot update a closed or processed case" });
+    }
+
+    await Case.update({
+      title: title || singleCase.title,
+      description: description || singleCase.description,
+      symptoms: symptoms || singleCase.symptoms,
+      priority: priority || singleCase.priority,
+      updated_by: req.user.id
+    }, {
+      where: { id, farmer_id: req.user.id }
+    });
+
+    await logAction(req.user.id, `Farmer updated case #${id}`);
+
+    res.json({ message: "Case updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const singleCase = await Case.findOne({
+      where: { id, farmer_id: req.user.id }
+    });
+
+    if (!singleCase) {
+      return res.status(404).json({ error: "Case not found or access denied" });
+    }
+
+    if (singleCase.status !== 'open') {
+      return res.status(403).json({ error: "Cannot delete a case that is already processed" });
+    }
+
+    await Case.destroy({
+      where: { id, farmer_id: req.user.id }
+    });
+
+    await logAction(req.user.id, `Farmer deleted case #${id}`);
+
+    res.json({ message: "Case deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

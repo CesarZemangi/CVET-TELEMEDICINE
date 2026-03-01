@@ -19,7 +19,7 @@ export default function Register() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
+      const res = await fetch("http://localhost:5000/api/v1/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -52,7 +52,7 @@ export default function Register() {
         padding: '20px'
       }}
     >
-      <div className="register-card shadow-lg border-0 overflow-hidden d-flex" style={{ borderRadius: '25px', maxWidth: '820px', width: '100%', minHeight: '550px', backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(10px)' }}>
+      <div className="register-card shadow-lg border-0 overflow-hidden d-flex" style={{ borderRadius: '25px', maxWidth: '820px', width: '100%', height: 'auto', backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(10px)' }}>
         {/* LEFT SIDE: BRANDING SECTION */}
         <div 
           className="register-left d-none d-md-flex align-items-center justify-content-center text-white p-4" 

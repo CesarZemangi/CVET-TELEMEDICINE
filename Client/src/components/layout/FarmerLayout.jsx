@@ -17,7 +17,7 @@ export default function FarmerLayout() {
   }, [])
 
   return (
-    <div className="d-flex vh-100 overflow-hidden" style={{ position: "relative" }}>
+    <div className="d-flex vh-100" style={{ position: "relative" }}>
       {/* Mobile Sidebar Overlay */}
       {isMobile && sidebarOpen && (
         <div 

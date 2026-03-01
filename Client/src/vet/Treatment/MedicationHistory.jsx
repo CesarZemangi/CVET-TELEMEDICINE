@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { getMedicationHistory, createMedicationHistory } from "../services/vet.treatment.service"
 import { getCasesForDropdown } from "../services/vet.cases.service"
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import FormModalWrapper from "../../components/common/FormModalWrapper"
 
 export default function MedicationHistory() {
   const [medications, setMedications] = useState([])
@@ -19,17 +20,31 @@ export default function MedicationHistory() {
   })
 
   const fetchData = async () => {
-    try {
-      setLoading(true)
-      const historyData = await getMedicationHistory()
-      setMedications(historyData)
-      const casesDropdown = await getCasesForDropdown()
-      setCases(casesDropdown?.data || [])
-    } catch (err) {
-      console.error("Error fetching data:", err)
-    } finally {
-      setLoading(false)
+    setLoading(true)
+    const [historyRes, casesRes] = await Promise.allSettled([
+      getMedicationHistory(),
+      getCasesForDropdown()
+    ])
+
+    if (historyRes.status === "fulfilled") {
+      const historyData = historyRes.value
+      const historyList = Array.isArray(historyData?.data) ? historyData.data : (Array.isArray(historyData) ? historyData : []);
+      setMedications(historyList)
+    } else {
+      setMedications([])
+      console.error("Error fetching medication history:", historyRes.reason)
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesDropdown = casesRes.value
+      const casesList = Array.isArray(casesDropdown?.data) ? casesDropdown.data : (Array.isArray(casesDropdown) ? casesDropdown : []);
+      setCases(casesList)
+    } else {
+      setCases([])
+      console.error("Error fetching cases for medication history:", casesRes.reason)
+    }
+
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -64,6 +79,12 @@ export default function MedicationHistory() {
     } catch (err) {
       alert("Failed to add record: " + (err.response?.data?.error || err.message))
     }
+  }
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
   }
 
   return (
@@ -132,16 +153,16 @@ export default function MedicationHistory() {
         </div>
       )}
 
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header border-0">
-                  <h5 className="modal-title fw-bold">Add Medication Record</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Add Medication Record"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleSubmit}
+        submitLabel="Save Record"
+        contentClassName="border-0"
+        bodyClassName=""
+        footerClassName="border-0"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Select Case</label>
                     <select 
@@ -153,7 +174,7 @@ export default function MedicationHistory() {
                       <option value="">Choose a case...</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} ({c.Animal?.tag_number})
+                          {getCaseOptionLabel(c)} ({c.Animal?.tag_number || "No tag"})
                         </option>
                       ))}
                     </select>
@@ -208,16 +229,7 @@ export default function MedicationHistory() {
                       onChange={e => setFormData({...formData, notes: e.target.value})}
                     ></textarea>
                   </div>
-                </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Record</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

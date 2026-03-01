@@ -15,8 +15,10 @@ const PreventiveReminder = sequelize.define('PreventiveReminder', {
 }, { 
   tableName: 'preventive_reminders', 
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
-  updatedAt: false,
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at',
   indexes: [{ fields: ['reminder_date'] }]
 });
 

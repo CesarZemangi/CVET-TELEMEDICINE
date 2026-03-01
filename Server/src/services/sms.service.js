@@ -1,5 +1,10 @@
 import SMSLog from '../models/smsLog.model.js';
 import User from '../models/user.model.js';
+import twilio from 'twilio';
+
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN 
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
 
 /**
  * Send SMS to a user
@@ -22,12 +27,16 @@ export const sendSMS = async ({ user_id, message }) => {
       return { success: false, reason: 'opt_out' };
     }
 
-    // ACTUAL SMS API CALL LOGIC HERE (Twilio, Africa's Talking, etc.)
-    // Example for Twilio:
-    // const client = new twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-    // await client.messages.create({ body: message, to: userPhone, from: process.env.TWILIO_NUMBER });
-    
-    console.log(`[SMS MOCK] To: ${userPhone}, Message: ${message}`);
+    if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+      await twilioClient.messages.create({
+        body: message,
+        to: userPhone,
+        from: process.env.TWILIO_PHONE_NUMBER
+      });
+      console.log(`SMS sent via Twilio to ${userPhone}`);
+    } else {
+      console.log(`[SMS MOCK] To: ${userPhone}, Message: ${message}`);
+    }
     
     // Log success
     await SMSLog.create({

@@ -19,14 +19,12 @@ export default function VetDashboard() {
     const fetchVetData = async () => {
       try {
         const res = await api.get("/vet/dashboard");
-        if (res.data && res.data.data) {
-          setMetrics(res.data.data);
-        }
+        const payload = res?.data?.data || res?.data || {};
+        setMetrics(prev => ({ ...prev, ...payload }));
         
         const activityRes = await api.get("/vet/dashboard/activity");
-        if (activityRes.data && activityRes.data.data) {
-          setRecentActivity(activityRes.data.data);
-        }
+        const activityPayload = activityRes?.data?.data || activityRes?.data || [];
+        setRecentActivity(Array.isArray(activityPayload) ? activityPayload : []);
       } catch (err) {
         console.error("Vet Dashboard Error:", err);
       } finally {

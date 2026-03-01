@@ -119,3 +119,21 @@ export const farmerUploadLabResult = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getVaccinations = async (req, res) => {
+  try {
+    // Return empty array for now since no table exists
+    res.json([]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getScreenings = async (req, res) => {
+  try {
+    // Return empty array for now since no table exists
+    res.json([]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

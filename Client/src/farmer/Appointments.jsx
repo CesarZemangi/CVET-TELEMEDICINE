@@ -6,12 +6,14 @@ import {
   getVetsForAppointments
 } from "./services/farmer.appointments.service";
 import api from "../services/api";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
   const [vets, setVets] = useState([]);
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
     case_id: "",
@@ -22,21 +24,40 @@ export default function Appointments() {
   });
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [apptData, vetsData, casesData] = await Promise.all([
-        getFarmerAppointments(),
-        getVetsForAppointments(),
-        getCasesForAppointments()
-      ]);
-      setAppointments(apptData || []);
-      setVets(vetsData || []);
-      setCases(casesData || []);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    setLoadError("");
+
+    const [apptRes, vetsRes, casesRes] = await Promise.allSettled([
+      getFarmerAppointments(),
+      getVetsForAppointments(),
+      getCasesForAppointments()
+    ]);
+
+    if (apptRes.status === "fulfilled") {
+      setAppointments(Array.isArray(apptRes.value) ? apptRes.value : []);
+    } else {
+      setAppointments([]);
+      console.error("Error fetching appointments:", apptRes.reason);
+      setLoadError("Appointments could not be loaded. You can still create a new request below.");
     }
+
+    if (vetsRes.status === "fulfilled") {
+      setVets(Array.isArray(vetsRes.value) ? vetsRes.value : []);
+    } else {
+      setVets([]);
+      console.error("Error fetching vets:", vetsRes.reason);
+      setLoadError("Vet list failed to load. Refresh or sign in again.");
+    }
+
+    if (casesRes.status === "fulfilled") {
+      setCases(Array.isArray(casesRes.value) ? casesRes.value : []);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases:", casesRes.reason);
+      setLoadError("Case list failed to load. Ensure you have at least one case.");
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -95,6 +116,12 @@ export default function Appointments() {
     }
   };
 
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
+  };
+
   return (
     <div className="container-fluid px-4 py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -110,6 +137,11 @@ export default function Appointments() {
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-0">
+          {loadError && (
+            <div className="alert alert-warning m-3 mb-0 py-2">
+              {loadError}
+            </div>
+          )}
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status"></div>
@@ -176,35 +208,32 @@ export default function Appointments() {
         </div>
       </div>
 
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg">
-              <form onSubmit={handleAddAppointment}>
-                <div className="modal-header border-0 p-4 pb-0">
-                  <h5 className="modal-title fw-bold">Request Appointment</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowAddModal(false)}
-                  ></button>
-                </div>
-                <div className="modal-body p-4">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Request Appointment"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddAppointment}
+        submitLabel="Request Appointment"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Select Case</label>
                     <select
                       className="form-select"
                       required
+                      disabled={cases.length === 0}
                       value={formData.case_id}
                       onChange={e => setFormData({ ...formData, case_id: e.target.value })}
                     >
                       <option value="">Choose a case...</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title}
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
+                    {cases.length === 0 && (
+                      <small className="text-danger">No cases available. Create a case first.</small>
+                    )}
                   </div>
 
                   <div className="mb-3">
@@ -212,16 +241,20 @@ export default function Appointments() {
                     <select
                       className="form-select"
                       required
+                      disabled={vets.length === 0}
                       value={formData.vet_id}
                       onChange={e => setFormData({ ...formData, vet_id: e.target.value })}
                     >
                       <option value="">Choose a vet...</option>
                       {vets.map(v => (
                         <option key={v.id} value={v.id}>
-                          Dr. {v.User?.name || "Unknown"}
+                          Dr. {v.User?.name || v.name || "Unknown"}
                         </option>
                       ))}
                     </select>
+                    {vets.length === 0 && (
+                      <small className="text-danger">No vets available for selection.</small>
+                    )}
                   </div>
 
                   <div className="row">
@@ -261,24 +294,7 @@ export default function Appointments() {
                       placeholder="Add any additional notes..."
                     ></textarea>
                   </div>
-                </div>
-                <div className="modal-footer border-0 p-4 pt-0">
-                  <button
-                    type="button"
-                    className="btn btn-light"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn btn-primary px-4">
-                    Request Appointment
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </div>
   );
 }

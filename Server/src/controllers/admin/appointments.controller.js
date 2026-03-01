@@ -14,25 +14,32 @@ export const getAllAppointments = async (req, res) => {
 
     const appointments = await Appointment.findAll({
       where,
+      paranoid: false,
       include: [
         {
           model: Case,
           attributes: ['id', 'title', 'description', 'animal_id'],
+          required: false,
+          paranoid: false,
           include: [
-            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+            { model: Animal, attributes: ['id', 'tag_number', 'species'], required: false, paranoid: false }
           ]
         },
         {
           model: User,
           as: 'farmer',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone'],
+          required: false,
+          paranoid: false
         },
         {
           model: Vet,
           as: 'vet',
           attributes: ['id', 'user_id'],
+          required: false,
+          paranoid: false,
           include: [
-            { model: User, attributes: ['id', 'name', 'email', 'phone'] }
+            { model: User, attributes: ['id', 'name', 'email', 'phone'], required: false, paranoid: false }
           ]
         }
       ],
@@ -53,6 +60,7 @@ export const getAllAppointments = async (req, res) => {
 export const getAppointmentStats = async (req, res) => {
   try {
     const stats = await Appointment.findAll({
+      paranoid: false,
       attributes: [
         'status',
         [fn('COUNT', col('id')), 'count']
@@ -61,7 +69,7 @@ export const getAppointmentStats = async (req, res) => {
       raw: true
     });
 
-    const total = await Appointment.count();
+    const total = await Appointment.count({ paranoid: false });
     
     res.json({
       total,
@@ -86,7 +94,7 @@ export const adminOverrideStatus = async (req, res) => {
       });
     }
 
-    const appointment = await Appointment.findByPk(id);
+    const appointment = await Appointment.findByPk(id, { paranoid: false });
     if (!appointment) {
       return res.status(404).json({ error: "Appointment not found" });
     }
@@ -116,25 +124,32 @@ export const getAppointmentDetails = async (req, res) => {
     const { id } = req.params;
 
     const appointment = await Appointment.findByPk(id, {
+      paranoid: false,
       include: [
         {
           model: Case,
           attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id'],
+          required: false,
+          paranoid: false,
           include: [
-            { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+            { model: Animal, attributes: ['id', 'tag_number', 'species'], required: false, paranoid: false }
           ]
         },
         {
           model: User,
           as: 'farmer',
-          attributes: ['id', 'name', 'email', 'phone']
+          attributes: ['id', 'name', 'email', 'phone'],
+          required: false,
+          paranoid: false
         },
         {
           model: Vet,
           as: 'vet',
           attributes: ['id', 'user_id'],
+          required: false,
+          paranoid: false,
           include: [
-            { model: User, attributes: ['id', 'name', 'email', 'phone'] }
+            { model: User, attributes: ['id', 'name', 'email', 'phone'], required: false, paranoid: false }
           ]
         }
       ]

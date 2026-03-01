@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import { getIO } from "../services/socket.service.js";
 import sequelize from "../config/db.js";
 import { logAction } from "../utils/dbLogger.js";
+import { getPagination, getPagingData } from "../utils/pagination.utils.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -116,7 +117,7 @@ export const getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Subquery to find latest message per conversation
+    // Subquery to find latest message per conversation (partner + case)
     const conversations = await sequelize.query(`
       SELECT 
         u.id as partner_id,
@@ -126,18 +127,23 @@ export const getConversations = async (req, res) => {
         m.message as lastMessage,
         m.created_at as lastTime,
         m.case_id,
-        (SELECT COUNT(*) FROM messages WHERE receiver_id = :userId AND sender_id = u.id AND is_read = 0) as unread_count
+        (SELECT COUNT(*) FROM messages 
+         WHERE receiver_id = :userId 
+         AND sender_id = u.id 
+         AND is_read = 0 
+         AND (case_id = m.case_id OR (case_id IS NULL AND m.case_id IS NULL))
+        ) as unread_count
       FROM messages m
       JOIN (
         SELECT 
-          CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END as partner_id,
-          MAX(created_at) as latest_date
+          MAX(id) as last_id
         FROM messages
         WHERE sender_id = :userId OR receiver_id = :userId
-        GROUP BY partner_id
-      ) latest ON (CASE WHEN m.sender_id = :userId THEN m.receiver_id ELSE m.sender_id END) = latest.partner_id 
-                AND m.created_at = latest.latest_date
-      JOIN users u ON u.id = latest.partner_id
+        GROUP BY 
+          CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END,
+          case_id
+      ) latest ON m.id = latest.last_id
+      JOIN users u ON u.id = (CASE WHEN m.sender_id = :userId THEN m.receiver_id ELSE m.sender_id END)
       ORDER BY m.created_at DESC
     `, {
       replacements: { userId },
@@ -165,28 +171,51 @@ export const getConversations = async (req, res) => {
 
 export const getChatlogs = async (req, res) => {
   try {
-    const { partner_id } = req.query;
+    const { partner_id, case_id, page, size } = req.query;
     const userId = req.user.id;
 
     if (!partner_id) return res.status(400).json({ error: "Partner ID required" });
 
-    const messages = await Message.findAll({
-      where: {
-        [Op.or]: [
-          { sender_id: userId, receiver_id: partner_id },
-          { sender_id: partner_id, receiver_id: userId }
-        ]
-      },
+    const where = {
+      [Op.or]: [
+        { sender_id: userId, receiver_id: partner_id },
+        { sender_id: partner_id, receiver_id: userId }
+      ]
+    };
+
+    // Filter by case_id if provided (session-based)
+    if (case_id !== undefined && case_id !== 'null' && case_id !== null) {
+      where.case_id = case_id;
+    } else {
+      where.case_id = null;
+    }
+
+    const queryOptions = {
+      where,
       include: [
         { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] },
         { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_pic'] }
       ],
       order: [['created_at', 'ASC']]
-    });
+    };
 
-    // Find unread messages from this partner
+    if (page !== undefined || size !== undefined) {
+      const { limit, offset } = getPagination(page, size);
+      queryOptions.limit = limit;
+      queryOptions.offset = offset;
+      queryOptions.order = [['created_at', 'DESC']];
+    }
+
+    const data = await Message.findAndCountAll(queryOptions);
+
+    // Find unread messages from this partner for this specific case
     const unreadMessages = await Message.findAll({
-      where: { sender_id: partner_id, receiver_id: userId, is_read: false },
+      where: { 
+        sender_id: partner_id, 
+        receiver_id: userId, 
+        is_read: false,
+        case_id: where.case_id
+      },
       attributes: ['id']
     });
 
@@ -208,7 +237,14 @@ export const getChatlogs = async (req, res) => {
       });
     }
 
-    res.json({ data: messages });
+    if (page !== undefined || size !== undefined) {
+      const { limit } = getPagination(page, size);
+      const response = getPagingData(data, page, limit);
+      response.data = response.data.reverse();
+      return res.json(response);
+    }
+
+    res.json({ data: data.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -242,12 +278,19 @@ export const getContacts = async (req, res) => {
 
 export const markAsRead = async (req, res) => {
   try {
-    const { partner_id } = req.body;
+    const { partner_id, case_id } = req.body;
     const userId = req.user.id;
+
+    const where = { sender_id: partner_id, receiver_id: userId, is_read: false };
+    if (case_id !== undefined && case_id !== 'null' && case_id !== null) {
+      where.case_id = case_id;
+    } else {
+      where.case_id = null;
+    }
 
     // Find unread messages from this partner
     const unreadMessages = await Message.findAll({
-      where: { sender_id: partner_id, receiver_id: userId, is_read: false },
+      where,
       attributes: ['id']
     });
 
@@ -277,14 +320,21 @@ export const markAsRead = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.findAll({
+    const { page, size } = req.query;
+    const { limit, offset } = getPagination(page, size);
+
+    const data = await Notification.findAndCountAll({
       where: { receiver_id: req.user.id },
       include: [
         { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
       ],
+      limit,
+      offset,
       order: [['created_at', 'DESC']]
     });
-    res.json({ data: notifications });
+
+    const response = getPagingData(data, page, limit);
+    res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -485,4 +535,3 @@ export const getAllMessages = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-

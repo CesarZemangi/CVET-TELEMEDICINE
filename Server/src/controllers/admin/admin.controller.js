@@ -1,4 +1,4 @@
-import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal, CaseMedia, Appointment } from "../../models/associations.js";
+import { User, Case, Consultation, Message, VideoSession, PreventiveReminder, Notification, Farmer, Vet, Reminder, Animal, CaseMedia, Appointment, FeedInventory } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import EmailLog from "../../models/emailLog.model.js";
 import SMSLog from "../../models/smsLog.model.js";
@@ -10,51 +10,73 @@ import { logAction } from "../../utils/dbLogger.js";
 
 export const getOverview = async (req, res) => {
   try {
-    const total_users = await User.count();
-    const total_farmers = await User.count({ where: { role: 'farmer' } });
-    const total_vets = await Vet.count();
-    const total_cases = await Case.count();
-    const open_cases = await Case.count({ where: { status: 'open' } });
-    const closed_cases = await Case.count({ where: { status: 'closed' } });
-    const pending_lab_requests = await LabRequest.count({ where: { status: 'pending' } });
-    const total_consultations = await Consultation.count();
-    const total_appointments = await Appointment.count();
-    const pending_appointments = await Appointment.count({ where: { status: 'pending' } });
-    const scheduled_reminders = await Reminder.count({ where: { status: 'scheduled' } });
+    const total_users = await User.count({ paranoid: false });
+    const total_farmers = await User.count({ where: { role: 'farmer' }, paranoid: false });
+    const total_vets = await User.count({ where: { role: 'vet' }, paranoid: false });
+    const total_animals = await Animal.count({ paranoid: false });
+    const total_cases = await Case.count({ paranoid: false });
+    const open_cases = await Case.count({ where: { status: 'open' }, paranoid: false });
+    const closed_cases = await Case.count({ where: { status: 'closed' }, paranoid: false });
+    const active_cases = open_cases;
+    const pending_lab_requests = await LabRequest.count({ where: { status: 'pending' }, paranoid: false });
+    const total_consultations = await Consultation.count({ paranoid: false });
+    const total_appointments = await Appointment.count({ paranoid: false });
+    const pending_appointments = await Appointment.count({ where: { status: 'pending' }, paranoid: false });
+    const approved_appointments = await Appointment.count({ where: { status: 'approved' }, paranoid: false });
+    const completed_appointments = await Appointment.count({ where: { status: 'completed' }, paranoid: false });
+    const rejected_appointments = await Appointment.count({ where: { status: 'rejected' }, paranoid: false });
+    const cancelled_appointments = await Appointment.count({ where: { status: 'cancelled' }, paranoid: false });
+    const scheduled_reminders = await Reminder.count({ where: { status: 'scheduled' }, paranoid: false });
 
-    const total_messages = await Message.count();
-    const unread_notifications = await Notification.count({ where: { is_read: false } });
-    const active_video_sessions = await VideoSession.count({ where: { status: 'active' } });
-    const completed_video_sessions = await VideoSession.count({ where: { status: 'ended' } });
+    const total_messages = await Message.count({ paranoid: false });
+    const unread_notifications = await Notification.count({ where: { is_read: false }, paranoid: false });
+    const active_video_sessions = await VideoSession.count({ where: { status: 'active' }, paranoid: false });
+    const completed_video_sessions = await VideoSession.count({ where: { status: 'ended' }, paranoid: false });
     const total_emails_sent = await EmailLog.count({ where: { status: 'sent' } });
     const total_sms_sent = await SMSLog.count({ where: { status: 'sent' } });
-    const pending_reminders = await PreventiveReminder.count({ where: { status: 'pending' } });
-    const sent_reminders = await PreventiveReminder.count({ where: { status: 'sent' } });
+    const pending_reminders = await PreventiveReminder.count({ where: { status: 'pending' }, paranoid: false });
+    const sent_reminders = await PreventiveReminder.count({ where: { status: 'sent' }, paranoid: false });
     const failed_emails = await EmailLog.count({ where: { status: 'failed' } });
     const failed_sms = await SMSLog.count({ where: { status: 'failed' } });
-    const high_priority_cases = await Case.count({ where: { priority: 'high' } });
-    const critical_priority_cases = await Case.count({ where: { priority: 'critical' } });
+    const high_priority_cases = await Case.count({ where: { priority: 'high' }, paranoid: false });
+    const critical_priority_cases = await Case.count({ where: { priority: 'critical' }, paranoid: false });
+    const total_feed_items = await FeedInventory.count({ paranoid: false });
+    let low_stock_items = 0;
+    try {
+      low_stock_items = await FeedInventory.count({
+        where: {
+          [Op.and]: [literal("quantity <= low_stock_threshold")]
+        },
+        paranoid: false
+      });
+    } catch {
+      low_stock_items = 0;
+    }
 
     const recent_cases = await Case.findAll({
       attributes: ['id', 'description', 'created_at', 'status'],
       order: [['created_at', 'DESC']],
-      limit: 5
+      limit: 5,
+      paranoid: false
     });
 
     const recent_users = await User.findAll({
-      attributes: ['id', 'name', 'role', 'created_at', 'profile_pic'],
+      attributes: ['id', 'name', 'role', 'created_at', 'profile_image'],
       order: [['created_at', 'DESC']],
-      limit: 8
+      limit: 8,
+      paranoid: false
     });
 
     const casesByStatus = await Case.findAll({
       attributes: ['status', [fn('count', col('id')), 'count']],
-      group: ['status']
+      group: ['status'],
+      paranoid: false
     });
 
     const casesByPriority = await Case.findAll({
       attributes: ['priority', [fn('count', col('id')), 'count']],
-      group: ['priority']
+      group: ['priority'],
+      paranoid: false
     });
 
     const monthlyCases = await Case.findAll({
@@ -64,7 +86,8 @@ export const getOverview = async (req, res) => {
       ],
       group: [fn('DATE_FORMAT', col('created_at'), '%Y-%m')],
       order: [[fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'ASC']],
-      limit: 12
+      limit: 12,
+      paranoid: false
     });
 
     res.json({
@@ -72,13 +95,19 @@ export const getOverview = async (req, res) => {
       total_users,
       total_farmers,
       total_vets,
+      total_animals,
       total_cases,
       open_cases,
       closed_cases,
+      active_cases,
       pending_lab_requests,
       total_consultations,
       total_appointments,
       pending_appointments,
+      approved_appointments,
+      completed_appointments,
+      rejected_appointments,
+      cancelled_appointments,
       scheduled_reminders,
       total_messages,
       unread_notifications,
@@ -92,6 +121,8 @@ export const getOverview = async (req, res) => {
       failed_sms,
       high_priority_cases,
       critical_priority_cases,
+      total_feed_items,
+      low_stock_items,
       recent_cases,
       recent_users,
       casesByStatus,
@@ -107,7 +138,8 @@ export const getUsers = async (req, res) => {
   try {
     const data = await User.findAll({
       attributes: ['id', 'name', 'email', 'role', 'status', 'phone', 'created_at'],
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      paranoid: false
     });
     res.json(data);
   } catch (err) {
@@ -164,16 +196,19 @@ export const getFarmerStats = async (req, res) => {
     const farmers = await User.findAll({
       where: { role: 'farmer' },
       attributes: ['id', 'name', 'email', 'status', 'phone', 'created_at'],
+      paranoid: false,
       include: [{
         model: Farmer,
-        attributes: ['farm_name', 'location', 'livestock_count']
+        attributes: ['farm_name', 'location', 'livestock_count'],
+        required: false,
+        paranoid: false
       }]
     });
 
     const farmerStats = await Promise.all(farmers.map(async (user) => {
-      const totalCases = await Case.count({ where: { farmer_id: user.id } });
-      const openCases = await Case.count({ where: { farmer_id: user.id, status: 'open' } });
-      const closedCases = await Case.count({ where: { farmer_id: user.id, status: 'closed' } });
+      const totalCases = await Case.count({ where: { farmer_id: user.id }, paranoid: false });
+      const openCases = await Case.count({ where: { farmer_id: user.id, status: 'open' }, paranoid: false });
+      const closedCases = await Case.count({ where: { farmer_id: user.id, status: 'closed' }, paranoid: false });
 
       return {
         id: user.id,
@@ -202,17 +237,21 @@ export const getVetStats = async (req, res) => {
     const vets = await User.findAll({
       where: { role: 'vet' },
       attributes: ['id', 'name', 'email', 'status', 'phone', 'created_at'],
+      paranoid: false,
       include: [{
         model: Vet,
-        attributes: ['id', 'specialization', 'license_number', 'experience_years']
+        attributes: ['id', 'specialization', 'license_number', 'experience_years'],
+        required: false,
+        paranoid: false
       }]
     });
 
     const vetStats = await Promise.all(vets.map(async (user) => {
       const vetId = user.Vet?.id;
-      const assignedCases = vetId ? await Case.count({ where: { vet_id: vetId } }) : 0;
+      const assignedCases = vetId ? await Case.count({ where: { vet_id: vetId }, paranoid: false }) : 0;
       const totalConsultations = vetId ? await Consultation.count({ 
-        where: { vet_id: vetId } 
+        where: { vet_id: vetId },
+        paranoid: false
       }) : 0;
 
       return {
@@ -240,15 +279,18 @@ export const getVetStats = async (req, res) => {
 export const getCases = async (req, res) => {
   try {
     const data = await Case.findAll({
+      paranoid: false,
       include: [
-        { model: User, as: 'farmer', attributes: ['id', 'name'] },
+        { model: User, as: 'farmer', attributes: ['id', 'name'], required: false, paranoid: false },
         { 
           model: Vet, 
           as: 'vet',
           attributes: ['id'],
-          include: [{ model: User, attributes: ['id', 'name'] }]
+          required: false,
+          paranoid: false,
+          include: [{ model: User, attributes: ['id', 'name'], required: false, paranoid: false }]
         },
-        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+        { model: Animal, attributes: ['id', 'tag_number', 'species'], required: false, paranoid: false }
       ],
       order: [['created_at', 'DESC']],
       raw: false,
@@ -276,17 +318,22 @@ export const getCases = async (req, res) => {
 export const getConsultations = async (req, res) => {
   try {
     const data = await Consultation.findAll({
+      paranoid: false,
       include: [
         {
           model: Vet,
           as: 'vet',
           attributes: ['id'],
-          include: [{ model: User, attributes: ['id', 'name'] }]
+          required: false,
+          paranoid: false,
+          include: [{ model: User, attributes: ['id', 'name'], required: false, paranoid: false }]
         },
         { 
           model: Case, 
           attributes: ['id', 'description'],
-          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'] }]
+          required: false,
+          paranoid: false,
+          include: [{ model: Animal, attributes: ['id', 'tag_number', 'species'], required: false, paranoid: false }]
         }
       ],
       order: [['created_at', 'DESC']]
@@ -433,10 +480,11 @@ export const sendDirectNotification = async (req, res) => {
 export const getAllChatLogs = async (req, res) => {
   try {
     const logs = await Message.findAll({
+      paranoid: false,
       include: [
-        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic', 'role'] },
-        { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_pic', 'role'] },
-        { model: Case, attributes: ['id', 'title'] }
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_image', 'role'], required: false, paranoid: false },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'profile_image', 'role'], required: false, paranoid: false },
+        { model: Case, attributes: ['id', 'title'], required: false, paranoid: false }
       ],
       order: [['created_at', 'DESC']]
     });
@@ -475,6 +523,7 @@ export const getThreadMessages = async (req, res) => {
     }
     
     const messages = await Message.findAll({
+      paranoid: false,
       where: {
         [Op.or]: [
           { sender_id, receiver_id },
@@ -482,8 +531,8 @@ export const getThreadMessages = async (req, res) => {
         ]
       },
       include: [
-        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] },
-        { model: Case, attributes: ['id', 'title'] }
+        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_image'], required: false, paranoid: false },
+        { model: Case, attributes: ['id', 'title'], required: false, paranoid: false }
       ],
       order: [['created_at', 'ASC']]
     });
@@ -497,19 +546,26 @@ export const getThreadMessages = async (req, res) => {
 export const getAllMedia = async (req, res) => {
   try {
     const media = await CaseMedia.findAll({
+      paranoid: false,
       include: [
         {
           model: Case,
           attributes: ['id', 'title', 'animal_id'],
+          required: false,
+          paranoid: false,
           include: [
             {
               model: Vet,
               as: 'vet',
               attributes: ['id'],
+              required: false,
+              paranoid: false,
               include: [
                 {
                   model: User,
-                  attributes: ['id', 'name']
+                  attributes: ['id', 'name'],
+                  required: false,
+                  paranoid: false
                 }
               ]
             }

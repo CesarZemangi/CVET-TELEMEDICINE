@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getFileUrl } from '../../utils';
 
-export default function ProfileImage({ src, role, size = "40px", className = "" }) {
-  const serverBaseUrl = "http://localhost:5000/uploads/profiles/";
+export default function ProfileImage({ src, role, name = "", size = "40px", className = "" }) {
   
   // Choose the default based on the role
   const getDefaultAvatar = () => {
@@ -12,23 +12,49 @@ export default function ProfileImage({ src, role, size = "40px", className = "" 
   };
 
   const defaultAvatar = getDefaultAvatar();
-  const imagePath = (src && src !== "") ? `${serverBaseUrl}${src}` : defaultAvatar;
+  const initialImagePath = (src && src !== "") ? getFileUrl(src) : defaultAvatar;
+  const [imagePath, setImagePath] = useState(initialImagePath);
+  const [failedDefault, setFailedDefault] = useState(false);
+
+  useEffect(() => {
+    setImagePath((src && src !== "") ? getFileUrl(src) : defaultAvatar);
+    setFailedDefault(false);
+  }, [src, role, defaultAvatar]);
+
+  const initials = useMemo(() => {
+    const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return "U";
+    const chars = parts.slice(0, 2).map((p) => p[0]?.toUpperCase() || "");
+    return chars.join("") || "U";
+  }, [name]);
 
   return (
     <div 
       className={`rounded-circle overflow-hidden border border-2 border-white border-opacity-25 ${className}`}
-      style={{ width: size, height: size, flexShrink: 0 }}
+      style={{ width: size, height: size, flexShrink: 0, background: "#e9ecef" }}
     >
-      <img
-        src={imagePath}
-        alt="Profile"
-        className="w-100 h-100"
-        style={{ objectFit: "cover" }}
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = defaultAvatar;
-        }}
-      />
+      {!failedDefault ? (
+        <img
+          src={imagePath}
+          alt="Profile"
+          className="w-100 h-100"
+          style={{ objectFit: "cover" }}
+          onError={() => {
+            if (imagePath !== defaultAvatar) {
+              setImagePath(defaultAvatar);
+              return;
+            }
+            setFailedDefault(true);
+          }}
+        />
+      ) : (
+        <div
+          className="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-secondary"
+          style={{ fontSize: "0.8rem" }}
+        >
+          {initials}
+        </div>
+      )}
     </div>
   );
 }

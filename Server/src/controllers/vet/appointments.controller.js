@@ -1,14 +1,19 @@
 import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
+import { v4 as uuidv4 } from 'uuid';
+import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 
 export const getVetAppointments = async (req, res) => {
   try {
+    const { page, size } = req.query;
+    const { limit, offset } = getPagination(page, size);
+
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });
     if (!vet) {
       return res.status(404).json({ error: "Vet record not found" });
     }
 
-    const appointments = await Appointment.findAll({
+    const data = await Appointment.findAndCountAll({
       where: { vet_id: vet.id },
       include: [
         {
@@ -24,13 +29,13 @@ export const getVetAppointments = async (req, res) => {
           attributes: ['id', 'name', 'phone', 'email']
         }
       ],
+      limit,
+      offset,
       order: [['appointment_date', 'DESC']]
     });
 
-    res.json({
-      data: appointments,
-      count: appointments.length
-    });
+    const response = getPagingData(data, page, limit);
+    res.json(response);
   } catch (error) {
     console.error("Error getting vet appointments:", error);
     res.status(500).json({ error: error.message });
@@ -256,6 +261,64 @@ export const cancelAppointment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error cancelling appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const joinSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+
+    if (!vet) {
+      return res.status(404).json({ error: "Vet record not found" });
+    }
+
+    const appointment = await Appointment.findOne({
+      where: { id, vet_id: vet.id }
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (appointment.status !== 'approved') {
+      return res.status(400).json({ error: "Only approved appointments can be joined" });
+    }
+
+    // Restrict by date and time
+    const now = new Date();
+    const apptDate = new Date(appointment.appointment_date);
+    const timeStr = appointment.appointment_time;
+    const [hours, minutes] = timeStr.split(':');
+    
+    const apptStartTime = new Date(apptDate.getFullYear(), apptDate.getMonth(), apptDate.getDate(), parseInt(hours), parseInt(minutes));
+    
+    // Allowed window: 15 minutes before to 2 hours after
+    const windowStart = new Date(apptStartTime.getTime() - 15 * 60000);
+    const windowEnd = new Date(apptStartTime.getTime() + 120 * 60000);
+
+    if (now < windowStart) {
+      return res.status(403).json({ error: "Session not available yet. Please wait until 15 minutes before the scheduled time." });
+    }
+
+    if (now > windowEnd) {
+      return res.status(403).json({ error: "Session has expired." });
+    }
+
+    // Generate meeting ID if not exists
+    if (!appointment.meeting_id) {
+      await appointment.update({ meeting_id: uuidv4() });
+    }
+
+    await logAction(req.user.id, `Vet joined video session for appointment #${id}`);
+
+    res.json({ 
+      message: "Session joined", 
+      meeting_id: appointment.meeting_id,
+      appointment
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };

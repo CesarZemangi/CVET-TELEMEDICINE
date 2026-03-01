@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getCases, addCase } from "./services/farmer.cases.service";
 import api from "../services/api";
 import CaseDetailsModal from "../components/dashboard/CaseDetailsModal";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function Cases() {
   const navigate = useNavigate();
@@ -39,7 +40,8 @@ export default function Cases() {
   const fetchAnimals = async () => {
     try {
       const res = await api.get("/farmer/animals");
-      setAnimals(res.data?.data || res.data || []);
+      const result = res.data?.data;
+      setAnimals(Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : []));
     } catch (err) {
       console.error("Error fetching animals:", err);
     }
@@ -48,7 +50,8 @@ export default function Cases() {
   const fetchVets = async () => {
     try {
       const res = await api.get("/user/vets");
-      setVets(res.data);
+      const result = res.data?.data;
+      setVets(Array.isArray(result) ? result : (Array.isArray(res.data) ? res.data : []));
     } catch (err) {
       console.error("Error fetching vets:", err);
     }
@@ -197,97 +200,85 @@ export default function Cases() {
       />
 
       {/* Report Case Modal */}
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg">
-              <form onSubmit={handleAddCase}>
-                <div className="modal-header border-0 p-4 pb-0">
-                  <h5 className="modal-title fw-bold">Report New Health Case</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body p-4">
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Animal</label>
-                    <select 
-                      className="form-select" 
-                      required 
-                      value={formData.animal_id} 
-                      onChange={e => setFormData({...formData, animal_id: e.target.value})}
-                    >
-                      <option value="">Choose an animal...</option>
-                      {animals.map(animal => (
-                        <option key={animal.id} value={animal.id}>
-                          {animal.tag_number} ({animal.species})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Veterinarian</label>
-                    <select 
-                      className="form-select" 
-                      required 
-                      value={formData.vet_id} 
-                      onChange={e => setFormData({...formData, vet_id: e.target.value})}
-                    >
-                      <option value="">Choose a vet...</option>
-                      {vets.map(vet => (
-                        <option key={vet.id} value={vet.id}>
-                          Dr. {vet.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Case Title</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="Short summary of the issue" 
-                      required 
-                      value={formData.title} 
-                      onChange={e => setFormData({...formData, title: e.target.value})} 
-                    />
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Detailed Description</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="3" 
-                      placeholder="Provide more details about the problem" 
-                      required 
-                      value={formData.description} 
-                      onChange={e => setFormData({...formData, description: e.target.value})}
-                    ></textarea>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Priority Level</label>
-                    <select 
-                      className="form-select" 
-                      value={formData.priority} 
-                      onChange={e => setFormData({...formData, priority: e.target.value})}
-                    >
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-footer border-0 p-4 pt-0">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary px-4">Submit Case</button>
-                </div>
-              </form>
-            </div>
-          </div>
+      <FormModalWrapper
+        show={showAddModal}
+        title="Report New Health Case"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddCase}
+        submitLabel="Submit Case"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Select Animal</label>
+          <select
+            className="form-select"
+            required
+            value={formData.animal_id}
+            onChange={e => setFormData({...formData, animal_id: e.target.value})}
+          >
+            <option value="">Choose an animal...</option>
+            {animals.map(animal => (
+              <option key={animal.id} value={animal.id}>
+                {animal.tag_number} ({animal.species})
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Select Veterinarian</label>
+          <select
+            className="form-select"
+            required
+            value={formData.vet_id}
+            onChange={e => setFormData({...formData, vet_id: e.target.value})}
+          >
+            <option value="">Choose a vet...</option>
+            {vets.map(vet => (
+              <option key={vet.id} value={vet.id}>
+                Dr. {vet.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Case Title</label>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Short summary of the issue"
+            required
+            value={formData.title}
+            onChange={e => setFormData({...formData, title: e.target.value})}
+          />
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Detailed Description</label>
+          <textarea
+            className="form-control"
+            rows="3"
+            placeholder="Provide more details about the problem"
+            required
+            value={formData.description}
+            onChange={e => setFormData({...formData, description: e.target.value})}
+          ></textarea>
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Priority Level</label>
+          <select
+            className="form-select"
+            value={formData.priority}
+            onChange={e => setFormData({...formData, priority: e.target.value})}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </FormModalWrapper>
     </div>
   );
 }

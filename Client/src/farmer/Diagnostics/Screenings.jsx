@@ -20,7 +20,7 @@ export default function Screenings() {
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/farmer/screenings")
+    fetch("http://localhost:5000/api/v1/farmer/diagnostics/screenings")
       .then(res => res.json())
       .then(data => setScreenings(data))
       .catch(err => console.error(err));

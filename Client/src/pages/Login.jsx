@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +17,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -24,6 +26,10 @@ export default function Login() {
       const result = await res.json();
 
       if (!res.ok) {
+        if (res.status === 401) {
+          setEmail("");
+          setPassword("");
+        }
         throw new Error(result.message || "Login failed");
       }
 
@@ -37,7 +43,7 @@ export default function Login() {
           token: result.token,
           role: role,
           name: result.user?.name,
-          profilePic: result.user?.profilePic
+          profile_image: result.user?.profile_image
         })
       );
 
@@ -104,15 +110,25 @@ export default function Login() {
 
           <div className="mb-4">
             <label className="form-label small fw-bold text-uppercase tracking-wider" style={{ color: "var(--text-dark)", fontSize: '0.7rem' }}>Password</label>
-            <input
-              type="password"
-              className="form-control py-2 px-3"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ borderRadius: '10px', border: '1px solid #e0e0e0' }}
-            />
+            <div className="position-relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-control py-2 px-3"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ borderRadius: '10px', border: '1px solid #e0e0e0', paddingRight: '40px' }}
+              />
+              <button
+                type="button"
+                className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent pe-3 text-muted"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ cursor: "pointer", zIndex: 10 }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button

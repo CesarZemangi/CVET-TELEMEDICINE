@@ -20,7 +20,7 @@ export default function ConsultationStats() {
   const [tableData, setTableData] = useState([])
 
   useEffect(() => {
-    fetch("/api/consultations/stats")
+    fetch("/api/v1/consultations/stats")
       .then(res => res.json())
       .then(data => {
         setStats(data.overall)

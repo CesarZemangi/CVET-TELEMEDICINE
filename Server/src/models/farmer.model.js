@@ -26,7 +26,11 @@ const Farmer = sequelize.define('Farmer', {
   }
 }, {
   tableName: 'farmers',
-  timestamps: false
+  timestamps: true,
+  paranoid: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 export default Farmer;

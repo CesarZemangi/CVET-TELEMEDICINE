@@ -3,6 +3,7 @@ import Case from "../../models/case.model.js";
 import Consultation from "../../models/consultation.model.js";
 import LabRequest from "../../models/labRequest.model.js";
 import { Op, fn, col } from "sequelize";
+import { success, error } from "../../utils/response.js";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -10,18 +11,21 @@ export const getDashboardData = async (req, res) => {
 
     // Total Animals for this farmer
     const animalCount = await Animal.count({
-      where: { farmer_id: userId }
+      where: { farmer_id: userId },
+      paranoid: false
     });
 
     // Active Cases (open)
     const activeCasesCount = await Case.count({
-      where: { farmer_id: userId, status: 'open' }
+      where: { farmer_id: userId, status: 'open' },
+      paranoid: false
     });
 
     // Get farmer's case IDs for nested queries
     const farmerCases = await Case.findAll({
       where: { farmer_id: userId },
-      attributes: ['id']
+      attributes: ['id'],
+      paranoid: false
     });
     const caseIds = farmerCases.map(c => c.id);
 
@@ -29,7 +33,8 @@ export const getDashboardData = async (req, res) => {
     const pendingConsultationsCount = await Consultation.count({
       where: {
         case_id: { [Op.in]: caseIds }
-      }
+      },
+      paranoid: false
     });
 
     // Health Alerts (Lab requests with pending status)
@@ -37,14 +42,16 @@ export const getDashboardData = async (req, res) => {
       where: {
         status: 'pending',
         case_id: { [Op.in]: caseIds }
-      }
+      },
+      paranoid: false
     });
 
     // Case Status Distribution
     const statusDistribution = await Case.findAll({
       where: { farmer_id: userId },
       attributes: ['status', [fn('count', col('id')), 'count']],
-      group: ['status']
+      group: ['status'],
+      paranoid: false
     });
 
     // Monthly activity (cases created per month)
@@ -56,10 +63,11 @@ export const getDashboardData = async (req, res) => {
       ],
       group: [fn('DATE_FORMAT', col('created_at'), '%Y-%m')],
       order: [[fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'ASC']],
-      limit: 6
+      limit: 6,
+      paranoid: false
     });
 
-    res.json({
+    success(res, {
       totalAnimals: animalCount,
       activeCases: activeCasesCount,
       pendingConsultations: pendingConsultationsCount,
@@ -68,7 +76,7 @@ export const getDashboardData = async (req, res) => {
       monthlyActivity
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    error(res, err.message);
   }
 };
 
@@ -83,7 +91,8 @@ export const getRecentActivity = async (req, res) => {
       order: [['created_at', 'DESC']],
       include: [
         { model: Animal, attributes: ['tag_number', 'species'] }
-      ]
+      ],
+      paranoid: false
     });
 
     const activity = recentCases.map(c => ({
@@ -91,8 +100,8 @@ export const getRecentActivity = async (req, res) => {
       date: c.created_at
     }));
 
-    res.json(activity);
+    success(res, activity);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    error(res, err.message);
   }
 };

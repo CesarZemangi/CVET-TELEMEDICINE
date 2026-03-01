@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { getTreatmentPlans, createTreatmentPlan } from "../services/vet.treatment.service";
 import { getCasesForDropdown } from "../services/vet.cases.service";
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import FormModalWrapper from "../../components/common/FormModalWrapper";
 
 export default function TreatmentPlans() {
   const [plans, setPlans] = useState([]);
@@ -16,17 +17,31 @@ export default function TreatmentPlans() {
   });
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const plansData = await getTreatmentPlans();
-      const casesDropdown = await getCasesForDropdown();
-      setPlans(plansData?.data || plansData || []);
-      setCases(casesDropdown?.data || []);
-    } catch (err) {
-      console.error("Error fetching treatment plans:", err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const [plansRes, casesRes] = await Promise.allSettled([
+      getTreatmentPlans(),
+      getCasesForDropdown()
+    ]);
+
+    if (plansRes.status === "fulfilled") {
+      const plansData = plansRes.value;
+      const plansList = Array.isArray(plansData?.data) ? plansData.data : (Array.isArray(plansData) ? plansData : []);
+      setPlans(plansList);
+    } else {
+      setPlans([]);
+      console.error("Error fetching treatment plans:", plansRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesDropdown = casesRes.value;
+      const casesList = Array.isArray(casesDropdown?.data) ? casesDropdown.data : (Array.isArray(casesDropdown) ? casesDropdown : []);
+      setCases(casesList);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for treatment plans:", casesRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -43,6 +58,12 @@ export default function TreatmentPlans() {
     } catch (err) {
       alert("Failed to create treatment plan: " + (err.response?.data?.error || err.message));
     }
+  };
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
   };
 
   return (
@@ -88,16 +109,13 @@ export default function TreatmentPlans() {
       </div>
 
       {/* Add Treatment Plan Modal */}
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Create Treatment Plan</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Create Treatment Plan"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleSubmit}
+        submitLabel="Save Plan"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Select Case</label>
                     <select 
@@ -109,7 +127,7 @@ export default function TreatmentPlans() {
                       <option value="">Select a case</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} (ID: {c.id})
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
@@ -145,16 +163,7 @@ export default function TreatmentPlans() {
                       />
                     </div>
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Plan</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

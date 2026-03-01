@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import MetricCard from "../components/dashboard/MetricCard";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function Animals() {
   const [animals, setAnimals] = useState([]);
@@ -13,9 +14,10 @@ export default function Animals() {
     try {
       setLoading(true);
       const res = await api.get("/farmer/animals");
-      setAnimals(res.data?.data || res.data || []);
-      // Some versions of the API might return total count separately
-      setLivestockCount(res.data?.data ? res.data.data.length : (Array.isArray(res.data) ? res.data.length : 0));
+      const result = res.data?.data;
+      const animalsList = Array.isArray(result?.data) ? result.data : (Array.isArray(result) ? result : []);
+      setAnimals(animalsList);
+      setLivestockCount(result?.totalItems || animalsList.length);
     } catch (err) {
       console.error("Error fetching animals:", err);
     } finally {
@@ -103,54 +105,42 @@ export default function Animals() {
       </div>
 
       {/* Basic Add Animal Modal */}
-      {showModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '20px' }}>
-              <form onSubmit={handleAddAnimal}>
-                <div className="modal-header border-0 p-4">
-                  <h5 className="modal-title fw-bold">Register New Animal</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-                </div>
-                <div className="modal-body p-4 pt-0">
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Tag Number</label>
-                    <input type="text" className="form-control" placeholder="e.g. TAG-001" required value={formData.tag_number} onChange={e => setFormData({...formData, tag_number: e.target.value})} />
-                  </div>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Species</label>
-                      <input type="text" className="form-control" placeholder="e.g. Cow" required value={formData.species} onChange={e => setFormData({...formData, species: e.target.value})} />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Breed</label>
-                      <input type="text" className="form-control" placeholder="e.g. Holstein" required value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Age (Years)</label>
-                      <input type="number" className="form-control" required value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Health Status</label>
-                      <select className="form-select" value={formData.health_status} onChange={e => setFormData({...formData, health_status: e.target.value})}>
-                        <option value="healthy">Healthy</option>
-                        <option value="sick">Sick</option>
-                        <option value="under treatment">Under Treatment</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-footer border-0 p-4 pt-0">
-                  <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary-custom">Save Animal</button>
-                </div>
-              </form>
-            </div>
+      <FormModalWrapper
+        show={showModal}
+        title="Register New Animal"
+        onClose={() => setShowModal(false)}
+        onSubmit={handleAddAnimal}
+        submitLabel="Save Animal"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Tag Number</label>
+          <input type="text" className="form-control" placeholder="e.g. TAG-001" required value={formData.tag_number} onChange={e => setFormData({...formData, tag_number: e.target.value})} />
+        </div>
+        <div className="row">
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Species</label>
+            <input type="text" className="form-control" placeholder="e.g. Cow" required value={formData.species} onChange={e => setFormData({...formData, species: e.target.value})} />
+          </div>
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Breed</label>
+            <input type="text" className="form-control" placeholder="e.g. Holstein" required value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
           </div>
         </div>
-      )}
+        <div className="row">
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Age (Years)</label>
+            <input type="number" className="form-control" required value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+          </div>
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Health Status</label>
+            <select className="form-select" value={formData.health_status} onChange={e => setFormData({...formData, health_status: e.target.value})}>
+              <option value="healthy">Healthy</option>
+              <option value="sick">Sick</option>
+              <option value="under treatment">Under Treatment</option>
+            </select>
+          </div>
+        </div>
+      </FormModalWrapper>
     </div>
   );
 }

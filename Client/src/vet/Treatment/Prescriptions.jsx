@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import { getPrescriptions, createPrescription, getCasesForTreatment } from "../services/vet.treatment.service";
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import FormModalWrapper from "../../components/common/FormModalWrapper";
 
 export default function Prescriptions() {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -15,17 +16,31 @@ export default function Prescriptions() {
   });
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const presData = await getPrescriptions();
-      const casesDropdown = await getCasesForTreatment();
-      setPrescriptions(presData?.data || presData || []);
-      setCases(casesDropdown?.data || casesDropdown || []);
-    } catch (err) {
-      console.error("Error fetching prescriptions:", err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const [presRes, casesRes] = await Promise.allSettled([
+      getPrescriptions(),
+      getCasesForTreatment()
+    ]);
+
+    if (presRes.status === "fulfilled") {
+      const presData = presRes.value;
+      const presList = Array.isArray(presData?.data) ? presData.data : (Array.isArray(presData) ? presData : []);
+      setPrescriptions(presList);
+    } else {
+      setPrescriptions([]);
+      console.error("Error fetching prescriptions:", presRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesDropdown = casesRes.value;
+      const casesList = Array.isArray(casesDropdown?.data) ? casesDropdown.data : (Array.isArray(casesDropdown) ? casesDropdown : []);
+      setCases(casesList);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for prescriptions:", casesRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -42,6 +57,12 @@ export default function Prescriptions() {
     } catch (err) {
       alert("Failed to create prescription: " + (err.response?.data?.error || err.message));
     }
+  };
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
   };
 
   return (
@@ -83,16 +104,13 @@ export default function Prescriptions() {
       </div>
 
       {/* Add Prescription Modal */}
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Issue New Prescription</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Issue New Prescription"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleSubmit}
+        submitLabel="Save Prescription"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Select Case</label>
                     <select 
@@ -104,7 +122,7 @@ export default function Prescriptions() {
                       <option value="">Select a case</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} (ID: {c.id})
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
@@ -144,16 +162,7 @@ export default function Prescriptions() {
                       />
                     </div>
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Save Prescription</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

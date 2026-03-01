@@ -1,4 +1,4 @@
-import { User, Case, Message, PreventiveReminder, Vet, Consultation } from "../../models/associations.js";
+import { User, Case, Message, PreventiveReminder, Vet, Consultation, Appointment } from "../../models/associations.js";
 import LabRequest from "../../models/labRequest.model.js";
 import Feedback from "../../models/feedback.model.js";
 import MedicationHistory from "../../models/medicationHistory.model.js";
@@ -6,18 +6,20 @@ import { fn, col, Op, literal } from "sequelize";
 
 export const getOverviewAnalytics = async (req, res) => {
   try {
-    const totalUsers = await User.count();
-    const totalFarmers = await User.count({ where: { role: 'farmer' } });
-    const totalVets = await User.count({ where: { role: 'vet' } });
+    const totalUsers = await User.count({ paranoid: false });
+    const totalFarmers = await User.count({ where: { role: 'farmer' }, paranoid: false });
+    const totalVets = await User.count({ where: { role: 'vet' }, paranoid: false });
     
     const casesByStatus = await Case.findAll({
       attributes: ['status', [fn('count', col('id')), 'count']],
-      group: ['status']
+      group: ['status'],
+      paranoid: false
     });
 
     const casesByPriority = await Case.findAll({
       attributes: ['priority', [fn('count', col('id')), 'count']],
-      group: ['priority']
+      group: ['priority'],
+      paranoid: false
     });
 
     res.json({
@@ -40,12 +42,14 @@ export const getCaseAnalytics = async (req, res) => {
         [fn('count', col('id')), 'count']
       ],
       group: [fn('DATE_FORMAT', col('created_at'), '%Y-%m')],
-      order: [[fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'ASC']]
+      order: [[fn('DATE_FORMAT', col('created_at'), '%Y-%m'), 'ASC']],
+      paranoid: false
     });
 
     const priorityDistribution = await Case.findAll({
       attributes: ['priority', [fn('count', col('id')), 'count']],
-      group: ['priority']
+      group: ['priority'],
+      paranoid: false
     });
 
     res.json({
@@ -66,7 +70,8 @@ export const getMessageAnalytics = async (req, res) => {
       ],
       group: [fn('DATE', col('created_at'))],
       order: [[fn('DATE', col('created_at')), 'ASC']],
-      limit: 30
+      limit: 30,
+      paranoid: false
     });
 
     res.json({
@@ -86,12 +91,14 @@ export const getReminderAnalytics = async (req, res) => {
       ],
       where: { status: 'sent' },
       group: [fn('DATE_FORMAT', col('reminder_date'), '%Y-%m')],
-      order: [[fn('DATE_FORMAT', col('reminder_date'), '%Y-%m'), 'ASC']]
+      order: [[fn('DATE_FORMAT', col('reminder_date'), '%Y-%m'), 'ASC']],
+      paranoid: false
     });
 
     const successRate = await PreventiveReminder.findAll({
       attributes: ['status', [fn('count', col('id')), 'count']],
-      group: ['status']
+      group: ['status'],
+      paranoid: false
     });
 
     res.json({
@@ -107,9 +114,12 @@ export const getVetPerformance = async (req, res) => {
     try {
         const vets = await Vet.findAll({
             attributes: ['id', 'specialization'],
+            paranoid: false,
             include: [{
                 model: User,
-                attributes: ['id', 'name']
+                attributes: ['id', 'name'],
+                required: false,
+                paranoid: false
             }]
         });
 
@@ -117,16 +127,24 @@ export const getVetPerformance = async (req, res) => {
             const vetUserId = vet.User.id;
 
             // Total cases assigned
-            const totalAssigned = await Case.count({ where: { vet_id: vet.id } });
+            const totalAssigned = await Case.count({ where: { vet_id: vet.id }, paranoid: false });
 
             // Closed cases
             const completedCases = await Case.count({ 
-                where: { vet_id: vet.id, status: 'closed' } 
+                where: { vet_id: vet.id, status: 'closed' },
+                paranoid: false
             });
 
             // Open cases
             const activeCases = await Case.count({ 
-                where: { vet_id: vet.id, status: 'open' } 
+                where: { vet_id: vet.id, status: 'open' },
+                paranoid: false
+            });
+
+            // Pending appointments
+            const pendingAppointments = await Appointment.count({
+                where: { vet_id: vet.id, status: 'pending' },
+                paranoid: false
             });
 
             // Average resolution time (in hours) - from case creation to closed_at
@@ -155,6 +173,7 @@ export const getVetPerformance = async (req, res) => {
                 where: {
                     vet_id: vet.id
                 },
+                paranoid: false,
                 raw: true
             });
             const avgRating = feedbackData?.avg_rating ? parseFloat(feedbackData.avg_rating).toFixed(2) : 0;
@@ -162,17 +181,20 @@ export const getVetPerformance = async (req, res) => {
 
             // Total lab requests created by vet
             const totalLabRequests = await LabRequest.count({
-                where: { vet_id: vet.id }
+                where: { vet_id: vet.id },
+                paranoid: false
             });
 
             // Total prescriptions (medications) created by vet
             const totalPrescriptions = await MedicationHistory.count({
-                where: { vet_id: vet.id }
+                where: { vet_id: vet.id },
+                paranoid: false
             });
 
             // Total consultations
             const totalConsultations = await Consultation.count({
-                where: { vet_id: vet.id }
+                where: { vet_id: vet.id },
+                paranoid: false
             });
 
             // Average response time (time from case creation to first vet message in minutes)
@@ -207,7 +229,9 @@ export const getVetPerformance = async (req, res) => {
                 specialization: vet.specialization || 'N/A',
                 totalAssigned,
                 completedCases,
+                completedTreatments: completedCases,
                 activeCases,
+                pendingAppointments,
                 caseClosureRate: parseFloat(caseClosureRate),
                 avgResolutionHours: Math.round(avgResolutionHours),
                 avgResponseTime: Math.round(avgResponseTime),

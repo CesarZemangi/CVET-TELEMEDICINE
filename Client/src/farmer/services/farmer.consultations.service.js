@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const API_URL = "/api/farmer/consultations"
+const API_URL = "/api/v1/farmer/consultations"
 
 export const getConsultations = async () => {
   const response = await axios.get(API_URL)

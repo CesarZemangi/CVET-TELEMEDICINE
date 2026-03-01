@@ -8,11 +8,19 @@ export default function AdminDashboard() {
     total_users: 0,
     total_farmers: 0,
     total_vets: 0,
+    total_animals: 0,
     total_cases: 0,
+    active_cases: 0,
     open_cases: 0,
     closed_cases: 0,
     total_consultations: 0,
     total_appointments: 0,
+    pending_appointments: 0,
+    approved_appointments: 0,
+    completed_appointments: 0,
+    cancelled_appointments: 0,
+    total_feed_items: 0,
+    low_stock_items: 0,
     pending_lab_requests: 0,
     scheduled_reminders: 0,
     unread_notifications: 0,
@@ -117,6 +125,33 @@ export default function AdminDashboard() {
       </div>
 
       <div className="row g-3 mb-4">
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="small text-uppercase mb-1 text-muted">Farmers</h6>
+            <h3 className="fw-bold mb-0">{metrics.total_farmers}</h3>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="small text-uppercase mb-1 text-muted">Vets</h6>
+            <h3 className="fw-bold mb-0">{metrics.total_vets}</h3>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="small text-uppercase mb-1 text-muted">Animals</h6>
+            <h3 className="fw-bold mb-0">{metrics.total_animals}</h3>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="small text-uppercase mb-1 text-muted">Active Cases</h6>
+            <h3 className="fw-bold mb-0">{metrics.active_cases}</h3>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-3 mb-4">
         <div className="col-md-4">
           <div 
             className="card shadow-sm border-0 p-3 h-100"
@@ -171,6 +206,44 @@ export default function AdminDashboard() {
       </div>
 
       <div className="row g-4 mb-4">
+        <div className="col-md-6">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="fw-bold mb-3">Appointment Summary</h6>
+            <div className="row text-center g-2">
+              <div className="col-3">
+                <div className="small text-muted">Pending</div>
+                <div className="fw-bold">{metrics.pending_appointments}</div>
+              </div>
+              <div className="col-3">
+                <div className="small text-muted">Approved</div>
+                <div className="fw-bold">{metrics.approved_appointments}</div>
+              </div>
+              <div className="col-3">
+                <div className="small text-muted">Completed</div>
+                <div className="fw-bold">{metrics.completed_appointments}</div>
+              </div>
+              <div className="col-3">
+                <div className="small text-muted">Cancelled</div>
+                <div className="fw-bold">{metrics.cancelled_appointments}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="card shadow-sm border-0 p-3">
+            <h6 className="fw-bold mb-3">Inventory Summary</h6>
+            <div className="row text-center">
+              <div className="col-6 border-end">
+                <h4 className="fw-bold mb-1">{metrics.total_feed_items}</h4>
+                <span className="text-muted small">Feed Items</span>
+              </div>
+              <div className="col-6">
+                <h4 className="fw-bold mb-1">{metrics.low_stock_items}</h4>
+                <span className="text-muted small">Low Stock</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="col-md-6">
           <div className="card shadow-sm border-0 p-3">
             <h6 className="fw-bold mb-3">Communication Overview</h6>

@@ -35,7 +35,7 @@ export const login = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        profilePic: user.profile_pic
+        profile_image: user.profile_image
       }
     });
   } catch (err) {
@@ -112,7 +112,7 @@ export const updateProfile = async (req, res) => {
         email: user.email,
         phone: user.phone,
         sms_opt_in: user.sms_opt_in,
-        profilePic: user.profile_pic
+        profile_image: user.profile_image
       }
     });
   } catch (err) {

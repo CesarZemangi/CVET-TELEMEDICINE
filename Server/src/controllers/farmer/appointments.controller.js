@@ -1,32 +1,54 @@
 import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
+import { v4 as uuidv4 } from 'uuid';
+import sequelize from "../../config/db.js";
+import { Op } from "sequelize";
+import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
+
+const APPOINTMENT_ATTRIBUTES = [
+  'id',
+  'case_id',
+  'farmer_id',
+  'vet_id',
+  'appointment_date',
+  'appointment_time',
+  'status',
+  'notes',
+  'created_at',
+  'updated_at'
+];
 
 export const createAppointmentRequest = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { case_id, vet_id, appointment_date, appointment_time, notes } = req.body;
     const farmer_id = req.user.id;
 
-    // Validation
-    if (!case_id || !vet_id || !appointment_date || !appointment_time) {
-      return res.status(400).json({ 
-        error: "case_id, vet_id, appointment_date, and appointment_time are required" 
-      });
-    }
-
     // Verify case exists and belongs to farmer
     const singleCase = await Case.findOne({
-      where: { id: case_id, farmer_id }
+      where: { id: case_id, farmer_id },
+      transaction: t
     });
 
     if (!singleCase) {
+      await t.rollback();
       return res.status(403).json({ 
         error: "Case not found or does not belong to you" 
       });
     }
 
     // Verify vet exists
-    const vetRecord = await Vet.findByPk(vet_id);
+    const vetRecord = await Vet.findOne({
+      where: {
+        [Op.or]: [
+          { id: vet_id },
+          { user_id: vet_id }
+        ]
+      },
+      transaction: t
+    });
     if (!vetRecord) {
+      await t.rollback();
       return res.status(400).json({ 
         error: "Vet not found" 
       });
@@ -35,6 +57,7 @@ export const createAppointmentRequest = async (req, res) => {
     // Verify appointment date is in future
     const appointmentDateTime = new Date(`${appointment_date}T${appointment_time}`);
     if (appointmentDateTime <= new Date()) {
+      await t.rollback();
       return res.status(400).json({ 
         error: "Appointment date and time must be in the future" 
       });
@@ -51,15 +74,23 @@ export const createAppointmentRequest = async (req, res) => {
       created_by: farmer_id,
       updated_by: farmer_id,
       status: 'pending'
+    }, { transaction: t });
+
+    await logAction(farmer_id, `Farmer created appointment request for case #${case_id} with vet #${vet_id} on ${appointment_date} at ${appointment_time}`, {
+      actionType: 'create',
+      module: 'appointments',
+      entityId: appointment.id,
+      ipAddress: req.ip
     });
 
-    await logAction(farmer_id, `Farmer created appointment request for case #${case_id} with vet #${vet_id} on ${appointment_date} at ${appointment_time}`);
+    await t.commit();
 
     res.status(201).json({
       message: "Appointment request created successfully",
       data: appointment
     });
   } catch (err) {
+    if (t) await t.rollback();
     console.error('Create appointment error:', err);
     res.status(500).json({ error: err.message });
   }
@@ -67,9 +98,12 @@ export const createAppointmentRequest = async (req, res) => {
 
 export const getFarmerAppointments = async (req, res) => {
   try {
+    const { page, size } = req.query;
+    const { limit, offset } = getPagination(page, size);
     const farmer_id = req.user.id;
 
-    const appointments = await Appointment.findAll({
+    const data = await Appointment.findAndCountAll({
+      attributes: APPOINTMENT_ATTRIBUTES,
       where: { farmer_id },
       include: [
         {
@@ -88,14 +122,15 @@ export const getFarmerAppointments = async (req, res) => {
           ]
         }
       ],
+      limit,
+      offset,
       order: [['appointment_date', 'DESC']],
-      raw: false
+      raw: false,
+      paranoid: false
     });
 
-    res.json({
-      data: appointments,
-      count: appointments.length
-    });
+    const response = getPagingData(data, page, limit);
+    res.json(response);
   } catch (err) {
     console.error('Get farmer appointments error:', err);
     res.status(500).json({ error: err.message });
@@ -108,7 +143,9 @@ export const cancelAppointment = async (req, res) => {
     const farmer_id = req.user.id;
 
     const appointment = await Appointment.findOne({
-      where: { id, farmer_id }
+      where: { id, farmer_id },
+      attributes: APPOINTMENT_ATTRIBUTES,
+      paranoid: false
     });
 
     if (!appointment) {
@@ -141,13 +178,139 @@ export const cancelAppointment = async (req, res) => {
   }
 };
 
+export const updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { appointment_date, appointment_time, notes } = req.body;
+    const farmer_id = req.user.id;
+
+    const appointment = await Appointment.findOne({
+      where: { id, farmer_id },
+      attributes: APPOINTMENT_ATTRIBUTES,
+      paranoid: false
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (appointment.status !== 'pending') {
+      return res.status(400).json({ error: "Only pending appointments can be updated" });
+    }
+
+    // Verify appointment date is in future
+    if (appointment_date && appointment_time) {
+      const appointmentDateTime = new Date(`${appointment_date}T${appointment_time}`);
+      if (appointmentDateTime <= new Date()) {
+        return res.status(400).json({ error: "Appointment date and time must be in the future" });
+      }
+    }
+
+    await appointment.update({
+      appointment_date: appointment_date || appointment.appointment_date,
+      appointment_time: appointment_time || appointment.appointment_time,
+      notes: notes !== undefined ? notes : appointment.notes,
+      updated_by: farmer_id
+    });
+
+    await logAction(farmer_id, `Farmer updated appointment #${id}`);
+
+    res.json({ message: "Appointment updated successfully", data: appointment });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const farmer_id = req.user.id;
+
+    const appointment = await Appointment.findOne({
+      where: { id, farmer_id },
+      attributes: APPOINTMENT_ATTRIBUTES,
+      paranoid: false
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (appointment.status !== 'pending' && appointment.status !== 'cancelled') {
+      return res.status(400).json({ error: "Only pending or cancelled appointments can be deleted" });
+    }
+
+    await appointment.destroy();
+
+    await logAction(farmer_id, `Farmer deleted appointment #${id}`);
+
+    res.json({ message: "Appointment deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const joinSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const farmer_id = req.user.id;
+
+    const appointment = await Appointment.findOne({
+      where: { id, farmer_id },
+      attributes: APPOINTMENT_ATTRIBUTES,
+      paranoid: false
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: "Appointment not found" });
+    }
+
+    if (appointment.status !== 'approved') {
+      return res.status(400).json({ error: "Only approved appointments can be joined" });
+    }
+
+    // Restrict by date and time
+    const now = new Date();
+    const apptDate = new Date(appointment.appointment_date);
+    const timeStr = appointment.appointment_time;
+    const [hours, minutes] = timeStr.split(':');
+    
+    const apptStartTime = new Date(apptDate.getFullYear(), apptDate.getMonth(), apptDate.getDate(), parseInt(hours), parseInt(minutes));
+    
+    // Allowed window: 15 minutes before to 2 hours after
+    const windowStart = new Date(apptStartTime.getTime() - 15 * 60000);
+    const windowEnd = new Date(apptStartTime.getTime() + 120 * 60000);
+
+    if (now < windowStart) {
+      return res.status(403).json({ error: "Session not available yet. Please wait until 15 minutes before the scheduled time." });
+    }
+
+    if (now > windowEnd) {
+      return res.status(403).json({ error: "Session has expired." });
+    }
+
+    // Meeting ID should be generated by Vet or here if not exists
+    const meetingId = uuidv4();
+
+    await logAction(req.user.id, `Farmer joined video session for appointment #${id}`);
+
+    res.json({ 
+      message: "Session joined", 
+      meeting_id: meetingId,
+      appointment
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const getCasesForAppointments = async (req, res) => {
   try {
     const farmer_id = req.user.id;
 
     const cases = await Case.findAll({
       where: { farmer_id },
-      attributes: ['id', 'title', 'status', 'priority', 'animal_id'],
+      attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id'],
       include: [
         { model: Animal, attributes: ['id', 'tag_number', 'species'] }
       ],
@@ -169,7 +332,7 @@ export const getVetsForAppointments = async (req, res) => {
     const vets = await Vet.findAll({
       attributes: ['id', 'user_id'],
       include: [
-        { model: User, attributes: ['id', 'name', 'phone', 'email'] }
+        { model: User, where: { role: 'vet' }, attributes: ['id', 'name', 'phone', 'email', 'status'] }
       ],
       order: [[User, 'name', 'ASC']]
     });

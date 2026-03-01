@@ -36,6 +36,10 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  meeting_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   created_by: { 
     type: DataTypes.INTEGER,
     allowNull: true
@@ -47,8 +51,10 @@ const Appointment = sequelize.define('Appointment', {
 }, { 
   tableName: 'appointments',
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 export default Appointment;

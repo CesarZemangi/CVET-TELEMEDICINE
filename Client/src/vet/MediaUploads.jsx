@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { getAllVetMedia, deleteMedia, getCasesForMedia } from "./services/vet.media.service";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
-import { Trash2, Download } from "lucide-react";
+import { Trash2, Download, FileText, Image as ImageIcon, Video } from "lucide-react";
+import { getFileUrl } from "../utils";
 
 export default function MediaUploads() {
   const [media, setMedia] = useState([]);
@@ -13,19 +14,27 @@ export default function MediaUploads() {
   const [uploading, setUploading] = useState(false);
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [mediaData, casesData] = await Promise.all([
-        getAllVetMedia(),
-        getCasesForMedia()
-      ]);
-      setMedia(mediaData || []);
-      setCases(casesData || []);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    const [mediaRes, casesRes] = await Promise.allSettled([
+      getAllVetMedia(),
+      getCasesForMedia()
+    ]);
+
+    if (mediaRes.status === "fulfilled") {
+      setMedia(Array.isArray(mediaRes.value) ? mediaRes.value : []);
+    } else {
+      setMedia([]);
+      console.error("Error fetching media:", mediaRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      setCases(Array.isArray(casesRes.value) ? casesRes.value : []);
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for media:", casesRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -76,6 +85,12 @@ export default function MediaUploads() {
     }
   };
 
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
+  };
+
   return (
     <DashboardSection title="Media Uploads">
       <div className="mb-6">
@@ -98,7 +113,7 @@ export default function MediaUploads() {
                   <option value="">Choose a case...</option>
                   {cases.map(c => (
                     <option key={c.id} value={c.id}>
-                      {c.title} (ID: {c.id})
+                      {getCaseOptionLabel(c)}
                     </option>
                   ))}
                 </select>
@@ -157,10 +172,11 @@ export default function MediaUploads() {
                       <td>{new Date(m.created_at).toLocaleDateString()}</td>
                       <td className="text-end">
                         <a
-                          href={m.file_path}
-                          download
+                          href={getFileUrl(m.file_path)}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="btn btn-sm btn-outline-primary me-2"
-                          title="Download"
+                          title="View/Download"
                         >
                           <Download className="w-4 h-4" />
                         </a>

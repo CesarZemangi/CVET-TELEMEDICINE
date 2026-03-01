@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getVetConsultations, createConsultation } from "../services/consultation";
 import { getCasesForDropdown } from "./services/vet.cases.service";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function VetConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -14,19 +15,29 @@ export default function VetConsultations() {
   });
 
   const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [consData, casesDropdown] = await Promise.all([
-        getVetConsultations(),
-        getCasesForDropdown()
-      ]);
+    setLoading(true);
+    const [consRes, casesRes] = await Promise.allSettled([
+      getVetConsultations(),
+      getCasesForDropdown()
+    ]);
+
+    if (consRes.status === "fulfilled") {
+      const consData = consRes.value;
       setConsultations(consData?.data || consData || []);
-      setCases(casesDropdown?.data || []);
-    } catch (err) {
-      console.error("Error fetching consultations:", err);
-    } finally {
-      setLoading(false);
+    } else {
+      setConsultations([]);
+      console.error("Error fetching consultations:", consRes.reason);
     }
+
+    if (casesRes.status === "fulfilled") {
+      const casesDropdown = casesRes.value;
+      setCases(Array.isArray(casesDropdown?.data) ? casesDropdown.data : (Array.isArray(casesDropdown) ? casesDropdown : []));
+    } else {
+      setCases([]);
+      console.error("Error fetching cases for consultations:", casesRes.reason);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -43,6 +54,12 @@ export default function VetConsultations() {
     } catch (err) {
       alert("Failed to start consultation: " + (err.response?.data?.error || err.message));
     }
+  };
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
+    const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
+    return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart} (Status: ${c.status || "n/a"})`;
   };
 
   return (
@@ -97,16 +114,13 @@ export default function VetConsultations() {
         </div>
       </div>
 
-      {showModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 shadow">
-              <form onSubmit={handleStartConsultation}>
-                <div className="modal-header">
-                  <h5 className="modal-title fw-bold">Start New Consultation</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showModal}
+        title="Start New Consultation"
+        onClose={() => setShowModal(false)}
+        onSubmit={handleStartConsultation}
+        submitLabel="Start"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Assigned Case</label>
                     <select 
@@ -118,7 +132,7 @@ export default function VetConsultations() {
                       <option value="">Select a case</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} (ID: {c.id}, Status: {c.status})
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
@@ -146,16 +160,7 @@ export default function VetConsultations() {
                       placeholder="Enter preliminary observations..."
                     ></textarea>
                   </div>
-                </div>
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary">Start</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </div>
   );
 }

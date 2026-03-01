@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import api from "../../services/api"
 import DashboardSection from "../../components/dashboard/DashboardSection"
+import FormModalWrapper from "../../components/common/FormModalWrapper"
 
 export default function Feedback() {
   const [feedbackList, setFeedbackList] = useState([])
@@ -14,17 +15,31 @@ export default function Feedback() {
   })
 
   const fetchData = async () => {
-    try {
-      setLoading(true)
-      const feedbackRes = await api.get("/farmer/feedback/my")
-      setFeedbackList(feedbackRes.data?.data || feedbackRes.data || [])
-      const casesRes = await api.get("/farmer/cases")
-      setCases(casesRes.data?.data || casesRes.data || [])
-    } catch (err) {
-      console.error("Error fetching feedback data:", err)
-    } finally {
-      setLoading(false)
+    setLoading(true)
+
+    const [feedbackRes, casesRes] = await Promise.allSettled([
+      api.get("/farmer/feedback/my"),
+      api.get("/farmer/cases")
+    ])
+
+    if (feedbackRes.status === "fulfilled") {
+      const feedbackData = feedbackRes.value?.data?.data || feedbackRes.value?.data || []
+      setFeedbackList(Array.isArray(feedbackData) ? feedbackData : [])
+    } else {
+      setFeedbackList([])
+      console.error("Error fetching feedback data:", feedbackRes.reason)
     }
+
+    if (casesRes.status === "fulfilled") {
+      const raw = casesRes.value?.data
+      const caseRows = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : [])
+      setCases(caseRows)
+    } else {
+      setCases([])
+      console.error("Error fetching cases for feedback:", casesRes.reason)
+    }
+
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -41,6 +56,12 @@ export default function Feedback() {
     } catch (err) {
       alert("Failed to submit feedback: " + (err.response?.data?.error || err.message))
     }
+  }
+
+  const getCaseOptionLabel = (c) => {
+    const shortDesc = c?.description ? String(c.description).trim().slice(0, 40) : ""
+    const desc = shortDesc ? ` - ${shortDesc}${shortDesc.length === 40 ? "..." : ""}` : ""
+    return `#${c.id} ${c.title || "Untitled Case"}${desc}`
   }
 
   return (
@@ -68,6 +89,7 @@ export default function Feedback() {
                       {[...Array(f.rating)].map((_, i) => <i key={i} className="bi bi-star-fill small"></i>)}
                     </div>
                   </div>
+                  <small className="text-muted d-block mb-2">Case ID: #{f.case_id || f.Case?.id || "N/A"}</small>
                   <p className="small text-muted mb-3">"{f.comments}"</p>
                   <div className="d-flex justify-content-between align-items-center mt-auto pt-2 border-top">
                     <small className="text-muted">
@@ -88,16 +110,16 @@ export default function Feedback() {
         </div>
       )}
 
-      {showAddModal && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header border-0">
-                  <h5 className="modal-title fw-bold">Submit Feedback</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
+      <FormModalWrapper
+        show={showAddModal}
+        title="Submit Feedback"
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleSubmit}
+        submitLabel="Submit"
+        contentClassName="border-0"
+        bodyClassName=""
+        footerClassName="border-0"
+      >
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Select Case</label>
                     <select 
@@ -109,27 +131,30 @@ export default function Feedback() {
                       <option value="">Choose a case...</option>
                       {cases.map(c => (
                         <option key={c.id} value={c.id}>
-                          {c.title} ({c.Animal?.tag_number})
+                          {getCaseOptionLabel(c)}
                         </option>
                       ))}
                     </select>
+                    {cases.length === 0 && (
+                      <small className="text-danger">No cases found. Create a case first.</small>
+                    )}
                   </div>
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Rating</label>
                     <div className="d-flex gap-3">
                       {[1, 2, 3, 4, 5].map(num => (
                         <div key={num} className="form-check">
-                          <input 
-                            className="form-check-input" 
-                            type="radio" 
-                            name="rating" 
-                            id={`rating-${num}`} 
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="rating"
+                            id={`rating-${num}`}
                             value={num}
                             checked={formData.rating === num}
-                            onChange={() => setFormData({...formData, rating: num})}
+                            onChange={() => setFormData({ ...formData, rating: num })}
                           />
                           <label className="form-check-label" htmlFor={`rating-${num}`}>
-                            {num}⭐
+                            {num} <i className="bi bi-star-fill text-warning"></i>
                           </label>
                         </div>
                       ))}
@@ -146,16 +171,8 @@ export default function Feedback() {
                       onChange={e => setFormData({...formData, comments: e.target.value})}
                     ></textarea>
                   </div>
-                </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-light" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary px-4">Submit</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </FormModalWrapper>
     </DashboardSection>
   )
 }
+

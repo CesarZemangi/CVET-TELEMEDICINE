@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import api from "../services/api";
 
 export default function AdminVetPerformance() {
+  const location = useLocation();
   const [performance, setPerformance] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -66,7 +68,8 @@ export default function AdminVetPerformance() {
                   <th className="ps-4">Veterinarian</th>
                   <th>Specialization</th>
                   <th className="text-center">Assigned</th>
-                  <th className="text-center">Completed</th>
+                  <th className="text-center">Completed Treatments</th>
+                  <th className="text-center">Pending Appointments</th>
                   <th className="text-center">Avg Response</th>
                   <th className="text-center">Consultations</th>
                   <th>Success Rate</th>
@@ -78,7 +81,8 @@ export default function AdminVetPerformance() {
                     <td className="ps-4 fw-bold">{v.name}</td>
                     <td><small className="badge bg-light text-dark">{v.specialization || 'General'}</small></td>
                     <td className="text-center">{v.totalAssigned}</td>
-                    <td className="text-center text-success fw-bold">{v.completedCases}</td>
+                    <td className="text-center text-success fw-bold">{v.completedTreatments ?? v.completedCases}</td>
+                    <td className="text-center text-warning fw-bold">{v.pendingAppointments ?? 0}</td>
                     <td className="text-center">
                       <span className={`badge ${v.avgResponseTime < 60 ? 'bg-success' : v.avgResponseTime < 240 ? 'bg-warning text-dark' : 'bg-danger'}`}>
                         {v.avgResponseTime} min

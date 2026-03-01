@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
 import { Download, Eye } from "lucide-react";
+import { getFileUrl } from "../utils";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function AdminMedia() {
   const [media, setMedia] = useState([]);
@@ -71,7 +73,7 @@ export default function AdminMedia() {
                       <td className="ps-4 fw-bold">
                         {getFileIcon(m.file_type)} {m.file_name}
                       </td>
-                      <td>{m.Case?.Vet?.User?.name || "Unknown"}</td>
+                      <td>{m.Case?.vet?.User?.name || m.Case?.Vet?.User?.name || "Unknown"}</td>
                       <td>{m.Case?.title || `Case #${m.case_id}`}</td>
                       <td>
                         <small className="badge bg-info">{m.file_type}</small>
@@ -80,8 +82,10 @@ export default function AdminMedia() {
                       <td>{new Date(m.created_at).toLocaleDateString()}</td>
                       <td className="text-end pe-4">
                         <a
-                          href={m.file_path}
+                          href={getFileUrl(m.file_path)}
                           download
+                          target="_blank"
+                          rel="noreferrer"
                           className="btn btn-sm btn-outline-primary me-2"
                           title="Download"
                         >
@@ -115,41 +119,33 @@ export default function AdminMedia() {
         </div>
       </div>
 
-      {selectedMedia && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-          onClick={() => setSelectedMedia(null)}
-        >
-          <div className="modal-dialog modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">{selectedMedia.file_name}</h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setSelectedMedia(null)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                {selectedMedia.file_type.startsWith("image/") && (
-                  <img
-                    src={selectedMedia.file_path}
-                    alt={selectedMedia.file_name}
-                    className="img-fluid"
-                  />
-                )}
-                {selectedMedia.file_type === "application/pdf" && (
-                  <iframe
-                    src={selectedMedia.file_path}
-                    style={{ width: "100%", height: "500px" }}
-                  ></iframe>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <FormModalWrapper
+        show={!!selectedMedia}
+        title={selectedMedia?.file_name || "Preview"}
+        onClose={() => setSelectedMedia(null)}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setSelectedMedia(null);
+        }}
+        submitLabel="Close"
+        cancelLabel="Cancel"
+        contentClassName="border-0 shadow-lg"
+      >
+        {selectedMedia?.file_type?.startsWith("image/") && (
+          <img
+            src={getFileUrl(selectedMedia.file_path)}
+            alt={selectedMedia.file_name}
+            className="img-fluid rounded-3 shadow-sm mx-auto d-block"
+          />
+        )}
+        {selectedMedia?.file_type === "application/pdf" && (
+          <iframe
+            src={getFileUrl(selectedMedia.file_path)}
+            title={selectedMedia.file_name}
+            style={{ width: "100%", height: "500px", border: "none" }}
+          ></iframe>
+        )}
+      </FormModalWrapper>
     </DashboardSection>
   );
 }

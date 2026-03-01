@@ -20,6 +20,7 @@ export default function ChatInterface({ readOnly = false }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  const normalizeCaseId = (value) => (value === undefined || value === "null" ? null : value);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,7 +54,7 @@ export default function ChatInterface({ readOnly = false }) {
       }
       
       let endpoint = "/communication/chatlogs";
-      let params = { partner_id: conv.partner?.id };
+      let params = { partner_id: conv.partner?.id, case_id: normalizeCaseId(conv.case_id) };
       
       if (readOnly) {
         endpoint = "/admin/chatlogs/thread";
@@ -64,7 +65,8 @@ export default function ChatInterface({ readOnly = false }) {
       const data = res.data?.data || res.data || [];
       
       if (Array.isArray(data)) {
-        setMessages(data);
+        const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        setMessages(sorted);
       } else {
         console.error("Invalid messages format:", data);
         setMessages([]);
@@ -92,7 +94,10 @@ export default function ChatInterface({ readOnly = false }) {
       // Check for initial state from navigation (e.g., from Cases page)
       if (location.state?.initialPartner) {
         const { initialPartner, initialCaseId } = location.state;
-        const existing = convs?.find(c => c.partner.id === initialPartner.id && c.case_id === initialCaseId);
+        const existing = convs?.find(
+          c => c.partner?.id === initialPartner.id &&
+          normalizeCaseId(c.case_id) === normalizeCaseId(initialCaseId)
+        );
         if (existing) {
           fetchMessages(existing);
         } else {
@@ -118,17 +123,21 @@ export default function ChatInterface({ readOnly = false }) {
         if (selectedConv) {
           const partnerId = selectedConv.partner?.id || (selectedConv.sender_id === user.id ? selectedConv.receiver_id : selectedConv.sender_id);
           const isRelatedToSelected = 
-            (msg.sender_id === user.id && msg.receiver_id === partnerId) ||
-            (msg.sender_id === partnerId && msg.receiver_id === user.id);
+            ((msg.sender_id === user.id && msg.receiver_id === partnerId) ||
+             (msg.sender_id === partnerId && msg.receiver_id === user.id)) &&
+            (normalizeCaseId(msg.case_id) === normalizeCaseId(selectedConv.case_id));
           
           if (isRelatedToSelected) {
-            setMessages(prev => [...prev, msg]);
+            setMessages(prev => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            });
             if (selectedConv.isNew) {
               setSelectedConv(prev => ({...prev, isNew: false}));
             }
             // If message is from partner, mark it as read immediately
             if (msg.sender_id === partnerId) {
-              await api.put("/communication/messages/read", { partner_id: partnerId });
+              await api.put("/communication/messages/read", { partner_id: partnerId, case_id: normalizeCaseId(msg.case_id) });
             }
           }
         }
@@ -162,15 +171,39 @@ export default function ChatInterface({ readOnly = false }) {
 
     const payload = {
       receiver_id: selectedConv.partner.id,
-      case_id: selectedConv.case_id,
-      message: newMessage
+      case_id: normalizeCaseId(selectedConv.case_id),
+      message: newMessage.trim()
     };
 
     try {
-      socket.emit("send_message", payload);
+      const optimisticMessage = {
+        id: `temp-${Date.now()}`,
+        sender_id: user.id,
+        receiver_id: payload.receiver_id,
+        case_id: payload.case_id,
+        message: payload.message,
+        created_at: new Date().toISOString(),
+        sender: { id: user.id, name: user.name, profile_pic: user.profile_image }
+      };
+
+      setMessages(prev => [...prev, optimisticMessage]);
       setNewMessage("");
+      const res = await api.post("/communication/messages", payload);
+      const saved = res.data;
+
+      setMessages(prev => prev.map((m) =>
+        m.id === optimisticMessage.id
+          ? { ...optimisticMessage, ...saved, sender: saved?.sender || optimisticMessage.sender }
+          : m
+      ));
+
+      if (selectedConv.isNew) {
+        setSelectedConv(prev => ({ ...prev, isNew: false }));
+      }
+      fetchConversations();
     } catch (err) {
       console.error("Error sending message:", err);
+      setMessages(prev => prev.filter((m) => !String(m.id).startsWith("temp-")));
     }
   };
 

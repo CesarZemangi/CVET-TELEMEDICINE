@@ -11,8 +11,10 @@ const LabResult = sequelize.define('LabResult', {
 }, { 
   tableName: 'lab_results', 
   timestamps: true,
+  paranoid: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at'
+  updatedAt: 'updated_at',
+  deletedAt: 'deleted_at'
 });
 
 export default LabResult;

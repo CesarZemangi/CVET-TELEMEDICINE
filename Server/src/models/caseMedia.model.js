@@ -57,7 +57,11 @@ const CaseMedia = sequelize.define('CaseMedia', {
   }
 }, { 
   tableName: 'media_uploads', 
-  timestamps: false 
+  timestamps: true,
+  paranoid: true,
+  createdAt: 'created_at',
+  updatedAt: false,
+  deletedAt: 'deleted_at'
 });
 
 export default CaseMedia;
