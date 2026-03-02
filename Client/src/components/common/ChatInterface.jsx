@@ -12,7 +12,7 @@ export default function ChatInterface({ readOnly = false }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [user] = useState(JSON.parse(localStorage.getItem("user")));
+  const [user] = useState(JSON.parse(localStorage.getItem("user") || "{}"));
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,8 +20,18 @@ export default function ChatInterface({ readOnly = false }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
-  const normalizeCaseId = (value) => (value === undefined || value === "null" ? null : value);
-
+  const getUserIdFromToken = (token) => {
+    if (!token) return null;
+    try {
+      const payload = token.split(".")[1];
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const decoded = JSON.parse(atob(normalized));
+      return decoded?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const currentUserId = user?.id ?? getUserIdFromToken(user?.token);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -54,7 +64,7 @@ export default function ChatInterface({ readOnly = false }) {
       }
       
       let endpoint = "/communication/chatlogs";
-      let params = { partner_id: conv.partner?.id, case_id: normalizeCaseId(conv.case_id) };
+      let params = { partner_id: conv.partner?.id };
       
       if (readOnly) {
         endpoint = "/admin/chatlogs/thread";
@@ -93,17 +103,15 @@ export default function ChatInterface({ readOnly = false }) {
       
       // Check for initial state from navigation (e.g., from Cases page)
       if (location.state?.initialPartner) {
-        const { initialPartner, initialCaseId } = location.state;
+        const { initialPartner } = location.state;
         const existing = convs?.find(
-          c => c.partner?.id === initialPartner.id &&
-          normalizeCaseId(c.case_id) === normalizeCaseId(initialCaseId)
+          c => c.partner?.id === initialPartner.id
         );
         if (existing) {
           fetchMessages(existing);
         } else {
           const tempConv = {
             partner: initialPartner,
-            case_id: initialCaseId,
             isNew: true
           };
           setSelectedConv(tempConv);
@@ -121,11 +129,10 @@ export default function ChatInterface({ readOnly = false }) {
     if (!readOnly) {
       socket.on("receive_message", async (msg) => {
         if (selectedConv) {
-          const partnerId = selectedConv.partner?.id || (selectedConv.sender_id === user.id ? selectedConv.receiver_id : selectedConv.sender_id);
+          const partnerId = selectedConv.partner?.id || (selectedConv.sender_id === currentUserId ? selectedConv.receiver_id : selectedConv.sender_id);
           const isRelatedToSelected = 
-            ((msg.sender_id === user.id && msg.receiver_id === partnerId) ||
-             (msg.sender_id === partnerId && msg.receiver_id === user.id)) &&
-            (normalizeCaseId(msg.case_id) === normalizeCaseId(selectedConv.case_id));
+            ((msg.sender_id === currentUserId && msg.receiver_id === partnerId) ||
+             (msg.sender_id === partnerId && msg.receiver_id === currentUserId));
           
           if (isRelatedToSelected) {
             setMessages(prev => {
@@ -137,7 +144,7 @@ export default function ChatInterface({ readOnly = false }) {
             }
             // If message is from partner, mark it as read immediately
             if (msg.sender_id === partnerId) {
-              await api.put("/communication/messages/read", { partner_id: partnerId, case_id: normalizeCaseId(msg.case_id) });
+              await api.put("/communication/messages/read", { partner_id: partnerId });
             }
           }
         }
@@ -148,7 +155,7 @@ export default function ChatInterface({ readOnly = false }) {
     return () => {
       socket.off("receive_message");
     };
-  }, [selectedConv, readOnly, location.state, user.id, fetchConversations, fetchMessages]);
+  }, [selectedConv, readOnly, location.state, currentUserId, fetchConversations, fetchMessages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -167,23 +174,21 @@ export default function ChatInterface({ readOnly = false }) {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConv || readOnly) return;
+    if (!newMessage.trim() || !selectedConv || readOnly || !currentUserId) return;
 
     const payload = {
       receiver_id: selectedConv.partner.id,
-      case_id: normalizeCaseId(selectedConv.case_id),
       message: newMessage.trim()
     };
 
     try {
       const optimisticMessage = {
         id: `temp-${Date.now()}`,
-        sender_id: user.id,
+        sender_id: currentUserId,
         receiver_id: payload.receiver_id,
-        case_id: payload.case_id,
         message: payload.message,
         created_at: new Date().toISOString(),
-        sender: { id: user.id, name: user.name, profile_pic: user.profile_image }
+        sender: { id: currentUserId, name: user.name, profile_pic: user.profile_image }
       };
 
       setMessages(prev => [...prev, optimisticMessage]);
@@ -208,13 +213,12 @@ export default function ChatInterface({ readOnly = false }) {
   };
 
   const startNewChat = (contact) => {
-    const existing = conversations.find(c => c.partner.id === contact.id && !c.case_id);
+    const existing = conversations.find(c => c.partner.id === contact.id);
     if (existing) {
       fetchMessages(existing);
     } else {
       const tempConv = {
         partner: contact,
-        case_id: null,
         isNew: true
       };
       setSelectedConv(tempConv);
@@ -283,17 +287,17 @@ export default function ChatInterface({ readOnly = false }) {
           {conversations.length > 0 ? (
             conversations
               .filter(conv => {
-                const partnerName = (readOnly ? (conv.sender_id === user.id ? conv.receiver : conv.sender) : conv.partner)?.name || '';
+                const partnerName = (readOnly ? (conv.sender_id === currentUserId ? conv.receiver : conv.sender) : conv.partner)?.name || '';
                 return partnerName.toLowerCase().includes(sidebarSearch.toLowerCase());
               })
               .map((conv, idx) => {
-                const partner = readOnly ? (conv.sender_id === user.id ? conv.receiver : conv.sender) : conv.partner;
+                const partner = readOnly ? (conv.sender_id === currentUserId ? conv.receiver : conv.sender) : conv.partner;
                 const lastMessage = readOnly ? conv.message : conv.lastMessage;
                 const lastTime = readOnly ? conv.created_at : conv.lastTime;
                 const displayPartner = partner || { name: 'Unknown', role: 'user' };
                 const isSelected = readOnly 
                   ? (selectedConv?.sender_id === conv.sender_id && selectedConv?.receiver_id === conv.receiver_id)
-                  : (selectedConv?.partner?.id === displayPartner.id && selectedConv?.case_id === conv.case_id);
+                  : (selectedConv?.partner?.id === displayPartner.id);
 
                 return (
                   <div 
@@ -319,7 +323,6 @@ export default function ChatInterface({ readOnly = false }) {
                         </span>
                       </div>
                       <p className="chat-conv-message">{lastMessage}</p>
-                      {conv.case_id && <span className="chat-case-tag">Case #{conv.case_id}</span>}
                     </div>
                     {conv.unread_count > 0 && (
                       <span className="chat-badge">{conv.unread_count}</span>
@@ -373,7 +376,7 @@ export default function ChatInterface({ readOnly = false }) {
                 const initiatorId = messages[0]?.sender_id;
                 const isMine = readOnly 
                   ? msg.sender_id !== initiatorId
-                  : msg.sender_id === user.id;
+                  : msg.sender_id === currentUserId;
                 const senderName = msg.sender?.name || 'Unknown';
                 return (
                   <div key={idx} className={`chat-message ${isMine ? 'sent' : 'received'}`}>

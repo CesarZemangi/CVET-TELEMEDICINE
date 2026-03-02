@@ -117,7 +117,7 @@ export const getConversations = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Subquery to find latest message per conversation (partner + case)
+    // Find latest message per conversation partner (Messenger/WhatsApp style)
     const conversations = await sequelize.query(`
       SELECT 
         u.id as partner_id,
@@ -126,12 +126,10 @@ export const getConversations = async (req, res) => {
         u.role as partner_role,
         m.message as lastMessage,
         m.created_at as lastTime,
-        m.case_id,
         (SELECT COUNT(*) FROM messages 
          WHERE receiver_id = :userId 
          AND sender_id = u.id 
          AND is_read = 0 
-         AND (case_id = m.case_id OR (case_id IS NULL AND m.case_id IS NULL))
         ) as unread_count
       FROM messages m
       JOIN (
@@ -140,8 +138,7 @@ export const getConversations = async (req, res) => {
         FROM messages
         WHERE sender_id = :userId OR receiver_id = :userId
         GROUP BY 
-          CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END,
-          case_id
+          CASE WHEN sender_id = :userId THEN receiver_id ELSE sender_id END
       ) latest ON m.id = latest.last_id
       JOIN users u ON u.id = (CASE WHEN m.sender_id = :userId THEN m.receiver_id ELSE m.sender_id END)
       ORDER BY m.created_at DESC
@@ -159,7 +156,6 @@ export const getConversations = async (req, res) => {
       },
       lastMessage: c.lastMessage,
       lastTime: c.lastTime,
-      case_id: c.case_id,
       unread_count: parseInt(c.unread_count) || 0
     }));
 
@@ -171,7 +167,7 @@ export const getConversations = async (req, res) => {
 
 export const getChatlogs = async (req, res) => {
   try {
-    const { partner_id, case_id, page, size } = req.query;
+    const { partner_id, page, size } = req.query;
     const userId = req.user.id;
 
     if (!partner_id) return res.status(400).json({ error: "Partner ID required" });
@@ -182,13 +178,6 @@ export const getChatlogs = async (req, res) => {
         { sender_id: partner_id, receiver_id: userId }
       ]
     };
-
-    // Filter by case_id if provided (session-based)
-    if (case_id !== undefined && case_id !== 'null' && case_id !== null) {
-      where.case_id = case_id;
-    } else {
-      where.case_id = null;
-    }
 
     const queryOptions = {
       where,
@@ -213,8 +202,7 @@ export const getChatlogs = async (req, res) => {
       where: { 
         sender_id: partner_id, 
         receiver_id: userId, 
-        is_read: false,
-        case_id: where.case_id
+        is_read: false
       },
       attributes: ['id']
     });
@@ -278,15 +266,10 @@ export const getContacts = async (req, res) => {
 
 export const markAsRead = async (req, res) => {
   try {
-    const { partner_id, case_id } = req.body;
+    const { partner_id } = req.body;
     const userId = req.user.id;
 
     const where = { sender_id: partner_id, receiver_id: userId, is_read: false };
-    if (case_id !== undefined && case_id !== 'null' && case_id !== null) {
-      where.case_id = case_id;
-    } else {
-      where.case_id = null;
-    }
 
     // Find unread messages from this partner
     const unreadMessages = await Message.findAll({
