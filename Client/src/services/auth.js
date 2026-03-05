@@ -16,6 +16,16 @@ export async function registerUser(data) {
   return response.data
 }
 
+export async function forgotPassword(email) {
+  const response = await api.post("/auth/forgot-password", { email })
+  return response.data
+}
+
+export async function resetPassword(payload) {
+  const response = await api.post("/auth/reset-password", payload)
+  return response.data
+}
+
 export function logoutUser() {
   localStorage.removeItem("token")
   localStorage.removeItem("user")

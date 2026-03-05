@@ -16,10 +16,9 @@ const MedicationHistory = sequelize.define('MedicationHistory', {
 }, { 
   tableName: 'medication_history', 
   timestamps: true,
-  paranoid: true,
+  paranoid: false,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  updatedAt: 'updated_at'
 });
 
 export default MedicationHistory;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCases, addCase } from "./services/farmer.cases.service";
 import api from "../services/api";
+import { predictDiagnosis } from "../services/aiPrediction.service";
 import CaseDetailsModal from "../components/dashboard/CaseDetailsModal";
 import FormModalWrapper from "../components/common/FormModalWrapper";
 
@@ -14,6 +15,11 @@ export default function Cases() {
   const [selectedCase, setSelectedCase] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiResult, setAiResult] = useState(null);
+  const [selectedVetReviews, setSelectedVetReviews] = useState([]);
+  const [loadingVetReviews, setLoadingVetReviews] = useState(false);
   
   const [formData, setFormData] = useState({
     animal_id: "",
@@ -23,6 +29,33 @@ export default function Cases() {
     symptoms: "",
     priority: "medium"
   });
+
+  const selectedVet = vets.find((vet) => String(vet.id) === String(formData.vet_id));
+
+  const formatVetRating = (vet) => {
+    const average = Number(vet?.average_rating);
+    const reviewCount = Number(vet?.review_count) || 0;
+
+    if (!Number.isFinite(average) || reviewCount === 0) {
+      return "No ratings yet";
+    }
+
+    return `Rating ${average.toFixed(2)}/5 (${reviewCount} review${reviewCount === 1 ? "" : "s"})`;
+  };
+
+  const renderRatingStars = (rating) => {
+    const safeRating = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+    return (
+      <span className="text-warning">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <i
+            key={`star-${n}`}
+            className={`bi ${n <= safeRating ? "bi-star-fill" : "bi-star"} me-1`}
+          ></i>
+        ))}
+      </span>
+    );
+  };
 
   const fetchCases = async () => {
     try {
@@ -49,11 +82,30 @@ export default function Cases() {
 
   const fetchVets = async () => {
     try {
-      const res = await api.get("/user/vets");
+      const res = await api.get("/vets");
       const result = res.data?.data;
       setVets(Array.isArray(result) ? result : (Array.isArray(res.data) ? res.data : []));
     } catch (err) {
       console.error("Error fetching vets:", err);
+    }
+  };
+
+  const fetchVetReviews = async (vetId) => {
+    if (!vetId) {
+      setSelectedVetReviews([]);
+      return;
+    }
+
+    try {
+      setLoadingVetReviews(true);
+      const res = await api.get(`/vets/${vetId}/reviews`);
+      const reviews = res.data?.data?.reviews;
+      setSelectedVetReviews(Array.isArray(reviews) ? reviews : []);
+    } catch (err) {
+      console.error("Error fetching vet reviews:", err);
+      setSelectedVetReviews([]);
+    } finally {
+      setLoadingVetReviews(false);
     }
   };
 
@@ -62,6 +114,10 @@ export default function Cases() {
     fetchAnimals();
     fetchVets();
   }, []);
+
+  useEffect(() => {
+    fetchVetReviews(selectedVet?.id);
+  }, [selectedVet?.id]);
 
   const handleViewCase = (caseData) => {
     setSelectedCase(caseData);
@@ -98,12 +154,35 @@ export default function Cases() {
         symptoms: "",
         priority: "medium"
       });
+      setAiResult(null);
+      setAiError("");
       setTimeout(() => {
         fetchCases();
       }, 500);
       alert("Case reported successfully!");
     } catch (err) {
       alert("Failed to report case: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handlePredict = async () => {
+    const symptomsText = String(formData.symptoms || formData.description || "").trim();
+    if (!symptomsText) {
+      setAiError("Please enter symptoms first.");
+      setAiResult(null);
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiResult(null);
+    try {
+      const prediction = await predictDiagnosis(symptomsText);
+      setAiResult(prediction);
+    } catch (err) {
+      setAiError(err.response?.data?.error || err.message);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -235,11 +314,39 @@ export default function Cases() {
             <option value="">Choose a vet...</option>
             {vets.map(vet => (
               <option key={vet.id} value={vet.id}>
-                Dr. {vet.name}
+                Dr. {vet.name} - {formatVetRating(vet)}
               </option>
             ))}
           </select>
         </div>
+
+        {selectedVet && (
+          <div className="mb-3 border rounded-3 p-3 bg-light">
+            <div className="fw-bold mb-1">Selected Vet Profile</div>
+            <div className="small text-muted mb-2">
+              Dr. {selectedVet.name} | {formatVetRating(selectedVet)}
+            </div>
+            <div className="small mb-2 d-flex align-items-center gap-2">
+              {renderRatingStars(selectedVet.average_rating)}
+              <span className="text-muted">({selectedVet.review_count || 0} reviews)</span>
+            </div>
+            {loadingVetReviews ? (
+              <div className="small text-muted">Loading reviews...</div>
+            ) : Array.isArray(selectedVetReviews) && selectedVetReviews.length > 0 ? (
+              <div>
+                <div className="small fw-semibold mb-1">Comments</div>
+                {selectedVetReviews.map((item, index) => (
+                  <div key={`${selectedVet.id}-comment-${index}`} className="small mb-1">
+                    <span className="me-2">{renderRatingStars(item.rating)}</span>
+                    "{item.comment}"
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="small text-muted">No comments available yet.</div>
+            )}
+          </div>
+        )}
 
         <div className="mb-3">
           <label className="form-label small fw-bold">Case Title</label>
@@ -264,6 +371,46 @@ export default function Cases() {
             onChange={e => setFormData({...formData, description: e.target.value})}
           ></textarea>
         </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Symptoms</label>
+          <textarea
+            className="form-control"
+            rows="3"
+            placeholder="e.g. fever, reduced appetite, swollen udder"
+            value={formData.symptoms}
+            onChange={e => setFormData({...formData, symptoms: e.target.value})}
+          ></textarea>
+          <small className="text-muted">Used for AI advisory diagnosis support.</small>
+        </div>
+
+        <div className="mb-3">
+          <button type="button" className="btn btn-outline-primary" onClick={handlePredict} disabled={aiLoading}>
+            {aiLoading ? "Predicting..." : "Predict Diagnosis"}
+          </button>
+        </div>
+
+        {aiError && (
+          <div className="alert alert-danger py-2">{aiError}</div>
+        )}
+
+        {aiResult && (
+          <div className="border rounded p-3 mb-3 bg-light">
+            <h6 className="fw-bold mb-2">AI Prediction</h6>
+            <p className="mb-1"><strong>Predicted Disease:</strong> {aiResult.predicted_disease || "N/A"}</p>
+            <p className="mb-1"><strong>Confidence:</strong> {aiResult.confidence != null ? `${(aiResult.confidence * 100).toFixed(1)}%` : "N/A"}</p>
+            <p className="mb-1"><strong>Suggested Tests:</strong></p>
+            <ul className="mb-2">
+              {(aiResult.suggested_tests || aiResult.recommended_tests || []).map((test, idx) => (
+                <li key={`case-ai-test-${idx}`}>{test}</li>
+              ))}
+            </ul>
+            <p className="mb-2"><strong>Suggested Medication:</strong> {aiResult.suggested_medication || "N/A"}</p>
+            <div className="alert alert-warning mb-0 py-2">
+              Advisory only. This does not replace vet clinical judgment and is not auto-saved.
+            </div>
+          </div>
+        )}
 
         <div className="mb-3">
           <label className="form-label small fw-bold">Priority Level</label>

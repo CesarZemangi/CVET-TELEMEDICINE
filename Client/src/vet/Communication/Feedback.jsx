@@ -1,26 +1,35 @@
-import React, { useState } from "react"
-import DashboardSection from "../../components/dashboard/DashboardSection";
+import React, { useEffect, useState } from "react"
+import DashboardSection from "../../components/dashboard/DashboardSection"
+import api from "../../services/api"
 
 export default function Feedback() {
-  const feedbacks = [
-    { id: 1, farmer: "Farmer Raj", animal: "Cow #A12", rating: 5, comment: "Excellent guidance on mastitis treatment.", date: "02 Jan 2026" },
-    { id: 2, farmer: "Farmer Anita", animal: "Goat #B07", rating: 4, comment: "Helpful advice on hoof care.", date: "03 Jan 2026" },
-    { id: 3, farmer: "Farmer Kumar", animal: "Sheep #C21", rating: 3, comment: "Respiratory infection follow-up was satisfactory.", date: "04 Jan 2026" },
-    { id: 4, farmer: "Farmer Meena", animal: "Cow #A15", rating: 5, comment: "Digestive disorder consultation was very clear.", date: "05 Jan 2026" },
-    { id: 5, farmer: "Farmer Joseph", animal: "Goat #B11", rating: 4, comment: "Skin dermatitis treatment worked well.", date: "06 Jan 2026" },
-    { id: 6, farmer: "Farmer Patel", animal: "Sheep #C09", rating: 5, comment: "Nutritional deficiency plan was excellent.", date: "07 Jan 2026" },
-    { id: 7, farmer: "Farmer Gupta", animal: "Cow #A18", rating: 4, comment: "Vaccination schedule was well explained.", date: "08 Jan 2026" },
-    { id: 8, farmer: "Farmer Rao", animal: "Goat #B14", rating: 3, comment: "Parasite infection follow-up could be more detailed.", date: "09 Jan 2026" },
-    { id: 9, farmer: "Farmer Sharma", animal: "Sheep #C25", rating: 5, comment: "Joint pain management advice was very effective.", date: "10 Jan 2026" },
-    { id: 10, farmer: "Farmer Kumar", animal: "Cow #A20", rating: 4, comment: "Rabies vaccine consultation was reassuring.", date: "11 Jan 2026" }
-  ]
-
+  const [feedbacks, setFeedbacks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState("all")
 
-  const filteredFeedbacks = feedbacks.filter(f => {
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        setLoading(true)
+        const res = await api.get("/vet/feedback/consultations")
+        const data = res.data?.data || res.data || []
+        setFeedbacks(Array.isArray(data) ? data : [])
+      } catch (err) {
+        console.error("Error fetching feedback:", err)
+        setFeedbacks([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFeedback()
+  }, [])
+
+  const filteredFeedbacks = feedbacks.filter((f) => {
+    const rating = Number(f.rating) || 0
     if (filter === "all") return true
-    if (filter === "positive") return f.rating >= 4
-    if (filter === "critical") return f.rating <= 3
+    if (filter === "positive") return rating >= 4
+    if (filter === "critical") return rating <= 3
     return true
   })
 
@@ -39,27 +48,37 @@ export default function Feedback() {
           className={`btn btn-sm ${filter === "positive" ? "btn-brown" : "btn-outline-brown"}`}
           onClick={() => setFilter("positive")}
         >
-          Positive (⭐ 4–5)
+          Positive (4-5)
         </button>
         <button
           className={`btn btn-sm ${filter === "critical" ? "btn-brown" : "btn-outline-brown"}`}
           onClick={() => setFilter("critical")}
         >
-          Critical (⭐ 1–3)
+          Critical (1-3)
         </button>
       </div>
 
-      <ul className="list-group">
-        {filteredFeedbacks.map(f => (
-          <li key={f.id} className="list-group-item d-flex justify-content-between align-items-center">
-            <span>{f.farmer} • {f.animal} • {f.comment}</span>
-            <small className="text-muted">⭐ {f.rating} • {f.date}</small>
-          </li>
-        ))}
-        {filteredFeedbacks.length === 0 && (
-          <li className="list-group-item text-muted">No feedback found.</li>
-        )}
-      </ul>
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status"></div>
+        </div>
+      ) : (
+        <ul className="list-group">
+          {filteredFeedbacks.map((f) => (
+            <li key={f.id} className="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                {(f.farmer?.name || "Farmer")} - {(f.Case?.title || `Case #${f.case_id}`)} - {f.comments}
+              </span>
+              <small className="text-muted">
+                {`Rating ${Number(f.rating) || 0} - ${f.created_at ? new Date(f.created_at).toLocaleDateString() : ""}`}
+              </small>
+            </li>
+          ))}
+          {filteredFeedbacks.length === 0 && (
+            <li className="list-group-item text-muted">No feedback found.</li>
+          )}
+        </ul>
+      )}
     </DashboardSection>
   )
 }

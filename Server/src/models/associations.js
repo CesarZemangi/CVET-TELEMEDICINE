@@ -19,6 +19,7 @@ import TreatmentPlan from './treatmentPlan.model.js';
 import LabRequest from './labRequest.model.js';
 import LabResult from './labResult.model.js';
 import Reminder from './reminder.model.js';
+import AiPredictionLog from './aiPredictionLog.model.js';
 
 // User Associations
 User.hasMany(Case, { foreignKey: 'farmer_id', onDelete: 'CASCADE' });
@@ -111,9 +112,15 @@ Appointment.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
 Appointment.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 Case.hasMany(Appointment, { foreignKey: 'case_id', onDelete: 'CASCADE' });
 
+// AI Prediction Logs
+Case.hasMany(AiPredictionLog, { foreignKey: 'case_id', onDelete: 'SET NULL' });
+AiPredictionLog.belongsTo(Case, { foreignKey: 'case_id' });
+Vet.hasMany(AiPredictionLog, { foreignKey: 'vet_id', onDelete: 'CASCADE' });
+AiPredictionLog.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
+
 export { 
   User, Case, CaseMedia, Consultation, Message, VideoSession, 
   PreventiveReminder, Notification, Farmer, Vet, Animal, 
   Prescription, TreatmentPlan, LabRequest, LabResult,
-  Feedback, FeedInventory, MedicationHistory, Reminder, Appointment
+  Feedback, FeedInventory, MedicationHistory, Reminder, Appointment, AiPredictionLog
 };

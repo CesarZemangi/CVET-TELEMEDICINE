@@ -21,6 +21,13 @@ export default function Consultations() {
     fetchConsultations();
   }, []);
 
+  const getVetName = (consultation) =>
+    consultation?.vet?.User?.name ||
+    consultation?.vet?.name ||
+    consultation?.Case?.vet?.User?.name ||
+    consultation?.Case?.vet?.name ||
+    "Assigned Vet";
+
   return (
     <div className="container-fluid px-4 py-4">
       <div className="mb-4">
@@ -50,12 +57,12 @@ export default function Consultations() {
                 ) : consultations.length > 0 ? consultations.map(c => (
                   <tr key={c.id}>
                     <td className="ps-4">
-                      <div className="fw-bold">{c.vet?.name || 'Assigned Vet'}</div>
+                      <div className="fw-bold">{getVetName(c)}</div>
                     </td>
-                    <td>{c.Case?.animal?.species || 'N/A'} ({c.Case?.animal?.tag_number})</td>
+                    <td>{c.Case?.Animal?.species || 'N/A'} ({c.Case?.Animal?.tag_number || 'N/A'})</td>
                     <td>
                       <span className={`badge ${c.mode === 'video' ? 'bg-primary' : 'bg-info text-dark'}`}>
-                        {c.mode.toUpperCase()}
+                        {(c.mode || 'N/A').toUpperCase()}
                       </span>
                     </td>
                     <td>

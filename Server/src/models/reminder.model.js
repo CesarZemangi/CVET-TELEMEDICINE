@@ -13,10 +13,9 @@ const Reminder = sequelize.define('Reminder', {
 }, { 
   tableName: 'reminders', 
   timestamps: true,
-  paranoid: true,
+  paranoid: false,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  updatedAt: false
 });
 
 export default Reminder;

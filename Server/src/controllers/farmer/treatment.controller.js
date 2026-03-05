@@ -23,7 +23,7 @@ export const getPrescriptions = async (req, res) => {
           ]
         }
       ],
-      order: [['created_at', 'DESC']]
+      order: [['id', 'DESC']]
     });
     res.json(data);
   } catch (err) {

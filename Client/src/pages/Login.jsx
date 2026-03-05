@@ -130,6 +130,15 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            <div className="text-end mt-2">
+              <button
+                type="button"
+                className="btn btn-link p-0 text-decoration-none small"
+                onClick={() => navigate("/forgot-password")}
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           <button

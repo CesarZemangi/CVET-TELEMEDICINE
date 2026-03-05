@@ -7,6 +7,7 @@ import logger from "./utils/logger.js";
 // Core routes
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import vetsRoutes from "./routes/vets.routes.js";
 
 // Farmer routes
 import farmerAnimalRoutes from "./routes/farmer/animals.routes.js";
@@ -26,6 +27,8 @@ import adminRoutes from "./routes/admin.routes.js";
 import adminAppointmentRoutes from "./routes/admin/appointments.routes.js";
 import communicationRoutes from "./routes/communication.routes.js";
 import reminderRoutes from "./routes/reminder.routes.js";
+import mlRoutes from "./routes/ml.routes.js";
+import { predictDisease } from "./controllers/ml.controller.js";
 import path from "path";
 
 // Vet routes
@@ -73,9 +76,12 @@ app.use("/storage", express.static("storage"));
 // 3. Routes
 app.use("/api/v1/auth", authLimiter, authRoutes);
 app.use("/api/v1/user", authenticate, userRoutes);
+app.use("/api/v1/vets", vetsRoutes);
 app.use("/api/v1/admin", authenticate, authorizeRoles("admin"), adminRoutes);
 app.use("/api/v1/admin/appointments", authenticate, authorizeRoles("admin"), adminAppointmentRoutes);
 app.use("/api/v1/reminders", reminderRoutes);
+app.use("/api/v1/ml", mlRoutes);
+app.post("/api/v1/predict", authenticate, authorizeRoles("vet"), predictDisease);
 app.use("/api/v1/communication", authenticate, communicationRoutes);
 
 app.use("/api/v1/farmer/dashboard", authenticate, authorizeRoles("farmer"), farmerDashboardRoutes);

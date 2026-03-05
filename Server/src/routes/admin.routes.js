@@ -25,6 +25,7 @@ import {
   getVetPerformance
 } from "../controllers/admin/analytics.controller.js";
 import appointmentsRoutes from "./admin/appointments.routes.js";
+import aiRoutes from "./admin/ai.routes.js";
 
 const router = express.Router();
 
@@ -54,5 +55,6 @@ router.get("/analytics/vet-performance", getVetPerformance);
 
 // Appointments
 router.use("/appointments", appointmentsRoutes);
+router.use("/ai", aiRoutes);
 
 export default router;

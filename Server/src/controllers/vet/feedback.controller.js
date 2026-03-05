@@ -13,9 +13,10 @@ export const getFeedbackForVetConsultations = async (req, res) => {
     if (!vetRecord) {
       return error(res, 'Vet record not found', 404);
     }
+    const vetIds = Array.from(new Set([vetRecord.id, Number(req.user.id)].filter(Boolean)));
 
     const feedback = await Feedback.findAll({
-      where: { vet_id: vetRecord.id },
+      where: { vet_id: vetIds },
       include: [
         { 
           model: Case,
@@ -53,9 +54,10 @@ export const getFeedbackByConsultation = async (req, res) => {
     if (!vetRecord) {
       return error(res, 'Vet record not found', 404);
     }
+    const vetIds = Array.from(new Set([vetRecord.id, Number(req.user.id)].filter(Boolean)));
 
     const feedback = await Feedback.findAll({ 
-      where: { consultation_id: consultationId, vet_id: vetRecord.id },
+      where: { consultation_id: consultationId, vet_id: vetIds },
       include: [
         { 
           model: Case,

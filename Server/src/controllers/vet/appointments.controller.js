@@ -2,6 +2,7 @@ import { Appointment, Case, User, Vet, Animal } from "../../models/associations.
 import { logAction } from "../../utils/dbLogger.js";
 import { v4 as uuidv4 } from 'uuid';
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
+import { sendSMS } from "../../services/sms.service.js";
 
 export const getVetAppointments = async (req, res) => {
   try {
@@ -71,6 +72,12 @@ export const approveAppointment = async (req, res) => {
     });
 
     await logAction(req.user.id, `Vet approved appointment #${id}`);
+    sendSMS({
+      user_id: appointment.farmer_id,
+      message: `CVET: Your appointment #${id} has been approved by the vet.`
+    }).catch((smsErr) => {
+      console.error("Failed to send appointment approved SMS:", smsErr?.message || smsErr);
+    });
 
     res.json({
       message: "Appointment approved successfully",
@@ -113,6 +120,12 @@ export const rejectAppointment = async (req, res) => {
     });
 
     await logAction(req.user.id, `Vet rejected appointment #${id}${reason ? `: ${reason}` : ''}`);
+    sendSMS({
+      user_id: appointment.farmer_id,
+      message: `CVET: Your appointment #${id} was rejected${reason ? ` (${reason})` : ""}.`
+    }).catch((smsErr) => {
+      console.error("Failed to send appointment rejected SMS:", smsErr?.message || smsErr);
+    });
 
     res.json({
       message: "Appointment rejected successfully",
@@ -155,6 +168,12 @@ export const completeAppointment = async (req, res) => {
     });
 
     await logAction(req.user.id, `Vet marked appointment #${id} as completed`);
+    sendSMS({
+      user_id: appointment.farmer_id,
+      message: `CVET: Your appointment #${id} has been marked completed.`
+    }).catch((smsErr) => {
+      console.error("Failed to send appointment completed SMS:", smsErr?.message || smsErr);
+    });
 
     res.json({
       message: "Appointment marked as completed successfully",
@@ -212,6 +231,12 @@ export const rescheduleAppointment = async (req, res) => {
     });
 
     await logAction(req.user.id, `Vet rescheduled appointment #${id} to ${appointment_date} at ${appointment_time}${reason ? `: ${reason}` : ''}`);
+    sendSMS({
+      user_id: appointment.farmer_id,
+      message: `CVET: Appointment #${id} was rescheduled to ${appointment_date} ${appointment_time}.`
+    }).catch((smsErr) => {
+      console.error("Failed to send appointment rescheduled SMS:", smsErr?.message || smsErr);
+    });
 
     res.json({
       message: "Appointment rescheduled successfully",
@@ -254,6 +279,12 @@ export const cancelAppointment = async (req, res) => {
     });
 
     await logAction(req.user.id, `Vet cancelled appointment #${id}${reason ? `: ${reason}` : ''}`);
+    sendSMS({
+      user_id: appointment.farmer_id,
+      message: `CVET: Your appointment #${id} was cancelled${reason ? ` (${reason})` : ""}.`
+    }).catch((smsErr) => {
+      console.error("Failed to send appointment cancelled SMS:", smsErr?.message || smsErr);
+    });
 
     res.json({
       message: "Appointment cancelled successfully",

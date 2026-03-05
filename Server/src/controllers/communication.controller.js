@@ -4,6 +4,7 @@ import { getIO } from "../services/socket.service.js";
 import sequelize from "../config/db.js";
 import { logAction } from "../utils/dbLogger.js";
 import { getPagination, getPagingData } from "../utils/pagination.utils.js";
+import { sendSMS } from "../services/sms.service.js";
 
 export const sendMessage = async (req, res) => {
   try {
@@ -105,6 +106,14 @@ export const sendMessage = async (req, res) => {
     
     const unreadCount = await Message.count({ where: { receiver_id: receiver_id, is_read: false } });
     io.to(`user_${receiver_id}`).emit('update_unread_count', { count: unreadCount });
+
+    // Offline fallback: send SMS if receiver has opted in.
+    sendSMS({
+      user_id: receiver_id,
+      message: `CVET: New message from ${sender?.name || "user"}: "${message.trim().slice(0, 120)}"`
+    }).catch((smsErr) => {
+      console.error("SMS message fallback failed:", smsErr?.message || smsErr);
+    });
 
     res.status(201).json(newMessage);
   } catch (err) {
@@ -362,7 +371,7 @@ export const adminBroadcastNotification = async (req, res) => {
       is_read: false
     }));
 
-    const createdNotifications = await Notification.bulkCreate(notifications);
+    const createdNotifications = await Notification.bulkCreate(notifications, { individualHooks: true });
     
     const io = getIO();
     users.forEach(u => {

@@ -23,6 +23,11 @@ export const getCasesForAppointments = async () => {
 }
 
 export const getVetsForAppointments = async () => {
-  const response = await api.get(`${API_URL}/vets`)
+  const response = await api.get("/vets")
   return response.data?.data || response.data || []
+}
+
+export const joinAppointmentSession = async (id) => {
+  const response = await api.get(`${API_URL}/${id}/join-session`)
+  return response.data
 }

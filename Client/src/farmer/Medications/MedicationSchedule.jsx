@@ -11,7 +11,8 @@ export default function MedicationSchedule() {
     try {
       setLoading(true);
       const res = await api.get("/farmer/treatment/prescriptions");
-      setPrescriptions(res.data);
+      const payload = res?.data?.data ?? res?.data;
+      setPrescriptions(Array.isArray(payload) ? payload : []);
       setError(null);
     } catch (err) {
       console.error("Error fetching medication schedule:", err);
@@ -24,6 +25,11 @@ export default function MedicationSchedule() {
   useEffect(() => {
     fetchPrescriptions();
   }, []);
+
+  const getVetName = (prescription) =>
+    prescription?.Case?.vet?.User?.name ||
+    prescription?.Case?.vet?.name ||
+    "Unknown";
 
   return (
     <DashboardSection title="Active Medication Schedule">
@@ -64,7 +70,7 @@ export default function MedicationSchedule() {
                         <td className="fw-bold text-brown">{p.medicine}</td>
                         <td>{p.dosage}</td>
                         <td>{p.duration}</td>
-                        <td>Dr. {p.Case?.vet?.name || "Unknown"}</td>
+                        <td>Dr. {getVetName(p)}</td>
                         <td>{new Date(p.created_at).toLocaleDateString()}</td>
                       </tr>
                     ))

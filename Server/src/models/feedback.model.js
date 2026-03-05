@@ -14,10 +14,9 @@ const Feedback = sequelize.define('Feedback', {
 }, { 
   tableName: 'feedback', 
   timestamps: true,
-  paranoid: true,
+  paranoid: false,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  updatedAt: 'updated_at'
 });
 
 export default Feedback;

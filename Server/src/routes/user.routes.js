@@ -1,5 +1,5 @@
 import express from "express"
-import { getMe, updateMe, getVets } from "../controllers/user.controller.js"
+import { getMe, updateMe, getVets, getVetReviews } from "../controllers/user.controller.js"
 import { authenticate } from "../middleware/auth.middleware.js"
 import multer from "multer"
 import path from "path"
@@ -35,5 +35,6 @@ const profileUpload = multer({
 router.get("/me", authenticate, getMe)
 router.put("/profile", authenticate, profileUpload.single('profile_image'), updateMe)
 router.get("/vets", authenticate, getVets)
+router.get("/vets/:id/reviews", authenticate, getVetReviews)
 
 export default router

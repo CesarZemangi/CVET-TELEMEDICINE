@@ -40,3 +40,8 @@ export const rescheduleAppointment = async (id, appointment_date, appointment_ti
   })
   return response.data
 }
+
+export const joinAppointmentSession = async (id) => {
+  const response = await api.get(`${API_URL}/${id}/join-session`)
+  return response.data
+}

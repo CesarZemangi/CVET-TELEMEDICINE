@@ -52,7 +52,7 @@ export default function Feedback() {
       await api.post("/farmer/feedback", formData)
       setShowAddModal(false)
       setFormData({ case_id: "", rating: 5, comments: "" })
-      fetchData()
+      await fetchData()
     } catch (err) {
       alert("Failed to submit feedback: " + (err.response?.data?.error || err.message))
     }
@@ -63,6 +63,13 @@ export default function Feedback() {
     const desc = shortDesc ? ` - ${shortDesc}${shortDesc.length === 40 ? "..." : ""}` : ""
     return `#${c.id} ${c.title || "Untitled Case"}${desc}`
   }
+
+  const getVetName = (item) =>
+    item?.vet?.User?.name ||
+    item?.vet?.name ||
+    item?.Case?.vet?.User?.name ||
+    item?.Case?.vet?.name ||
+    "Assigned Vet"
 
   return (
     <DashboardSection title="My Feedback">
@@ -96,7 +103,7 @@ export default function Feedback() {
                       {new Date(f.created_at).toLocaleDateString()}
                     </small>
                     <small className="fw-medium text-primary">
-                      Vet: {f.Case?.vet?.name || "Assigned Vet"}
+                      Vet: {getVetName(f)}
                     </small>
                   </div>
                 </div>

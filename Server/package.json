@@ -2,7 +2,10 @@
   "type": "module",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:stabilize-vet-ratings": "node scripts/stabilizeVetRatings.js",
+    "db:ensure-password-reset": "node scripts/ensurePasswordResetTable.js",
+    "ml:export-cases": "node scripts/exportCasesDataset.js"
   },
   "name": "server",
   "version": "1.0.0",

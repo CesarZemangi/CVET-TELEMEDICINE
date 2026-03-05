@@ -9,6 +9,8 @@ import "bootstrap-icons/font/bootstrap-icons.css"
 
 import Login from "./pages/Login"
 import Register from "./pages/Register"
+import ForgotPassword from "./pages/ForgotPassword"
+import ResetPassword from "./pages/ResetPassword"
 
 /* Layouts */
 import FarmerLayout from "./components/layout/FarmerLayout"
@@ -81,6 +83,7 @@ import VetLabResults from "./vet/Diagnostics/LabResults"
 import VetImagingReports from "./vet/Diagnostics/ImagingReports"
 import VetDiseaseTracking from "./vet/Diagnostics/DiseaseTracking"
 import VetPreventiveScreenings from "./vet/Diagnostics/PreventiveScreenings"
+import AiPredictor from "./vet/Diagnostics/AiPredictor"
 
 /* Vet Treatment */
 import VetPrescriptions from "./vet/Treatment/Prescriptions"
@@ -121,8 +124,9 @@ import AdminNotifications from "./pages/AdminNotifications"
 import AdminCommunication from "./pages/AdminCommunication"
 import AdminSettings from "./pages/AdminSettings"
 import AdminMedia from "./pages/AdminMedia"
+import AdminAiMonitoring from "./pages/AdminAiMonitoring"
 
-function RequireAuth({ role, children }) {
+function RequireAuth({ role, children, allowAdmin = false }) {
 const [isAuthenticated, setIsAuthenticated] = React.useState(null)
 
 React.useEffect(() => {
@@ -148,8 +152,8 @@ setIsAuthenticated(false)
 return
 }
 
-// Allow specific role OR admin
-if (user.role !== role && user.role !== "admin") {
+const hasAccess = user.role === role || (allowAdmin && user.role === "admin")
+if (!hasAccess) {
 setIsAuthenticated(false)
 return
 }
@@ -183,11 +187,13 @@ return (
 <Routes>
 <Route path="/" element={<Login />} />
 <Route path="/register" element={<Register />} />
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password" element={<ResetPassword />} />
 
   <Route
     path="/farmerdashboard/*"
     element={
-      <RequireAuth role="farmer">
+      <RequireAuth role="farmer" allowAdmin={false}>
         <FarmerLayout />
       </RequireAuth>
     }
@@ -240,7 +246,7 @@ return (
   <Route
     path="/vetdashboard/*"
     element={
-      <RequireAuth role="vet">
+      <RequireAuth role="vet" allowAdmin={false}>
         <VetLayout />
       </RequireAuth>
     }
@@ -256,6 +262,7 @@ return (
     <Route path="diagnostics/imaging-reports" element={<VetImagingReports />} />
     <Route path="diagnostics/disease-tracking" element={<VetDiseaseTracking />} />
     <Route path="diagnostics/preventive-screenings" element={<VetPreventiveScreenings />} />
+    <Route path="diagnostics/ai-predictor" element={<AiPredictor />} />
 
     <Route path="treatment/prescriptions" element={<VetPrescriptions />} />
     <Route path="treatment/plans" element={<VetTreatmentPlans />} />
@@ -280,7 +287,7 @@ return (
 
     <Route path="/admindashboard/*"
     element={
-      <RequireAuth role="admin">
+      <RequireAuth role="admin" allowAdmin={true}>
         <AdminLayout />
       </RequireAuth>
     }
@@ -296,6 +303,7 @@ return (
     <Route path="settings" element={<AdminSettings />} />
     
     <Route path="analytics" element={<AdminAnalytics />} />
+    <Route path="ai-monitoring" element={<AdminAiMonitoring />} />
     <Route path="reminders" element={<AdminReminders />} />
     <Route path="vet-performance" element={<AdminVetPerformance />} />
     <Route path="media" element={<AdminMedia />} />

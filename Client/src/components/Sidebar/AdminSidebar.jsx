@@ -66,6 +66,12 @@ export default function AdminSidebar() {
       </li>
 
       <li className="nav-item">
+        <NavLink to="/admindashboard/ai-monitoring" className={linkClass}>
+          <i className="bi bi-cpu me-3"></i> AI Monitoring
+        </NavLink>
+      </li>
+
+      <li className="nav-item">
         <NavLink to="/admindashboard/logs" className={linkClass}>
           <i className="bi bi-journal-text me-3"></i> System Logs
         </NavLink>

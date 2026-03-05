@@ -19,7 +19,8 @@ export default function Prescriptions() {
     const fetchPrescriptions = async () => {
       try {
         const res = await api.get("/farmer/treatment/prescriptions");
-        setPrescriptions(res.data);
+        const payload = res?.data?.data ?? res?.data;
+        setPrescriptions(Array.isArray(payload) ? payload : []);
       } catch (err) {
         console.error("Error fetching prescriptions:", err);
       } finally {
@@ -30,12 +31,13 @@ export default function Prescriptions() {
   }, []);
 
   // Doctors distribution
-  const doctors = [...new Set(prescriptions.map(p => p.Case?.vet?.name || 'Assigned Vet'))]
+  const getVetName = (p) => p?.Case?.vet?.User?.name || p?.Case?.vet?.name || "Assigned Vet";
+  const doctors = [...new Set(prescriptions.map(getVetName))]
   const pieData = {
     labels: doctors,
     datasets: [
       {
-        data: doctors.map(doc => prescriptions.filter(p => (p.Case?.vet?.name || 'Assigned Vet') === doc).length),
+        data: doctors.map(doc => prescriptions.filter(p => getVetName(p) === doc).length),
         backgroundColor: ["#FF4500", "#1E90FF", "#228B22", "#8B4513", "#A0522D", "#CD853F"],
         borderColor: "#fff",
         borderWidth: 2
@@ -77,7 +79,7 @@ export default function Prescriptions() {
                     <tr key={p.id}>
                       <td>{p.Case?.Animal?.species} ({p.Case?.Animal?.tag_number})</td>
                       <td className="fw-bold">{p.medicine}</td>
-                      <td>{p.Case?.vet?.name || 'N/A'}</td>
+                      <td>{getVetName(p)}</td>
                       <td className="text-muted">{new Date(p.created_at).toLocaleDateString()}</td>
                     </tr>
                   )) : (

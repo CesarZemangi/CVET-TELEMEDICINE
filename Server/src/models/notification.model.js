@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
+import { sendNotificationEmail } from '../services/notificationEmail.service.js';
 
 const Notification = sequelize.define('Notification', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -17,6 +18,10 @@ const Notification = sequelize.define('Notification', {
   createdAt: 'created_at',
   updatedAt: false,
   deletedAt: 'deleted_at'
+});
+
+Notification.addHook("afterCreate", async (notification) => {
+  await sendNotificationEmail(notification);
 });
 
 export default Notification;

@@ -11,11 +11,8 @@ const VideoSession = sequelize.define('VideoSession', {
   status: { type: DataTypes.ENUM('active', 'ended', 'missed'), defaultValue: 'active' }
 }, { 
   tableName: 'video_sessions', 
-  timestamps: true,
-  paranoid: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  timestamps: false,
+  paranoid: false
 });
 
 export default VideoSession;

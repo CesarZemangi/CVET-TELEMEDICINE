@@ -49,6 +49,7 @@ export default function VetSidebar() {
           <div className={dropdownContainerClass}>
             <NavLink to="/vetdashboard/diagnostics/lab-requests" className={linkClass}>Lab Requests</NavLink>
             <NavLink to="/vetdashboard/diagnostics/lab-results" className={linkClass}>Lab Results</NavLink>
+            <NavLink to="/vetdashboard/diagnostics/ai-predictor" className={linkClass}>AI Predictor</NavLink>
           </div>
         )}
       </li>

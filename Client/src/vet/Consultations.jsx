@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getVetConsultations, createConsultation } from "../services/consultation";
 import { getCasesForDropdown } from "./services/vet.cases.service";
 import FormModalWrapper from "../components/common/FormModalWrapper";
+import { predictDiagnosis } from "../services/aiPrediction.service";
 
 export default function VetConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -13,6 +14,9 @@ export default function VetConsultations() {
     mode: "chat",
     notes: ""
   });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiResult, setAiResult] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -50,9 +54,35 @@ export default function VetConsultations() {
       await createConsultation(formData);
       setShowModal(false);
       setFormData({ case_id: "", mode: "chat", notes: "" });
+      setAiError("");
+      setAiResult(null);
       fetchData();
     } catch (err) {
       alert("Failed to start consultation: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handlePredictDiagnosis = async () => {
+    const symptomsText = String(formData.notes || "").trim();
+    if (!symptomsText) {
+      setAiError("Enter notes/symptoms first.");
+      setAiResult(null);
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiResult(null);
+    try {
+      const prediction = await predictDiagnosis({
+        symptoms: symptomsText,
+        case_id: formData.case_id || null
+      });
+      setAiResult(prediction);
+    } catch (err) {
+      setAiError(err.response?.data?.error || err.message);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -159,7 +189,36 @@ export default function VetConsultations() {
                       onChange={e => setFormData({...formData, notes: e.target.value})}
                       placeholder="Enter preliminary observations..."
                     ></textarea>
+                    <small className="text-muted">Use notes as symptoms for AI advisory prediction.</small>
                   </div>
+                  <div className="mb-3">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={handlePredictDiagnosis}
+                      disabled={aiLoading}
+                    >
+                      {aiLoading ? "Predicting..." : "Predict Diagnosis"}
+                    </button>
+                  </div>
+                  {aiError && <div className="alert alert-danger py-2">{aiError}</div>}
+                  {aiResult && (
+                    <div className="border rounded p-3 mb-3 bg-light">
+                      <h6 className="fw-bold mb-2">AI Prediction</h6>
+                      <p className="mb-1"><strong>Predicted Disease:</strong> {aiResult.predicted_disease || "N/A"}</p>
+                      <p className="mb-1"><strong>Confidence:</strong> {aiResult.confidence != null ? `${(aiResult.confidence * 100).toFixed(1)}%` : "N/A"}</p>
+                      <p className="mb-1"><strong>Suggested Tests:</strong></p>
+                      <ul className="mb-2">
+                        {(aiResult.suggested_tests || aiResult.recommended_tests || []).map((test, idx) => (
+                          <li key={`consult-ai-test-${idx}`}>{test}</li>
+                        ))}
+                      </ul>
+                      <p className="mb-2"><strong>Suggested Medication:</strong> {aiResult.suggested_medication || "N/A"}</p>
+                      <div className="alert alert-warning mb-0 py-2">
+                        Advisory only. This does not replace veterinary clinical judgment and is not auto-saved.
+                      </div>
+                    </div>
+                  )}
       </FormModalWrapper>
     </div>
   );

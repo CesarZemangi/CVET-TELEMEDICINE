@@ -10,7 +10,8 @@ export default function TreatmentPlans() {
     const fetchPlans = async () => {
       try {
         const res = await api.get("/farmer/treatment/plans");
-        setPlans(res.data);
+        const payload = res?.data?.data ?? res?.data;
+        setPlans(Array.isArray(payload) ? payload : []);
       } catch (err) {
         console.error("Error fetching treatment plans:", err);
       } finally {

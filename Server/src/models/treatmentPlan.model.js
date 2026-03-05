@@ -10,9 +10,8 @@ const TreatmentPlan = sequelize.define('TreatmentPlan', {
 }, { 
   tableName: 'treatment_plans', 
   timestamps: true,
-  paranoid: true,
+  paranoid: false,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  updatedAt: false
 });
 export default   TreatmentPlan;

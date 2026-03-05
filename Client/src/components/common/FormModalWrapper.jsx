@@ -17,7 +17,7 @@ export default function FormModalWrapper({
   return (
     <div
       className="modal d-block"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 2000, overflowY: "auto" }}
       onClick={onClose}
     >
       <div
@@ -25,13 +25,19 @@ export default function FormModalWrapper({
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`modal-content ${contentClassName}`}>
-          <form onSubmit={onSubmit}>
+          <form
+            onSubmit={onSubmit}
+            className="d-flex flex-column"
+            style={{ maxHeight: "calc(100vh - 2rem)" }}
+          >
             <div className="modal-header border-0 p-4 pb-0">
               <h5 className="modal-title fw-bold">{title}</h5>
               <button type="button" className="btn-close" onClick={onClose}></button>
             </div>
-            <div className={`modal-body ${bodyClassName}`}>{children}</div>
-            <div className={`modal-footer ${footerClassName}`}>
+            <div className={`modal-body ${bodyClassName}`} style={{ overflowY: "auto", flex: "1 1 auto" }}>
+              {children}
+            </div>
+            <div className={`modal-footer ${footerClassName}`} style={{ position: "sticky", bottom: 0, background: "#fff" }}>
               <button type="button" className="btn btn-light" onClick={onClose}>
                 {cancelLabel}
               </button>

@@ -9,11 +9,8 @@ const Prescription = sequelize.define('Prescription', {
   duration: { type: DataTypes.STRING, allowNull: false }
 }, { 
   tableName: 'prescriptions', 
-  timestamps: true,
-  paranoid: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  deletedAt: 'deleted_at'
+  timestamps: false,
+  paranoid: false
 });
 
 export default Prescription;

@@ -1,9 +1,12 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { generateToken } from "../utils/jwt.js";
 import User from "../models/user.model.js";
 import Farmer from "../models/farmer.model.js";
 import Vet from "../models/vet.model.js";
+import PasswordResetToken from "../models/passwordResetToken.model.js";
 import { logAction } from "../utils/dbLogger.js";
+import { sendEmail } from "../services/email.service.js";
 
 export const login = async (req, res) => {
   try {
@@ -154,5 +157,99 @@ export const changePassword = async (req, res) => {
   } catch (err) {
     console.error("CHANGE PASSWORD ERROR", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  const genericMessage = "If the email is registered, a password reset link has been sent.";
+  try {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    if (!email) {
+      return res.status(200).json({ message: genericMessage });
+    }
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(200).json({ message: genericMessage });
+    }
+
+    await PasswordResetToken.destroy({ where: { user_id: user.id } });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await PasswordResetToken.create({
+      user_id: user.id,
+      token,
+      expires_at: expiresAt
+    });
+
+    const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
+    const resetLink = `${frontendBase.replace(/\/+$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+    const subject = "CVET Password Reset";
+    const message = `You requested a password reset. Use this link within 1 hour: ${resetLink}`;
+    const html = `
+      <p>You requested a password reset.</p>
+      <p>This link expires in 1 hour.</p>
+      <p><a href="${resetLink}">Reset Password</a></p>
+      <p>If you did not request this, ignore this email.</p>
+    `;
+    const emailResult = await sendEmail({
+      user_id: user.id,
+      to: user.email,
+      subject,
+      message,
+      html
+    });
+    if (process.env.NODE_ENV !== "production" && emailResult?.mocked) {
+      console.warn(`DEV RESET LINK for ${user.email}: ${resetLink}`);
+    }
+
+    return res.status(200).json({ message: genericMessage });
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR", err);
+    return res.status(200).json({ message: genericMessage });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const token = String(req.body?.token || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
+
+    if (!token || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "Token and password fields are required." });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "Passwords do not match." });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters." });
+    }
+
+    const resetRow = await PasswordResetToken.findOne({ where: { token } });
+    if (!resetRow) {
+      return res.status(400).json({ message: "Invalid or expired reset token." });
+    }
+    if (new Date(resetRow.expires_at) <= new Date()) {
+      await resetRow.destroy();
+      return res.status(400).json({ message: "Invalid or expired reset token." });
+    }
+
+    const user = await User.findByPk(resetRow.user_id);
+    if (!user) {
+      await resetRow.destroy();
+      return res.status(400).json({ message: "Invalid or expired reset token." });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await user.update({ password: hashedPassword });
+    await PasswordResetToken.destroy({ where: { user_id: user.id } });
+    await logAction(user.id, `User ${user.email} reset password via email token`);
+
+    return res.status(200).json({ message: "Password reset successful." });
+  } catch (err) {
+    console.error("RESET PASSWORD ERROR", err);
+    return res.status(500).json({ message: "Failed to reset password." });
   }
 };

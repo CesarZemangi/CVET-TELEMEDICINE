@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import * as appointmentService from "./services/vet.appointments.service";
+import { predictDiagnosis } from "../services/aiPrediction.service";
 
 export default function Appointments() {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -10,6 +12,10 @@ export default function Appointments() {
   const [modalAction, setModalAction] = useState(null);
   const [formData, setFormData] = useState({ reason: "", summary: "", date: "", time: "" });
   const [successMessage, setSuccessMessage] = useState("");
+  const [aiSymptoms, setAiSymptoms] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiResult, setAiResult] = useState(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -58,12 +64,42 @@ export default function Appointments() {
     setSelectedAppt(appointment);
     setModalAction(action);
     setFormData({ reason: "", summary: "", date: "", time: "" });
+    setAiSymptoms(String(appointment?.Case?.symptoms || ""));
+    setAiError("");
+    setAiResult(null);
   };
 
   const closeModal = () => {
     setModalAction(null);
     setSelectedAppt(null);
     setFormData({ reason: "", summary: "", date: "", time: "" });
+    setAiSymptoms("");
+    setAiError("");
+    setAiResult(null);
+  };
+
+  const handlePredictDiagnosis = async () => {
+    const symptomsText = String(aiSymptoms || formData.summary || "").trim();
+    if (!symptomsText) {
+      setAiError("Enter symptoms or summary text first.");
+      setAiResult(null);
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError("");
+    setAiResult(null);
+    try {
+      const prediction = await predictDiagnosis({
+        symptoms: symptomsText,
+        case_id: selectedAppt?.case_id || selectedAppt?.Case?.id || null
+      });
+      setAiResult(prediction);
+    } catch (err) {
+      setAiError(err.response?.data?.error || err.message);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleApprove = async () => {
@@ -159,6 +195,21 @@ export default function Appointments() {
   const canCancel = (status) => status !== "cancelled" && status !== "completed";
   const canReschedule = (status) => status === "pending" || status === "approved";
 
+  const handleJoinSession = async (appointmentId) => {
+    try {
+      const res = await appointmentService.joinAppointmentSession(appointmentId);
+      const meetingId = res?.meeting_id;
+      if (!meetingId) {
+        alert("Meeting is not ready yet.");
+        return;
+      }
+      const url = `https://meet.jit.si/cvet-${encodeURIComponent(meetingId)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      alert("Unable to join now: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   return (
     <div className="container-fluid py-2">
       {successMessage && (
@@ -171,6 +222,9 @@ export default function Appointments() {
       <div className="mb-4">
         <h4 className="fw-bold">Scheduled Consultations</h4>
         <p className="text-muted">Manage your daily veterinary appointments</p>
+        <small className="text-muted">
+          SMS fallback: {user?.sms_opt_in && user?.phone ? "Enabled" : "Disabled"} {user?.phone ? "" : "(add phone in Settings)"}
+        </small>
       </div>
 
       <div className="row g-3">
@@ -211,7 +265,10 @@ export default function Appointments() {
                     {appt.mode && (
                       <span className="badge bg-primary-subtle text-primary rounded-pill px-3">{appt.mode}</span>
                     )}
-                    <button className="btn btn-primary btn-sm px-3">
+                    <button
+                      className="btn btn-primary btn-sm px-3"
+                      onClick={() => handleJoinSession(appt.id)}
+                    >
                       <i className="bi bi-video me-2"></i> Join Session
                     </button>
                     {canApprove(appt.status) && (
@@ -310,6 +367,44 @@ export default function Appointments() {
                       onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
                       placeholder="Enter appointment summary, diagnosis, treatment given..."
                     />
+                    <div className="mt-3">
+                      <label className="form-label">Symptoms For AI Prediction</label>
+                      <textarea
+                        className="form-control"
+                        rows="2"
+                        value={aiSymptoms}
+                        onChange={(e) => setAiSymptoms(e.target.value)}
+                        placeholder="e.g. fever, lethargy, appetite loss"
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={handlePredictDiagnosis}
+                        disabled={aiLoading}
+                      >
+                        {aiLoading ? "Predicting..." : "Predict Diagnosis"}
+                      </button>
+                    </div>
+                    {aiError && <div className="alert alert-danger mt-2 py-2">{aiError}</div>}
+                    {aiResult && (
+                      <div className="border rounded p-3 mt-2 bg-light">
+                        <h6 className="fw-bold mb-2">AI Prediction</h6>
+                        <p className="mb-1"><strong>Predicted Disease:</strong> {aiResult.predicted_disease || "N/A"}</p>
+                        <p className="mb-1"><strong>Confidence:</strong> {aiResult.confidence != null ? `${(aiResult.confidence * 100).toFixed(1)}%` : "N/A"}</p>
+                        <p className="mb-1"><strong>Suggested Tests:</strong></p>
+                        <ul className="mb-2">
+                          {(aiResult.suggested_tests || aiResult.recommended_tests || []).map((test, idx) => (
+                            <li key={`appt-ai-test-${idx}`}>{test}</li>
+                          ))}
+                        </ul>
+                        <p className="mb-2"><strong>Suggested Medication:</strong> {aiResult.suggested_medication || "N/A"}</p>
+                        <div className="alert alert-warning mb-0 py-2">
+                          Advisory only. Prediction does not override veterinary judgment and is not auto-saved.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

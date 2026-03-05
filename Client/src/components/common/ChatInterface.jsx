@@ -32,6 +32,17 @@ export default function ChatInterface({ readOnly = false }) {
     }
   };
   const currentUserId = user?.id ?? getUserIdFromToken(user?.token);
+  const dedupeMessages = (list) => {
+    const seen = new Set();
+    return list.filter((m) => {
+      const key = m?.id
+        ? `id:${m.id}`
+        : `msg:${m?.sender_id || ""}|${m?.receiver_id || ""}|${m?.message || ""}|${m?.created_at || ""}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -75,7 +86,7 @@ export default function ChatInterface({ readOnly = false }) {
       const data = res.data?.data || res.data || [];
       
       if (Array.isArray(data)) {
-        const sorted = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        const sorted = dedupeMessages([...data]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         setMessages(sorted);
       } else {
         console.error("Invalid messages format:", data);
@@ -137,7 +148,7 @@ export default function ChatInterface({ readOnly = false }) {
           if (isRelatedToSelected) {
             setMessages(prev => {
               if (prev.some((m) => m.id === msg.id)) return prev;
-              return [...prev, msg].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+              return dedupeMessages([...prev, msg]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
             });
             if (selectedConv.isNew) {
               setSelectedConv(prev => ({...prev, isNew: false}));
@@ -191,16 +202,16 @@ export default function ChatInterface({ readOnly = false }) {
         sender: { id: currentUserId, name: user.name, profile_pic: user.profile_image }
       };
 
-      setMessages(prev => [...prev, optimisticMessage]);
+      setMessages(prev => dedupeMessages([...prev, optimisticMessage]));
       setNewMessage("");
       const res = await api.post("/communication/messages", payload);
       const saved = res.data;
 
-      setMessages(prev => prev.map((m) =>
+      setMessages(prev => dedupeMessages(prev.map((m) =>
         m.id === optimisticMessage.id
           ? { ...optimisticMessage, ...saved, sender: saved?.sender || optimisticMessage.sender }
           : m
-      ));
+      )));
 
       if (selectedConv.isNew) {
         setSelectedConv(prev => ({ ...prev, isNew: false }));
@@ -365,7 +376,9 @@ export default function ChatInterface({ readOnly = false }) {
                       : selectedConv.partner.name}
                   </h3>
                   <p className="chat-header-status">
-                    {readOnly ? 'Monitoring Conversation' : `Online • ${selectedConv.partner.role}`}
+                    {readOnly
+                      ? "Monitoring Conversation"
+                      : `Online - ${selectedConv.partner.role}${user?.sms_opt_in && user?.phone ? " | SMS backup enabled" : ""}`}
                   </p>
                 </div>
               </div>
