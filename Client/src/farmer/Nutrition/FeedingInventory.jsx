@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { Pie, Line, Bar } from "react-chartjs-2"
+import { Pie, Bar } from "react-chartjs-2"
 import { getFeedInventory, addFeedInventory } from "../services/farmer.nutrition.service"
 import FormModalWrapper from "../../components/common/FormModalWrapper"
 import {
@@ -36,21 +36,37 @@ export default function FeedingInventory() {
     feed_name: "",
     quantity: "",
     unit: "kg",
-    low_stock_threshold: 10
+    low_stock_threshold: 10,
+    status: "active",
+    location: "",
+    expiry_date: "",
+    notes: ""
   })
 
   const fetchInventory = async () => {
     try {
-      setLoading(true);
-      const data = await getFeedInventory()
-      const mappedData = data.map(item => ({
+      setLoading(true)
+      const response = await getFeedInventory()
+      const list = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.rows)
+            ? response.rows
+            : []
+
+      const mappedData = list.map((item) => ({
         id: item.id,
         item: item.feed_name,
         quantity: item.quantity,
-        displayQuantity: `${item.quantity} ${item.unit || 'kg'}`,
+        displayQuantity: `${item.quantity} ${item.unit || "kg"}`,
         status: parseFloat(item.quantity) < parseFloat(item.low_stock_threshold || 10) ? "Low Stock" : "Available",
+        recordStatus: item.status || "active",
         date: new Date(item.created_at).toLocaleDateString(),
-        low_stock_threshold: item.low_stock_threshold
+        low_stock_threshold: item.low_stock_threshold,
+        location: item.location || "",
+        expiryDate: item.expiry_date || null,
+        notes: item.notes || ""
       }))
       setInventory(mappedData)
     } catch (error) {
@@ -65,18 +81,27 @@ export default function FeedingInventory() {
   }, [])
 
   const handleAddFeed = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      await addFeedInventory(formData);
-      setShowModal(false);
-      setFormData({ feed_name: "", quantity: "", unit: "kg", low_stock_threshold: 10 });
-      fetchInventory();
+      await addFeedInventory(formData)
+      setShowModal(false)
+      setFormData({
+        feed_name: "",
+        quantity: "",
+        unit: "kg",
+        low_stock_threshold: 10,
+        status: "active",
+        location: "",
+        expiry_date: "",
+        notes: ""
+      })
+      fetchInventory()
     } catch (err) {
-      alert("Failed to add feed: " + (err.response?.data?.message || err.message));
+      alert("Failed to add feed: " + (err.response?.data?.error || err.response?.data?.message || err.message))
     }
-  };
+  }
 
-  const filteredInventory = inventory.filter(feed =>
+  const filteredInventory = inventory.filter((feed) =>
     filter === "All" ? true : feed.status === filter
   )
 
@@ -87,13 +112,12 @@ export default function FeedingInventory() {
     return ""
   }
 
-  // Pie chart: status distribution
   const statuses = ["Available", "Low Stock", "Pending Order"]
   const pieData = {
     labels: statuses,
     datasets: [
       {
-        data: statuses.map(s => inventory.filter(feed => feed.status === s).length),
+        data: statuses.map((s) => inventory.filter((feed) => feed.status === s).length),
         backgroundColor: ["#228B22", "#FFA500", "#1E90FF"],
         borderColor: "#fff",
         borderWidth: 2
@@ -101,13 +125,12 @@ export default function FeedingInventory() {
     ]
   }
 
-  // Bar chart: item quantities
   const barData = {
-    labels: inventory.map(feed => feed.item),
+    labels: inventory.map((feed) => feed.item),
     datasets: [
       {
         label: "Current Quantity",
-        data: inventory.map(feed => parseFloat(feed.quantity)),
+        data: inventory.map((feed) => parseFloat(feed.quantity)),
         backgroundColor: "rgba(34, 139, 34, 0.6)",
         borderColor: "#228B22",
         borderWidth: 1
@@ -126,23 +149,23 @@ export default function FeedingInventory() {
       x: {
         title: {
           display: true,
-          text: 'Feed Items',
-          font: { weight: 'bold' }
+          text: "Feed Items",
+          font: { weight: "bold" }
         }
       },
       y: {
         title: {
           display: true,
-          text: 'Quantity Levels',
-          font: { weight: 'bold' }
+          text: "Quantity Levels",
+          font: { weight: "bold" }
         },
         beginAtZero: true
       }
     }
   }
 
-  const lowStockCount = inventory.filter(feed => feed.status === "Low Stock").length
-  const pendingCount = inventory.filter(feed => feed.status === "Pending Order").length
+  const lowStockCount = inventory.filter((feed) => feed.status === "Low Stock").length
+  const pendingCount = inventory.filter((feed) => feed.status === "Pending Order").length
 
   return (
     <div className="container-fluid py-2">
@@ -156,16 +179,14 @@ export default function FeedingInventory() {
         </button>
       </div>
 
-      {/* Conditional alert */}
       {(lowStockCount > 0 || pendingCount > 0) && (
         <div className="alert alert-warning fw-bold">
-          ⚠️ {lowStockCount} items are low stock and {pendingCount} pending orders. Review feed supply!
+          Warning: {lowStockCount} items are low stock and {pendingCount} pending orders. Review feed supply!
         </div>
       )}
 
-      {/* Filter buttons */}
       <div className="mb-3 d-flex gap-2 flex-wrap">
-        {["All", ...statuses].map(f => (
+        {["All", ...statuses].map((f) => (
           <button
             key={f}
             className={`btn btn-sm ${filter === f ? "btn-primary" : "btn-outline-primary"}`}
@@ -186,15 +207,19 @@ export default function FeedingInventory() {
                 </div>
               ) : (
                 <ul className="list-group list-group-flush">
-                  {filteredInventory.map(feed => (
+                  {filteredInventory.map((feed) => (
                     <li key={feed.id} className="list-group-item d-flex justify-content-between align-items-center px-0">
                       <div>
                         <div className="fw-bold">{feed.item}</div>
-                        <small className="text-muted">{feed.displayQuantity} (Threshold: {feed.low_stock_threshold})</small>
+                        <small className="text-muted d-block">{feed.displayQuantity} (Threshold: {feed.low_stock_threshold})</small>
+                        <small className="text-muted d-block">Status: {feed.recordStatus}</small>
+                        {feed.location && <small className="text-muted d-block">Location: {feed.location}</small>}
+                        {feed.expiryDate && <small className="text-muted d-block">Expiry: {new Date(feed.expiryDate).toLocaleDateString()}</small>}
+                        {feed.notes && <small className="text-muted d-block">Notes: {feed.notes}</small>}
                       </div>
                       <div className="text-end">
-                        <div className={getStatusClass(feed.status)} style={{fontSize: '0.75rem'}}>{feed.status}</div>
-                        <small className="text-muted" style={{fontSize: '0.65rem'}}>{feed.date}</small>
+                        <div className={getStatusClass(feed.status)} style={{ fontSize: "0.75rem" }}>{feed.status}</div>
+                        <small className="text-muted" style={{ fontSize: "0.65rem" }}>{feed.date}</small>
                       </div>
                     </li>
                   ))}
@@ -208,23 +233,23 @@ export default function FeedingInventory() {
         </div>
 
         <div className="col-lg-5">
-           <div className="card border-0 shadow-sm mb-4">
-             <div className="card-body">
-                <h6>Status Summary</h6>
-                <div style={{ height: "200px" }}>
-                  <Pie data={pieData} options={{...options, scales: undefined}} />
-                </div>
-             </div>
-           </div>
-           
-           <div className="card border-0 shadow-sm">
-             <div className="card-body">
-                <h6>Inventory Levels</h6>
-                <div style={{ height: "200px" }}>
-                  <Bar data={barData} options={options} />
-                </div>
-             </div>
-           </div>
+          <div className="card border-0 shadow-sm mb-4">
+            <div className="card-body">
+              <h6>Status Summary</h6>
+              <div style={{ height: "200px" }}>
+                <Pie data={pieData} options={{ ...options, scales: undefined }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="card border-0 shadow-sm">
+            <div className="card-body">
+              <h6>Inventory Levels</h6>
+              <div style={{ height: "200px" }}>
+                <Bar data={barData} options={options} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -242,10 +267,11 @@ export default function FeedingInventory() {
             className="form-control"
             required
             value={formData.feed_name}
-            onChange={e => setFormData({...formData, feed_name: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, feed_name: e.target.value })}
             placeholder="e.g. Maize Bran, Silage"
           />
         </div>
+
         <div className="row">
           <div className="col-md-6 mb-3">
             <label className="form-label small fw-bold">Quantity</label>
@@ -255,7 +281,7 @@ export default function FeedingInventory() {
               className="form-control"
               required
               value={formData.quantity}
-              onChange={e => setFormData({...formData, quantity: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
               placeholder="0.00"
             />
           </div>
@@ -267,23 +293,69 @@ export default function FeedingInventory() {
               className="form-control"
               required
               value={formData.low_stock_threshold}
-              onChange={e => setFormData({...formData, low_stock_threshold: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
               placeholder="10.00"
             />
           </div>
         </div>
+
         <div className="mb-3">
           <label className="form-label small fw-bold">Unit</label>
           <select
             className="form-select"
             value={formData.unit}
-            onChange={e => setFormData({...formData, unit: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
           >
             <option value="kg">kg</option>
             <option value="tons">tons</option>
             <option value="bags">bags</option>
             <option value="liters">liters</option>
           </select>
+        </div>
+
+        <div className="row">
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Status</label>
+            <select
+              className="form-select"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            >
+              <option value="active">active</option>
+              <option value="inactive">inactive</option>
+            </select>
+          </div>
+          <div className="col-md-6 mb-3">
+            <label className="form-label small fw-bold">Location</label>
+            <input
+              type="text"
+              className="form-control"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="e.g. Store Room A"
+            />
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Expiry Date</label>
+          <input
+            type="date"
+            className="form-control"
+            value={formData.expiry_date}
+            onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+          />
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Notes</label>
+          <textarea
+            className="form-control"
+            rows="3"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            placeholder="Optional storage or handling notes"
+          ></textarea>
         </div>
       </FormModalWrapper>
     </div>

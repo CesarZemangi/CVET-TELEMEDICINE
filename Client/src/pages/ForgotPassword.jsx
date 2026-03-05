@@ -8,15 +8,20 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [devResetLink, setDevResetLink] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setMessage("");
+    setDevResetLink("");
     try {
       const res = await api.post("/auth/forgot-password", { email });
       setMessage(res.data?.message || "Check your email for reset instructions.");
+      if (res.data?.dev_reset_link) {
+        setDevResetLink(res.data.dev_reset_link);
+      }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to submit request.");
     } finally {
@@ -30,6 +35,11 @@ export default function ForgotPassword() {
         <h4 className="fw-bold mb-2">Forgot Password</h4>
         <p className="text-muted small mb-3">Enter your email to receive a reset link.</p>
         {message && <div className="alert alert-success py-2">{message}</div>}
+        {devResetLink && (
+          <div className="alert alert-info py-2">
+            Dev reset link: <a href={devResetLink}>{devResetLink}</a>
+          </div>
+        )}
         {error && <div className="alert alert-danger py-2">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="mb-3">

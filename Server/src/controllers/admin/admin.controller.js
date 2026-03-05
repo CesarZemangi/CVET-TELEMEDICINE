@@ -173,9 +173,13 @@ export const getUserDetails = async (req, res) => {
     });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const caseCount = await Case.count({
-      where: user.role === 'farmer' ? { farmer_id: user.id } : { vet_id: user.id }
-    });
+    let caseCount = 0;
+    if (user.role === "farmer") {
+      caseCount = await Case.count({ where: { farmer_id: user.id } });
+    } else if (user.role === "vet") {
+      const vetProfile = await Vet.findOne({ where: { user_id: user.id } });
+      caseCount = vetProfile ? await Case.count({ where: { vet_id: vetProfile.id } }) : 0;
+    }
 
     const messageCount = await Message.count({
       where: { [Op.or]: [{ sender_id: user.id }, { receiver_id: user.id }] }
@@ -185,6 +189,66 @@ export const getUserDetails = async (req, res) => {
       ...user.toJSON(),
       caseCount,
       messageCount
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getOrCreateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      attributes: ["id", "name", "email", "role", "status", "phone", "created_at", "profile_image"],
+      paranoid: false
+    });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    let profile = null;
+    let profileCreated = false;
+
+    if (user.role === "farmer") {
+      const [farmerProfile, created] = await Farmer.findOrCreate({
+        where: { user_id: user.id },
+        defaults: {
+          user_id: user.id,
+          farm_name: `${user.name || "Farmer"} Farm`,
+          location: "",
+          livestock_count: 0
+        }
+      });
+      profile = farmerProfile;
+      profileCreated = created;
+    } else if (user.role === "vet") {
+      const [vetProfile, created] = await Vet.findOrCreate({
+        where: { user_id: user.id },
+        defaults: {
+          user_id: user.id,
+          specialization: "General Veterinary",
+          license_number: null,
+          experience_years: 0
+        }
+      });
+      profile = vetProfile;
+      profileCreated = created;
+    }
+
+    let caseCount = 0;
+    if (user.role === "farmer") {
+      caseCount = await Case.count({ where: { farmer_id: user.id } });
+    } else if (user.role === "vet") {
+      const vetProfile = profile || await Vet.findOne({ where: { user_id: user.id } });
+      caseCount = vetProfile ? await Case.count({ where: { vet_id: vetProfile.id } }) : 0;
+    }
+
+    const messageCount = await Message.count({
+      where: { [Op.or]: [{ sender_id: user.id }, { receiver_id: user.id }] }
+    });
+
+    res.json({
+      user,
+      profile,
+      profile_created: profileCreated,
+      stats: { caseCount, messageCount }
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -1,6 +1,6 @@
 import path from 'path';
 import { Op } from "sequelize";
-import { Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
+import { AiPredictionLog, Case, CaseMedia, Animal, User, Vet } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { logAction } from "../../utils/dbLogger.js";
 import sequelize from "../../config/db.js";
@@ -27,7 +27,27 @@ export const getCases = async (req, res) => {
       subQuery: false
     });
 
-    // Flatten vet info for frontend
+    const caseIds = data.rows.map((c) => c.id);
+    let latestPredictionsByCaseId = new Map();
+    if (caseIds.length > 0) {
+      const predictionRows = await AiPredictionLog.findAll({
+        attributes: ["case_id", "predicted_disease", "confidence", "vet_id", "created_at"],
+        where: {
+          case_id: { [Op.in]: caseIds },
+          farmer_id: req.user.id
+        },
+        order: [["created_at", "DESC"]]
+      });
+
+      for (const row of predictionRows) {
+        const key = Number(row.case_id);
+        if (!latestPredictionsByCaseId.has(key)) {
+          latestPredictionsByCaseId.set(key, row.toJSON());
+        }
+      }
+    }
+
+    // Flatten vet info for frontend and attach latest AI prediction
     const rows = data.rows.map(c => {
       const caseJson = c.toJSON();
       if (caseJson.vet) {
@@ -37,6 +57,7 @@ export const getCases = async (req, res) => {
           user_id: caseJson.vet.User?.id
         };
       }
+      caseJson.latest_prediction = latestPredictionsByCaseId.get(Number(caseJson.id)) || null;
       return caseJson;
     });
 
@@ -153,6 +174,17 @@ export const getCaseById = async (req, res) => {
         user_id: caseJson.vet.User?.id
       };
     }
+
+    const latestPrediction = await AiPredictionLog.findOne({
+      attributes: ["case_id", "predicted_disease", "confidence", "vet_id", "created_at"],
+      where: {
+        case_id: singleCase.id,
+        farmer_id: req.user.id
+      },
+      order: [["created_at", "DESC"]]
+    });
+    caseJson.latest_prediction = latestPrediction ? latestPrediction.toJSON() : null;
+
     res.json(caseJson);
   } catch (err) {
     res.status(500).json({ error: err.message });

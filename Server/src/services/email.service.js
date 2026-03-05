@@ -1,12 +1,16 @@
 import nodemailer from 'nodemailer';
 import EmailLog from '../models/emailLog.model.js';
 
-const smtpAuthEnabled = String(process.env.SMTP_AUTH || "").toLowerCase() === "true";
+const smtpAuthEnabled =
+  String(process.env.SMTP_AUTH || "").toLowerCase() === "true" ||
+  (Boolean(process.env.SMTP_USER) && Boolean(process.env.SMTP_PASS));
 
 const transporterConfig = {
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT || 587),
-  secure: String(process.env.SMTP_SECURE || "").toLowerCase() === "true" // true for 465, false for other ports
+  secure: String(process.env.SMTP_SECURE || "").toLowerCase() === "true", // true for 465, false for other ports
+  connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT_MS || 10000),
+  greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT_MS || 10000)
 };
 
 if (smtpAuthEnabled) {
@@ -20,8 +24,15 @@ const transporter = nodemailer.createTransport(transporterConfig);
 
 export const sendEmail = async ({ user_id, to, subject, message, html = null }) => {
   try {
+    if (!to || !subject || !message) {
+      throw new Error("Email requires 'to', 'subject', and 'message'");
+    }
+    if (!process.env.SMTP_HOST) {
+      throw new Error("SMTP_HOST is not configured");
+    }
+
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to,
       subject,
       text: message,

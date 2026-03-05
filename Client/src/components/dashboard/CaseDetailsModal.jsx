@@ -33,6 +33,25 @@ const CaseDetailsModal = ({ isOpen, onClose, caseData }) => {
                   <p className="mb-0">{caseData.description || 'No description provided.'}</p>
                 </div>
               </div>
+              {caseData.latest_prediction && (
+                <div className="col-12">
+                  <div className="p-3 border rounded-3 bg-light">
+                    <h6 className="fw-bold text-muted small mb-2">LATEST VET AI PREDICTION</h6>
+                    <p className="mb-1">
+                      <strong>Predicted Disease:</strong> {caseData.latest_prediction.predicted_disease || "N/A"}
+                    </p>
+                    <p className="mb-1">
+                      <strong>Confidence:</strong>{" "}
+                      {caseData.latest_prediction.confidence != null
+                        ? `${(Number(caseData.latest_prediction.confidence) * 100).toFixed(1)}%`
+                        : "N/A"}
+                    </p>
+                    <p className="mb-0">
+                      <strong>Predicted At:</strong> {new Date(caseData.latest_prediction.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
               {caseData.notes && (
                 <div className="col-12">
                   <div className="p-3 border rounded-3 bg-light">

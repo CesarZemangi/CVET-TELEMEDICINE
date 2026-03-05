@@ -22,12 +22,13 @@ export const getFeedInventory = async (req, res) => {
 
 export const addFeedInventory = async (req, res) => {
   try {
-    const { feed_name, quantity, low_stock_threshold } = req.body;
+    const { feed_name, quantity, unit, low_stock_threshold } = req.body;
     
     const feed = await FeedInventory.create({
       farmer_id: req.user.id,
       feed_name,
       quantity,
+      unit: unit || "kg",
       low_stock_threshold: low_stock_threshold || 10.00,
       created_by: req.user.id,
       updated_by: req.user.id
@@ -44,12 +45,13 @@ export const addFeedInventory = async (req, res) => {
 
 export const updateFeedInventory = async (req, res) => {
   try {
-    const { feed_name, quantity, low_stock_threshold } = req.body;
+    const { feed_name, quantity, unit, low_stock_threshold } = req.body;
     const { id } = req.params;
 
     await FeedInventory.update({
       feed_name,
       quantity,
+      unit,
       low_stock_threshold,
       updated_by: req.user.id
     }, {

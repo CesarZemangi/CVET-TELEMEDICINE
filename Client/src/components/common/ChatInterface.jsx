@@ -114,16 +114,17 @@ export default function ChatInterface({ readOnly = false }) {
       
       // Check for initial state from navigation (e.g., from Cases page)
       if (location.state?.initialPartner) {
-        const { initialPartner } = location.state;
+        const { initialPartner, initialCaseId } = location.state;
         const existing = convs?.find(
           c => c.partner?.id === initialPartner.id
         );
         if (existing) {
-          fetchMessages(existing);
+          fetchMessages({ ...existing, case_id: initialCaseId || existing.case_id || null });
         } else {
           const tempConv = {
             partner: initialPartner,
-            isNew: true
+            isNew: true,
+            case_id: initialCaseId || null
           };
           setSelectedConv(tempConv);
           setMessages([]);
@@ -189,7 +190,8 @@ export default function ChatInterface({ readOnly = false }) {
 
     const payload = {
       receiver_id: selectedConv.partner.id,
-      message: newMessage.trim()
+      message: newMessage.trim(),
+      case_id: selectedConv.case_id || null
     };
 
     try {
@@ -197,6 +199,7 @@ export default function ChatInterface({ readOnly = false }) {
         id: `temp-${Date.now()}`,
         sender_id: currentUserId,
         receiver_id: payload.receiver_id,
+        case_id: payload.case_id,
         message: payload.message,
         created_at: new Date().toISOString(),
         sender: { id: currentUserId, name: user.name, profile_pic: user.profile_image }

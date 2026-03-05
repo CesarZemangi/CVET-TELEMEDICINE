@@ -81,7 +81,7 @@ app.use("/api/v1/admin", authenticate, authorizeRoles("admin"), adminRoutes);
 app.use("/api/v1/admin/appointments", authenticate, authorizeRoles("admin"), adminAppointmentRoutes);
 app.use("/api/v1/reminders", reminderRoutes);
 app.use("/api/v1/ml", mlRoutes);
-app.post("/api/v1/predict", authenticate, authorizeRoles("vet"), predictDisease);
+app.post("/api/v1/predict", authenticate, predictDisease);
 app.use("/api/v1/communication", authenticate, communicationRoutes);
 
 app.use("/api/v1/farmer/dashboard", authenticate, authorizeRoles("farmer"), farmerDashboardRoutes);

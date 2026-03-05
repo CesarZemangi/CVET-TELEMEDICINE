@@ -117,6 +117,8 @@ Case.hasMany(AiPredictionLog, { foreignKey: 'case_id', onDelete: 'SET NULL' });
 AiPredictionLog.belongsTo(Case, { foreignKey: 'case_id' });
 Vet.hasMany(AiPredictionLog, { foreignKey: 'vet_id', onDelete: 'CASCADE' });
 AiPredictionLog.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
+User.hasMany(AiPredictionLog, { foreignKey: 'farmer_id', onDelete: 'SET NULL' });
+AiPredictionLog.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
 
 export { 
   User, Case, CaseMedia, Consultation, Message, VideoSession, 

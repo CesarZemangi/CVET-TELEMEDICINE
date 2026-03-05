@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getVetConsultations, createConsultation } from "../services/consultation";
 import { getCasesForDropdown } from "./services/vet.cases.service";
 import FormModalWrapper from "../components/common/FormModalWrapper";
 import { predictDiagnosis } from "../services/aiPrediction.service";
 
 export default function VetConsultations() {
+  const navigate = useNavigate();
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -92,6 +94,44 @@ export default function VetConsultations() {
     return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart} (Status: ${c.status || "n/a"})`;
   };
 
+  const handleContinueConsultation = (consultation) => {
+    const mode = String(consultation?.mode || "").toLowerCase();
+    const caseId = consultation?.case_id || consultation?.Case?.id;
+
+    if (mode === "video") {
+      const roomKey = consultation?.id || caseId;
+      if (!roomKey) {
+        alert("Unable to open video session: consultation reference missing.");
+        return;
+      }
+      const url = `https://meet.jit.si/cvet-consult-${encodeURIComponent(roomKey)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const farmer = consultation?.Case?.farmer;
+    if (!farmer?.id) {
+      alert("Unable to open chat: farmer account not found for this consultation.");
+      return;
+    }
+
+    navigate("/vetdashboard/communication/messages", {
+      state: {
+        initialPartner: { id: farmer.id, name: farmer.name || "Farmer", role: "farmer" },
+        initialCaseId: caseId || null
+      }
+    });
+  };
+
+  const handleViewNotes = (consultation) => {
+    const notes = String(consultation?.notes || "").trim();
+    if (!notes) {
+      alert("No notes available for this consultation.");
+      return;
+    }
+    alert(notes);
+  };
+
   return (
     <div className="container-fluid px-4 py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -131,8 +171,8 @@ export default function VetConsultations() {
                     <td><span className="badge bg-success">Active</span></td>
                     <td>{new Date(c.created_at).toLocaleDateString()}</td>
                     <td className="text-end pe-4">
-                      <button className="btn btn-sm btn-primary me-2">Continue</button>
-                      <button className="btn btn-sm btn-outline-secondary">Notes</button>
+                      <button className="btn btn-sm btn-primary me-2" onClick={() => handleContinueConsultation(c)}>Continue</button>
+                      <button className="btn btn-sm btn-outline-secondary" onClick={() => handleViewNotes(c)}>Notes</button>
                     </td>
                   </tr>
                 )) : (

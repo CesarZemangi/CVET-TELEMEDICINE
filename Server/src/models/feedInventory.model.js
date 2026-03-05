@@ -6,6 +6,7 @@ const FeedInventory = sequelize.define('FeedInventory', {
   farmer_id: { type: DataTypes.INTEGER, allowNull: false },
   feed_name: { type: DataTypes.STRING, allowNull: false },
   quantity: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+  unit: { type: DataTypes.STRING(30), allowNull: false, defaultValue: 'kg' },
   low_stock_threshold: { type: DataTypes.DECIMAL(10, 2), defaultValue: 10.00 },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
   updated_by: { type: DataTypes.INTEGER, allowNull: false }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getFarmerConsultations } from "../services/consultation";
 
 export default function Consultations() {
+  const navigate = useNavigate();
   const [consultations, setConsultations] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,36 @@ export default function Consultations() {
     consultation?.Case?.vet?.User?.name ||
     consultation?.Case?.vet?.name ||
     "Assigned Vet";
+
+  const handleJoinConsultation = (consultation) => {
+    const mode = String(consultation?.mode || "").toLowerCase();
+    const caseId = consultation?.case_id || consultation?.Case?.id;
+
+    if (mode === "video") {
+      const roomKey = consultation?.id || caseId;
+      if (!roomKey) {
+        alert("Unable to open video session: consultation reference missing.");
+        return;
+      }
+      const url = `https://meet.jit.si/cvet-consult-${encodeURIComponent(roomKey)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const vetUserId = consultation?.vet?.User?.id || consultation?.Case?.vet?.User?.id || consultation?.Case?.vet?.user_id;
+    const vetName = getVetName(consultation);
+    if (!vetUserId) {
+      alert("Unable to open chat: veterinarian account not found.");
+      return;
+    }
+
+    navigate("/farmerdashboard/communication/messages", {
+      state: {
+        initialPartner: { id: vetUserId, name: vetName, role: "vet" },
+        initialCaseId: caseId || null
+      }
+    });
+  };
 
   return (
     <div className="container-fluid px-4 py-4">
@@ -70,7 +102,7 @@ export default function Consultations() {
                     </td>
                     <td>{new Date(c.created_at).toLocaleDateString()}</td>
                     <td className="text-end pe-4">
-                      <button className="btn btn-sm btn-primary">Join</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleJoinConsultation(c)}>Join</button>
                     </td>
                   </tr>
                 )) : (

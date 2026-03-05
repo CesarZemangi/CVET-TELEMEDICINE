@@ -56,6 +56,7 @@ export const feedbackValidation = [
 export const inventoryValidation = [
   body('feed_name').notEmpty().trim(),
   body('quantity').isDecimal(),
+  body('unit').optional().isIn(['kg', 'tons', 'bags', 'liters']),
   body('low_stock_threshold').optional().isDecimal(),
   validateRequest
 ];

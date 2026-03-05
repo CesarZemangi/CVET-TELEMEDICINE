@@ -17,7 +17,11 @@ const updateSchema = async () => {
       "ALTER TABLE appointments ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER updated_at",
       "ALTER TABLE messages ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER created_at",
       "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER created_at",
+      "ALTER TABLE feed_inventory ADD COLUMN IF NOT EXISTS unit VARCHAR(30) NOT NULL DEFAULT 'kg' AFTER quantity",
+      "ALTER TABLE feed_inventory ADD COLUMN IF NOT EXISTS low_stock_threshold DECIMAL(10,2) NOT NULL DEFAULT 10.00 AFTER unit",
       "ALTER TABLE feed_inventory ADD COLUMN IF NOT EXISTS deleted_at DATETIME NULL AFTER updated_at",
+      "ALTER TABLE ai_prediction_logs ADD COLUMN IF NOT EXISTS farmer_id INT NULL AFTER vet_id",
+      "CREATE INDEX IF NOT EXISTS idx_ai_prediction_logs_farmer_id ON ai_prediction_logs (farmer_id)",
       // Farmers and Vets
       "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS created_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP",
       "ALTER TABLE farmers ADD COLUMN IF NOT EXISTS updated_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",

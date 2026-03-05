@@ -1,5 +1,6 @@
 import express from "express"
 import auth from "../../middleware/auth.middleware.js"
+import { predictDisease } from "../../controllers/ml.controller.js"
 import {
   getLabRequests,
   createLabRequest,
@@ -17,5 +18,6 @@ router.get("/lab-results", auth, getLabResults)
 router.post("/lab-results", auth, farmerUploadLabResult)
 router.get("/vaccinations", auth, getVaccinations)
 router.get("/screenings", auth, getScreenings)
+router.post("/predict", auth, predictDisease)
 
 export default router

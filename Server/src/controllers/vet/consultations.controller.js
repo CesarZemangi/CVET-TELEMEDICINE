@@ -1,6 +1,8 @@
 import Consultation from "../../models/consultation.model.js";
 import Case from "../../models/case.model.js";
 import { Vet } from "../../models/associations.js";
+import User from "../../models/user.model.js";
+import Animal from "../../models/animal.model.js";
 import { success, error } from "../../utils/response.js";
 import { logAction } from "../../utils/dbLogger.js";
 
@@ -13,7 +15,15 @@ export const getVetConsultations = async (req, res) => {
 
     const consultations = await Consultation.findAll({
       where: { vet_id: vet.id },
-      include: [{ model: Case }]
+      include: [
+        {
+          model: Case,
+          include: [
+            { model: User, as: "farmer", attributes: ["id", "name", "role"] },
+            { model: Animal, attributes: ["id", "tag_number", "species"] }
+          ]
+        }
+      ]
     });
     success(res, consultations, "Consultations fetched successfully");
   } catch (err) {

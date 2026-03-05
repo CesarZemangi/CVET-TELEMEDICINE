@@ -7,6 +7,7 @@ import {
   getSystemLogs, 
   getProfile,
   getUserDetails,
+  getOrCreateUserProfile,
   getFarmerStats,
   getVetStats,
   getCases,
@@ -32,6 +33,9 @@ const router = express.Router();
 router.get("/overview", getOverview);
 router.get("/users", getUsers);
 router.get("/users/:id", getUserDetails);
+router.get("/users/:id/profile", getOrCreateUserProfile);
+router.get("/users/profile/:id", getOrCreateUserProfile);
+router.get("/user-profile/:id", getOrCreateUserProfile);
 router.put("/users/:id", updateUserStatus);
 router.delete("/users/:id", deleteUser);
 router.get("/farmers", getFarmerStats);

@@ -160,11 +160,26 @@ export const changePassword = async (req, res) => {
   }
 };
 
+const getFrontendBaseUrl = () => {
+  if (process.env.FRONTEND_URL) {
+    return process.env.FRONTEND_URL.replace(/\/+$/, "");
+  }
+  const origins = String(process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+  if (origins.length > 0) {
+    return origins[0].replace(/\/+$/, "");
+  }
+  return "http://localhost:5173";
+};
+
 export const forgotPassword = async (req, res) => {
   const genericMessage = "If the email is registered, a password reset link has been sent.";
   try {
     const email = String(req.body?.email || "").trim().toLowerCase();
-    if (!email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       return res.status(200).json({ message: genericMessage });
     }
 
@@ -183,8 +198,8 @@ export const forgotPassword = async (req, res) => {
       expires_at: expiresAt
     });
 
-    const frontendBase = process.env.FRONTEND_URL || "http://localhost:5173";
-    const resetLink = `${frontendBase.replace(/\/+$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+    const frontendBase = getFrontendBaseUrl();
+    const resetLink = `${frontendBase}/reset-password?token=${encodeURIComponent(token)}`;
     const subject = "CVET Password Reset";
     const message = `You requested a password reset. Use this link within 1 hour: ${resetLink}`;
     const html = `
@@ -200,10 +215,17 @@ export const forgotPassword = async (req, res) => {
       message,
       html
     });
+
+    if (!emailResult?.messageId && !emailResult?.mocked) {
+      throw new Error("Email transport did not confirm delivery.");
+    }
+
     if (process.env.NODE_ENV !== "production" && emailResult?.mocked) {
       console.warn(`DEV RESET LINK for ${user.email}: ${resetLink}`);
     }
-
+    if (process.env.NODE_ENV !== "production" && String(process.env.EXPOSE_RESET_LINK_IN_DEV || "").toLowerCase() === "true") {
+      return res.status(200).json({ message: genericMessage, dev_reset_link: resetLink });
+    }
     return res.status(200).json({ message: genericMessage });
   } catch (err) {
     console.error("FORGOT PASSWORD ERROR", err);

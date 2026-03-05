@@ -125,6 +125,7 @@ import AdminCommunication from "./pages/AdminCommunication"
 import AdminSettings from "./pages/AdminSettings"
 import AdminMedia from "./pages/AdminMedia"
 import AdminAiMonitoring from "./pages/AdminAiMonitoring"
+import AdminUserProfile from "./pages/AdminUserProfile"
 
 function RequireAuth({ role, children, allowAdmin = false }) {
 const [isAuthenticated, setIsAuthenticated] = React.useState(null)
@@ -294,6 +295,7 @@ return (
   >
     <Route index element={<AdminDashboard />} />
     <Route path="users" element={<AdminUsers />} />
+    <Route path="users/:id" element={<AdminUserProfile />} />
     <Route path="farmers" element={<AdminFarmers />} />
     <Route path="vets" element={<AdminVets />} />
     <Route path="cases" element={<AdminCases />} />

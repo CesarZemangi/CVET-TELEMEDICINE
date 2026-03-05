@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
 import { Send, Users, MessageSquare, Bell, CheckCircle, AlertCircle } from "lucide-react";
 import ChatInterface from "../components/common/ChatInterface";
 
 export default function AdminCommunication() {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("broadcast");
   const [broadcast, setBroadcast] = useState({ title: "", message: "", role: "all" });
   const [direct, setDirect] = useState({ user_id: "", title: "", message: "" });
@@ -22,6 +24,13 @@ export default function AdminCommunication() {
     };
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    const tab = (searchParams.get("tab") || "").toLowerCase();
+    if (["broadcast", "direct", "chats"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleBroadcast = async (e) => {
     e.preventDefault();
