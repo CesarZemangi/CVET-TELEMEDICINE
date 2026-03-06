@@ -160,17 +160,42 @@ export const changePassword = async (req, res) => {
   }
 };
 
-const getFrontendBaseUrl = () => {
-  if (process.env.FRONTEND_URL) {
-    return process.env.FRONTEND_URL.replace(/\/+$/, "");
+const normalizeBaseUrl = (value) => String(value || "").trim().replace(/\/+$/, "");
+
+const isLocalhostUrl = (value) => {
+  const v = String(value || "").toLowerCase();
+  return v.includes("localhost") || v.includes("127.0.0.1");
+};
+
+const getFrontendBaseUrl = (req) => {
+  const configuredFrontend = normalizeBaseUrl(process.env.FRONTEND_URL);
+  if (configuredFrontend) {
+    return configuredFrontend;
   }
+
   const origins = String(process.env.ALLOWED_ORIGINS || "")
     .split(",")
-    .map((v) => v.trim())
+    .map((v) => normalizeBaseUrl(v))
     .filter(Boolean);
-  if (origins.length > 0) {
-    return origins[0].replace(/\/+$/, "");
+  const nonLocalOrigin = origins.find((origin) => !isLocalhostUrl(origin));
+  if (nonLocalOrigin) {
+    return nonLocalOrigin;
   }
+  if (origins.length > 0) {
+    return origins[0];
+  }
+
+  const reqOrigin = normalizeBaseUrl(req?.headers?.origin);
+  if (reqOrigin) {
+    return reqOrigin;
+  }
+
+  const host = normalizeBaseUrl(req?.headers?.["x-forwarded-host"] || req?.headers?.host);
+  const proto = normalizeBaseUrl(req?.headers?.["x-forwarded-proto"]) || "https";
+  if (host) {
+    return `${proto}://${host}`;
+  }
+
   return "http://localhost:5173";
 };
 
@@ -198,7 +223,7 @@ export const forgotPassword = async (req, res) => {
       expires_at: expiresAt
     });
 
-    const frontendBase = getFrontendBaseUrl();
+    const frontendBase = getFrontendBaseUrl(req);
     const resetLink = `${frontendBase}/reset-password?token=${encodeURIComponent(token)}`;
     const subject = "CVET Password Reset";
     const message = `You requested a password reset. Use this link within 1 hour: ${resetLink}`;

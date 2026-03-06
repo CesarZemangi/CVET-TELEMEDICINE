@@ -4,6 +4,8 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
+  const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL || "/downloads/cvet-telemedicine.apk";
+  const [showApkDownload, setShowApkDownload] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -170,6 +172,32 @@ export default function Login() {
               Sign up
             </span>
           </small>
+        </div>
+        <div className="mt-3 rounded-3 border" style={{ borderColor: "#d9f2dd", overflow: "hidden" }}>
+          <button
+            type="button"
+            className="w-100 d-flex align-items-center justify-content-between border-0 px-3 py-2"
+            style={{ backgroundColor: "#f8fff8", color: "#2d5a2d", fontSize: "0.82rem", fontWeight: 600 }}
+            onClick={() => setShowApkDownload((prev) => !prev)}
+          >
+            <span>Get CVET Android App</span>
+            <span style={{ fontSize: "0.72rem", lineHeight: 1 }}>▼</span>
+          </button>
+          {showApkDownload && (
+            <div className="px-3 pt-2 pb-3 border-top" style={{ backgroundColor: "#ffffff", borderColor: "#e9f7eb" }}>
+              <p className="mb-2" style={{ color: "#2d5a2d", fontSize: "0.78rem", lineHeight: 1.35 }}>
+                Bring CVET to the farm. Download the Android app for faster field access to cases, appointments, and consultations.
+              </p>
+              <a
+                href={apkDownloadUrl}
+                className="btn btn-sm w-100 text-white fw-semibold py-1"
+                style={{ background: "linear-gradient(180deg, #2e8b57 0%, #1e90ff 100%)", fontSize: "0.78rem" }}
+                download
+              >
+                Download CVET Android App (.apk)
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -2,7 +2,20 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(" ")
 }
 
-export const API_BASE_URL = "http://localhost:5000";
+const resolveApiRoot = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    const cleaned = String(envUrl).replace(/\/+$/, "");
+    return cleaned.replace(/\/api\/v1$/i, "");
+  }
+
+  const host = window.location.hostname;
+  const isLocalHost = host === "localhost" || host === "127.0.0.1";
+  const apiHost = isLocalHost ? "localhost" : host;
+  return `http://${apiHost}:5000`;
+};
+
+export const API_BASE_URL = resolveApiRoot();
 
 export function getFileUrl(path) {
   if (!path) return "";
