@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from "react"
-import { getMedicationHistory, createMedicationHistory } from "../services/vet.treatment.service"
+import { getMedicationHistory } from "../services/vet.treatment.service"
 import { getCasesForDropdown } from "../services/vet.cases.service"
 import DashboardSection from "../../components/dashboard/DashboardSection"
-import FormModalWrapper from "../../components/common/FormModalWrapper"
 
 export default function MedicationHistory() {
   const [medications, setMedications] = useState([])
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({
-    case_id: "",
-    animal_id: "",
-    medication_name: "",
-    dosage: "",
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: "",
-    notes: ""
-  })
+  const [selectedCaseId, setSelectedCaseId] = useState("")
 
   const fetchData = async () => {
     setLoading(true)
@@ -63,6 +53,10 @@ export default function MedicationHistory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!formData.case_id || !formData.medication_name.trim()) {
+      alert("Select a case and enter medication name.");
+      return;
+    }
     try {
       await createMedicationHistory(formData)
       setShowAddModal(false)
@@ -91,9 +85,22 @@ export default function MedicationHistory() {
     <DashboardSection title="Medication History">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <p className="mb-0 text-muted">Complete records of medications administered to animals under your care.</p>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-          <i className="bi bi-plus-circle me-1"></i> Add Record
-        </button>
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label small fw-bold">Filter by Case</label>
+        <select
+          className="form-select"
+          value={selectedCaseId}
+          onChange={(e) => setSelectedCaseId(e.target.value)}
+        >
+          <option value="">All cases</option>
+          {cases.map((c) => (
+            <option key={c.id} value={c.id}>
+              {getCaseOptionLabel(c)}
+            </option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
@@ -117,7 +124,7 @@ export default function MedicationHistory() {
                   </tr>
                 </thead>
                 <tbody>
-                  {medications.length > 0 ? medications.map(m => (
+        {medications.filter(m => selectedCaseId ? String(m.case_id) === String(selectedCaseId) : true).length > 0 ? medications.filter(m => selectedCaseId ? String(m.case_id) === String(selectedCaseId) : true).map(m => (
                     <tr key={m.id}>
                       <td className="ps-4 small">
                         {new Date(m.start_date).toLocaleDateString()}
@@ -153,83 +160,7 @@ export default function MedicationHistory() {
         </div>
       )}
 
-      <FormModalWrapper
-        show={showAddModal}
-        title="Add Medication Record"
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleSubmit}
-        submitLabel="Save Record"
-        contentClassName="border-0"
-        bodyClassName=""
-        footerClassName="border-0"
-      >
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Case</label>
-                    <select 
-                      className="form-select" 
-                      required 
-                      value={formData.case_id} 
-                      onChange={handleCaseChange}
-                    >
-                      <option value="">Choose a case...</option>
-                      {cases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {getCaseOptionLabel(c)} ({c.Animal?.tag_number || "No tag"})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Medication Name</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      required 
-                      value={formData.medication_name}
-                      onChange={e => setFormData({...formData, medication_name: e.target.value})}
-                    />
-                  </div>
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Dosage</label>
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        required 
-                        value={formData.dosage}
-                        onChange={e => setFormData({...formData, dosage: e.target.value})}
-                      />
-                    </div>
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label small fw-bold">Start Date</label>
-                      <input 
-                        type="date" 
-                        className="form-control" 
-                        required 
-                        value={formData.start_date}
-                        onChange={e => setFormData({...formData, start_date: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">End Date (Optional)</label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
-                      value={formData.end_date}
-                      onChange={e => setFormData({...formData, end_date: e.target.value})}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Notes</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="2"
-                      value={formData.notes}
-                      onChange={e => setFormData({...formData, notes: e.target.value})}
-                    ></textarea>
-                  </div>
-      </FormModalWrapper>
+      {/* Manual add removed: view-only history filtered by case */}
     </DashboardSection>
   )
 }

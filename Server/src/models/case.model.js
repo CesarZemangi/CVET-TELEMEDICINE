@@ -10,6 +10,7 @@ const Case = sequelize.define('Case', {
   description: { type: DataTypes.TEXT, allowNull: false },
   symptoms: { type: DataTypes.TEXT, allowNull: true },
   status: { type: DataTypes.ENUM('open', 'closed'), defaultValue: 'open', allowNull: false },
+  health_status: { type: DataTypes.STRING(20), allowNull: true, defaultValue: 'not healthy' },
   priority: { type: DataTypes.ENUM('low', 'medium', 'high', 'critical'), defaultValue: 'medium', allowNull: false },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
   updated_by: { type: DataTypes.INTEGER, allowNull: false },

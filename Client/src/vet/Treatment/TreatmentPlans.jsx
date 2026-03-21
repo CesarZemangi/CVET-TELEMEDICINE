@@ -50,6 +50,10 @@ export default function TreatmentPlans() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.case_id || !formData.plan_details?.trim()) {
+      alert("Case and plan details are required.");
+      return;
+    }
     try {
       await createTreatmentPlan(formData);
       setShowAddModal(false);

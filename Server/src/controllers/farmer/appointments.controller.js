@@ -1,4 +1,4 @@
-import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal, Payment } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { v4 as uuidv4 } from 'uuid';
 import sequelize from "../../config/db.js";
@@ -6,6 +6,7 @@ import { Op } from "sequelize";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { getVetRatingsSummaryByVetIds } from "../../services/vetRating.service.js";
 import { sendSMS } from "../../services/sms.service.js";
+import { getPaymentAttributes } from "../../utils/paymentSchema.js";
 
 const APPOINTMENT_ATTRIBUTES = [
   'id',
@@ -23,7 +24,7 @@ const APPOINTMENT_ATTRIBUTES = [
 export const createAppointmentRequest = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { case_id, vet_id, appointment_date, appointment_time, notes } = req.body;
+    const { case_id, appointment_date, appointment_time, notes } = req.body;
     const farmer_id = req.user.id;
 
     // Verify case exists and belongs to farmer
@@ -39,20 +40,12 @@ export const createAppointmentRequest = async (req, res) => {
       });
     }
 
-    // Verify vet exists
-    const vetRecord = await Vet.findOne({
-      where: {
-        [Op.or]: [
-          { id: vet_id },
-          { user_id: vet_id }
-        ]
-      },
-      transaction: t
-    });
+    // Auto-bind vet from the case to avoid mismatches
+    const vetRecord = await Vet.findByPk(singleCase.vet_id, { transaction: t });
     if (!vetRecord) {
       await t.rollback();
       return res.status(400).json({ 
-        error: "Vet not found" 
+        error: "Case is missing an assigned veterinarian. Please contact support." 
       });
     }
 
@@ -65,7 +58,7 @@ export const createAppointmentRequest = async (req, res) => {
       });
     }
 
-    // Create appointment (defaults to pending status)
+    // Keep the original appointment lifecycle and enforce payment separately.
     const appointment = await Appointment.create({
       case_id,
       farmer_id,
@@ -78,7 +71,7 @@ export const createAppointmentRequest = async (req, res) => {
       status: 'pending'
     }, { transaction: t });
 
-    await logAction(farmer_id, `Farmer created appointment request for case #${case_id} with vet #${vet_id} on ${appointment_date} at ${appointment_time}`, {
+    await logAction(farmer_id, `Farmer created appointment request for case #${case_id} with vet #${vetRecord.id} on ${appointment_date} at ${appointment_time}`, {
       actionType: 'create',
       module: 'appointments',
       entityId: appointment.id,
@@ -107,9 +100,21 @@ export const createAppointmentRequest = async (req, res) => {
 
 export const getFarmerAppointments = async (req, res) => {
   try {
-    const { page, size } = req.query;
+    const { page, size, include_deleted } = req.query;
     const { limit, offset } = getPagination(page, size);
+    const paranoid = include_deleted === "true" ? false : true;
     const farmer_id = req.user.id;
+    const paymentAttributes = await getPaymentAttributes([
+      "id",
+      "amount",
+      "payment_method",
+      "payment_provider",
+      "payment_status",
+      "transaction_reference",
+      "payment_reference_number",
+      "proof_of_payment_url",
+      "verified_at"
+    ]);
 
     const data = await Appointment.findAndCountAll({
       attributes: APPOINTMENT_ATTRIBUTES,
@@ -129,13 +134,18 @@ export const getFarmerAppointments = async (req, res) => {
           include: [
             { model: User, attributes: ['id', 'name', 'phone'] }
           ]
+        },
+        {
+          model: Payment,
+          attributes: paymentAttributes,
+          required: false
         }
       ],
       limit,
       offset,
       order: [['appointment_date', 'DESC']],
       raw: false,
-      paranoid: false
+      paranoid
     });
 
     const response = getPagingData(data, page, limit);
@@ -257,7 +267,7 @@ export const deleteAppointment = async (req, res) => {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
-    if (appointment.status !== 'pending' && appointment.status !== 'cancelled') {
+    if (!['pending', 'cancelled'].includes(appointment.status)) {
       return res.status(400).json({ error: "Only pending or cancelled appointments can be deleted" });
     }
 
@@ -279,6 +289,13 @@ export const joinSession = async (req, res) => {
     const appointment = await Appointment.findOne({
       where: { id, farmer_id },
       attributes: APPOINTMENT_ATTRIBUTES,
+      include: [
+        {
+          model: Payment,
+          attributes: ['id', 'payment_status', 'transaction_reference'],
+          required: false
+        }
+      ],
       paranoid: false
     });
 
@@ -288,6 +305,10 @@ export const joinSession = async (req, res) => {
 
     if (appointment.status !== 'approved') {
       return res.status(400).json({ error: "Only approved appointments can be joined" });
+    }
+
+    if (!appointment.Payment || appointment.Payment.payment_status !== 'paid') {
+      return res.status(403).json({ error: "Payment has not been verified for this appointment yet" });
     }
 
     // Restrict by date and time
@@ -333,9 +354,10 @@ export const getCasesForAppointments = async (req, res) => {
 
     const cases = await Case.findAll({
       where: { farmer_id },
-      attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id'],
+      attributes: ['id', 'title', 'description', 'status', 'priority', 'animal_id', 'vet_id'],
       include: [
-        { model: Animal, attributes: ['id', 'tag_number', 'species'] }
+        { model: Animal, attributes: ['id', 'tag_number', 'species'] },
+        { model: Vet, as: 'vet', attributes: ['id'], include: [{ model: User, attributes: ['id', 'name'], required: false }] }
       ],
       order: [['created_at', 'DESC']]
     });
@@ -353,7 +375,7 @@ export const getCasesForAppointments = async (req, res) => {
 export const getVetsForAppointments = async (req, res) => {
   try {
     const vets = await Vet.findAll({
-      attributes: ['id', 'user_id'],
+      attributes: ['id', 'user_id', 'specialization', 'experience_years'],
       include: [
         { model: User, where: { role: 'vet' }, attributes: ['id', 'name', 'phone', 'email', 'status'] }
       ],

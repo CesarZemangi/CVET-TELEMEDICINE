@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react"
+﻿import React, { useState, useEffect } from "react"
 import { Pie, Line } from "react-chartjs-2"
-import { getLabResults, getLabRequests, uploadLabResult } from "../services/farmer.diagnostics.service"
+import { getLabResults, getLabRequests, uploadLabResult, deleteLabResult } from "../services/farmer.diagnostics.service"
 import {
   Chart as ChartJS,
   ArcElement,
@@ -23,7 +23,9 @@ export default function LabResults() {
   const [uploading, setUploading] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [uploadResult, setUploadResult] = useState('')
+  const [uploadFile, setUploadFile] = useState(null)
   const [message, setMessage] = useState('')
+  const [fieldError, setFieldError] = useState('')
 
   const fetchData = async () => {
     try {
@@ -50,20 +52,24 @@ export default function LabResults() {
   }, [])
 
   const handleUpload = async () => {
-    if (!selectedRequest || !uploadResult.trim()) {
-      setMessage("Please select a lab request and enter results");
+    if (!selectedRequest || (!uploadResult.trim() && !uploadFile)) {
+      setFieldError("Select a lab request and add result text or upload a PDF.");
       return;
     }
 
     try {
       setUploading(true);
       setMessage('');
-      await uploadLabResult({
-        lab_request_id: selectedRequest.id,
-        result: uploadResult
-      });
+      setFieldError('');
+      const formData = new FormData();
+      formData.append("lab_request_id", selectedRequest.id || selectedRequest.lab_request_id);
+      if (uploadResult.trim()) formData.append("result", uploadResult.trim());
+      if (uploadFile) formData.append("lab_file", uploadFile);
+
+      await uploadLabResult(formData);
       setMessage('Lab result uploaded successfully!');
       setUploadResult('');
+      setUploadFile(null);
       setSelectedRequest(null);
       fetchData();
     } catch (err) {
@@ -153,19 +159,22 @@ export default function LabResults() {
                 <label className="form-label small fw-bold">Select Lab Request *</label>
                 <select 
                   className="form-select"
-                  value={selectedRequest?.id || ''}
+                  value={selectedRequest?.id || selectedRequest?.lab_request_id || ''}
                   onChange={(e) => {
-                    const req = requests.find(r => r.id === parseInt(e.target.value));
+                    const req = requests.find(r => (r.id || r.lab_request_id) === parseInt(e.target.value));
                     setSelectedRequest(req || null);
                   }}
                 >
                   <option value="">Choose a pending lab request...</option>
                   {pendingRequests.map(req => (
-                    <option key={req.id} value={req.id}>
+                    <option key={req.id || req.lab_request_id} value={req.id || req.lab_request_id}>
                       Case: {req.Case?.title} - {req.test_type}  
                     </option>
                   ))}
                 </select>
+                {fieldError && !selectedRequest && (
+                  <small className="text-danger d-block mt-1">{fieldError}</small>
+                )}
               </div>
 
               {selectedRequest && (
@@ -190,6 +199,20 @@ export default function LabResults() {
                   value={uploadResult}
                   onChange={(e) => setUploadResult(e.target.value)}
                 ></textarea>
+                <div className="form-text">You may also upload the PDF report below.</div>
+                {fieldError && !uploadResult.trim() && !uploadFile && (
+                  <small className="text-danger d-block mt-1">{fieldError}</small>
+                )}
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label small fw-bold">Upload PDF (optional)</label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="form-control"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                />
               </div>
 
               <button 
@@ -244,8 +267,29 @@ export default function LabResults() {
                     <div className={`card-text p-2 bg-light rounded ${getResultClass(res.result)}`} style={{fontSize: '0.9rem'}}>
                       {res.result}
                     </div>
-                    <div className="mt-3 pt-2 border-top">
+                    {res.file_url && (
+                      <div className="mt-2">
+                        <a href={res.file_url} target="_blank" rel="noreferrer" className="small">
+                          View PDF attachment
+                        </a>
+                      </div>
+                    )}
+                    <div className="mt-3 pt-2 border-top d-flex justify-content-between align-items-center">
                        <small className="text-muted">{new Date(res.uploaded_at).toLocaleDateString()} — Completed</small>
+                       <button
+                         className="btn btn-sm btn-outline-danger"
+                         onClick={async () => {
+                           if (!window.confirm("Delete this lab result?")) return;
+                           try {
+                             await deleteLabResult(res.id);
+                             fetchData();
+                           } catch (err) {
+                             alert(err.response?.data?.error || err.message || "Failed to delete result");
+                           }
+                         }}
+                       >
+                         Delete
+                       </button>
                     </div>
                   </div>
                 </div>
@@ -284,3 +328,4 @@ export default function LabResults() {
     </div>
   )
 }
+

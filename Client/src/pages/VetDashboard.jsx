@@ -13,18 +13,25 @@ export default function VetDashboard() {
   });
 
   const [recentActivity, setRecentActivity] = useState([]);
+  const [paymentInsights, setPaymentInsights] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchVetData = async () => {
       try {
-        const res = await api.get("/vet/dashboard");
-        const payload = res?.data?.data || res?.data || {};
+        const [res, activityRes, paymentRes] = await Promise.allSettled([
+          api.get("/vet/dashboard"),
+          api.get("/vet/dashboard/activity"),
+          api.get("/ml/payment-insights")
+        ]);
+        const payload = res.status === "fulfilled" ? res.value?.data?.data || res.value?.data || {} : {};
         setMetrics(prev => ({ ...prev, ...payload }));
-        
-        const activityRes = await api.get("/vet/dashboard/activity");
-        const activityPayload = activityRes?.data?.data || activityRes?.data || [];
+        const activityPayload = activityRes.status === "fulfilled" ? activityRes.value?.data?.data || activityRes.value?.data || [] : [];
         setRecentActivity(Array.isArray(activityPayload) ? activityPayload : []);
+        setPaymentInsights(paymentRes.status === "fulfilled" ? paymentRes.value?.data?.data || null : null);
+        if (paymentRes.status === "rejected") {
+          console.warn("Vet payment AI endpoint unavailable:", paymentRes.reason?.response?.data || paymentRes.reason?.message || paymentRes.reason);
+        }
       } catch (err) {
         console.error("Vet Dashboard Error:", err);
       } finally {
@@ -153,6 +160,18 @@ export default function VetDashboard() {
         </div>
 
         <div className="col-lg-4">
+          <div className="card border-0 shadow-sm p-4 mb-4">
+            <h6 className="fw-bold mb-3">AI Revenue Forecast</h6>
+            <div className="small text-muted mb-2">Predicted next period earnings</div>
+            <div className="h3 fw-bold text-success mb-3">
+              USD {Number(paymentInsights?.earnings_prediction?.predicted_next_period_earnings || 0).toFixed(2)}
+            </div>
+            <div className="small text-muted mb-1">Recommended payment method</div>
+            <div className="fw-semibold mb-2">{paymentInsights?.payment_success?.recommended_method || "N/A"}</div>
+            <div className="small text-muted mb-1">Busiest consultation day</div>
+            <div className="fw-semibold">{paymentInsights?.demand_forecast?.busiest_day || "N/A"}</div>
+          </div>
+
           <div className="card border-0 shadow-sm p-4 h-100">
             <h6 className="fw-bold mb-4">Quick Actions</h6>
             <div className="d-grid gap-2">

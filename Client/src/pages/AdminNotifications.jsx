@@ -4,15 +4,18 @@ import api from "../services/api";
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const perPage = 10;
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       setLoading(true);
       try {
-        const res = await api.get("/communication/notifications");
-        const notifs = res.data?.data || res.data || [];
-        setNotifications(notifs);
+        const res = await api.get("/communication/notifications", { params: { page, perPage } });
+        const data = res.data?.notifications || res.data?.data || res.data || [];
+        setNotifications(Array.isArray(data) ? data : []);
+        setTotal(res.data?.total || data.length || 0);
       } catch (err) {
         console.error("Error fetching notifications:", err);
       } finally {
@@ -20,7 +23,7 @@ export default function AdminNotifications() {
       }
     };
     fetchNotifications();
-  }, []);
+  }, [page]);
 
   const handleClearAll = async () => {
     if (window.confirm("Are you sure you want to clear all notifications?")) {
@@ -43,11 +46,6 @@ export default function AdminNotifications() {
     }
   };
 
-  const categories = ["all", "message", "chat", "reminder", "system"];
-  const filteredNotifications = categoryFilter === "all" 
-    ? notifications 
-    : notifications.filter(n => n.type === categoryFilter);
-
   return (
     <div className="container-fluid px-4 py-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -65,74 +63,49 @@ export default function AdminNotifications() {
         )}
       </div>
 
-      <div className="mb-4 d-flex gap-2 flex-wrap">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            className={`btn btn-sm rounded-pill px-3 ${
-              categoryFilter === cat
-                ? "btn-primary"
-                : "btn-outline-secondary"
-            }`}
-            onClick={() => setCategoryFilter(cat)}
-          >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </button>
-        ))}
+      <div className="card border-0 shadow-sm">
+        <div className="table-responsive">
+          <table className="table align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th className="ps-3">Title</th>
+                <th>Message</th>
+                <th>Sender</th>
+                <th>Date</th>
+                <th className="pe-3">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="5" className="text-center py-4">Loading...</td></tr>
+              ) : notifications.length === 0 ? (
+                <tr><td colSpan="5" className="text-center py-4 text-muted">No notifications found.</td></tr>
+              ) : (
+                notifications.map(note => (
+                  <tr key={note.id}>
+                    <td className="ps-3">{note.title || "No Title"}</td>
+                    <td>{note.message || "No Message"}</td>
+                    <td>{note.sender?.name || "Unknown"}</td>
+                    <td>{note.created_at ? new Date(note.created_at).toLocaleString() : "-"}</td>
+                    <td className="pe-3">
+                      <span className={`${getPriorityClass(note.type)} text-uppercase small`}>
+                        {note.is_read ? "Read" : "Unread"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="card border-0 shadow-sm">
-        <div className="card-body p-0">
-          {loading ? (
-            <div className="text-center py-5">
-              <div className="spinner-border text-primary" role="status"></div>
-              <p className="mt-2 text-muted mb-0">Loading notifications...</p>
-            </div>
-          ) : filteredNotifications.length > 0 ? (
-            <div className="list-group list-group-flush">
-              {filteredNotifications.map(note => (
-                <div
-                  key={note.id}
-                  className="list-group-item d-flex justify-content-between align-items-start p-3"
-                >
-                  <div className="flex-grow-1">
-                    <div className="fw-bold text-dark">{note.title}</div>
-                    <div className="small text-muted mt-1">{note.message}</div>
-                  </div>
-                  <div className="text-end ms-3">
-                    <span className={`${getPriorityClass(note.type)} mb-1 d-block`}>
-                      {note.type}
-                    </span>
-                    <small className="text-muted d-block" style={{fontSize: '0.75rem'}}>
-                      {new Date(note.created_at).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </small>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-5">
-              <div className="text-muted mb-2">
-                <i className="bi bi-bell-slash" style={{fontSize: '2rem'}}></i>
-              </div>
-              <p className="mb-0 text-muted">
-                No {categoryFilter !== 'all' ? categoryFilter : ''} notifications found.
-              </p>
-            </div>
-          )}
+      <div className="d-flex justify-content-between align-items-center mt-3">
+        <div className="text-muted small">Page {page} of {Math.max(1, Math.ceil((total || 0) / perPage))}</div>
+        <div className="d-flex gap-2">
+          <button className="btn btn-outline-secondary btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</button>
+          <button className="btn btn-outline-secondary btn-sm" disabled={page >= Math.ceil((total || 0) / perPage)} onClick={() => setPage(page + 1)}>Next</button>
         </div>
-        {filteredNotifications.length > 0 && (
-          <div className="card-footer bg-white border-0 py-3 text-center">
-            <small className="text-muted">
-              Showing {filteredNotifications.length} of {notifications.length} notifications
-            </small>
-          </div>
-        )}
       </div>
     </div>
   );

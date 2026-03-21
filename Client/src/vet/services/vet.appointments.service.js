@@ -45,3 +45,8 @@ export const joinAppointmentSession = async (id) => {
   const response = await api.get(`${API_URL}/${id}/join-session`)
   return response.data
 }
+
+export const archiveAppointment = async (id) => {
+  const response = await api.delete(`${API_URL}/${id}`)
+  return response.data
+}

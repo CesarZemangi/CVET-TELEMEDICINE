@@ -1,10 +1,12 @@
-import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal, Payment } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { fn, col } from "sequelize";
+import { getPaymentAttributes } from "../../utils/paymentSchema.js";
 
 export const getAllAppointments = async (req, res) => {
   try {
     const { status, case_id, farmer_id, vet_id } = req.query;
+    const paymentAttributes = await getPaymentAttributes();
     
     const where = {};
     if (status) where.status = status;
@@ -41,6 +43,12 @@ export const getAllAppointments = async (req, res) => {
           include: [
             { model: User, attributes: ['id', 'name', 'email', 'phone'], required: false, paranoid: false }
           ]
+        },
+        {
+          model: Payment,
+          attributes: paymentAttributes,
+          required: false,
+          paranoid: false
         }
       ],
       order: [['appointment_date', 'DESC']]
@@ -122,6 +130,7 @@ export const adminOverrideStatus = async (req, res) => {
 export const getAppointmentDetails = async (req, res) => {
   try {
     const { id } = req.params;
+    const paymentAttributes = await getPaymentAttributes();
 
     const appointment = await Appointment.findByPk(id, {
       paranoid: false,
@@ -151,6 +160,12 @@ export const getAppointmentDetails = async (req, res) => {
           include: [
             { model: User, attributes: ['id', 'name', 'email', 'phone'], required: false, paranoid: false }
           ]
+        },
+        {
+          model: Payment,
+          attributes: paymentAttributes,
+          required: false,
+          paranoid: false
         }
       ]
     });

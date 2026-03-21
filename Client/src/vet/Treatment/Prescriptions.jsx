@@ -49,6 +49,10 @@ export default function Prescriptions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.case_id || !formData.medicine.trim() || !formData.dosage.trim()) {
+      alert("Case, medicine, and dosage are required.");
+      return;
+    }
     try {
       await createPrescription(formData);
       setShowAddModal(false);

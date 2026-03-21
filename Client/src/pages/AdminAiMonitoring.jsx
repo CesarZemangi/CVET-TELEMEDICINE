@@ -7,6 +7,7 @@ export default function AdminAiMonitoring() {
   const [opsLogs, setOpsLogs] = useState([]);
   const [quality, setQuality] = useState(null);
   const [datasetRows, setDatasetRows] = useState([]);
+  const [paymentInsights, setPaymentInsights] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -14,19 +15,25 @@ export default function AdminAiMonitoring() {
   const fetchAll = async () => {
     try {
       setLoading(true);
-      const [summaryRes, predRes, opsRes, qualityRes, dataRes] = await Promise.all([
+      const [summaryRes, predRes, opsRes, qualityRes, dataRes, paymentRes] = await Promise.allSettled([
         api.get("/admin/ai/summary"),
         api.get("/admin/ai/prediction-logs?limit=50"),
         api.get("/admin/ai/ops-logs?limit=50"),
         api.get("/admin/ai/data-quality"),
-        api.get("/admin/ai/dataset-records?limit=30")
+        api.get("/admin/ai/dataset-records?limit=30"),
+        api.get("/ml/payment-insights")
       ]);
 
-      setSummary(summaryRes.data);
-      setPredictionLogs(Array.isArray(predRes.data?.data) ? predRes.data.data : []);
-      setOpsLogs(Array.isArray(opsRes.data?.data) ? opsRes.data.data : []);
-      setQuality(qualityRes.data);
-      setDatasetRows(Array.isArray(dataRes.data?.data) ? dataRes.data.data : []);
+      setSummary(summaryRes.status === "fulfilled" ? summaryRes.value.data : null);
+      setPredictionLogs(predRes.status === "fulfilled" && Array.isArray(predRes.value.data?.data) ? predRes.value.data.data : []);
+      setOpsLogs(opsRes.status === "fulfilled" && Array.isArray(opsRes.value.data?.data) ? opsRes.value.data.data : []);
+      setQuality(qualityRes.status === "fulfilled" ? qualityRes.value.data : null);
+      setDatasetRows(dataRes.status === "fulfilled" && Array.isArray(dataRes.value.data?.data) ? dataRes.value.data.data : []);
+      setPaymentInsights(paymentRes.status === "fulfilled" ? paymentRes.value.data?.data || null : null);
+
+      if (paymentRes.status === "rejected") {
+        console.warn("Payment AI endpoint unavailable:", paymentRes.reason?.response?.data || paymentRes.reason?.message || paymentRes.reason);
+      }
     } catch (err) {
       console.error("AI admin dashboard load error:", err);
     } finally {
@@ -74,6 +81,22 @@ export default function AdminAiMonitoring() {
     }
   };
 
+  const handleExportPaymentsCsv = async () => {
+    try {
+      const res = await api.get("/admin/ai/export-payments-csv", { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "text/csv" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `payments_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Payment CSV export failed:", err);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
   }
@@ -87,6 +110,7 @@ export default function AdminAiMonitoring() {
         </div>
         <div className="d-flex gap-2">
           <button className="btn btn-outline-primary" onClick={handleExportCsv}>Export Cases CSV</button>
+          <button className="btn btn-outline-secondary" onClick={handleExportPaymentsCsv}>Export Payments CSV</button>
           <label className="btn btn-primary mb-0">
             {uploading ? "Uploading..." : "Upload Model File"}
             <input type="file" hidden onChange={handleUploadModel} />
@@ -125,7 +149,21 @@ export default function AdminAiMonitoring() {
         </div>
         <div className="col-lg-6">
           <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Data Quality</div>
+            <div className="card-header bg-white fw-bold">Payment AI Highlights</div>
+            <div className="card-body">
+              <p className="mb-1">Recommended method: <strong>{paymentInsights?.payment_success?.recommended_method || "N/A"}</strong></p>
+              <p className="mb-1">Recommended provider: <strong>{paymentInsights?.payment_success?.recommended_provider || "N/A"}</strong></p>
+              <p className="mb-1">Busiest day: <strong>{paymentInsights?.demand_forecast?.busiest_day || "N/A"}</strong></p>
+              <p className="mb-0">Next-period consultations: <strong>{paymentInsights?.demand_forecast?.expected_next_period_consultations || 0}</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-4 mt-1">
+        <div className="col-lg-6">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white fw-bold">Payment Data Quality</div>
             <div className="card-body">
               <p className="mb-1">Total cases: <strong>{quality?.total_cases || 0}</strong></p>
               <p className="mb-1">Missing symptoms: <strong>{quality?.missing_symptoms || 0}</strong></p>
@@ -134,9 +172,57 @@ export default function AdminAiMonitoring() {
             </div>
           </div>
         </div>
+        <div className="col-lg-6">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white fw-bold">Top Payment Methods</div>
+            <div className="card-body">
+              {(paymentInsights?.payment_success?.by_method || []).length === 0 ? (
+                <div className="text-muted">No payment history available.</div>
+              ) : (
+                <ul className="list-group">
+                  {paymentInsights.payment_success.by_method.map((row, idx) => (
+                    <li key={`pm-${idx}`} className="list-group-item d-flex justify-content-between">
+                      <span>{row.payment_method}</span>
+                      <strong>{row.success_probability != null ? `${(Number(row.success_probability) * 100).toFixed(1)}%` : "N/A"}</strong>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="row g-4 mt-1">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-header bg-white fw-bold">Demand Forecast Leaders</div>
+            <div className="table-responsive">
+              <table className="table table-sm mb-0">
+                <thead className="table-light">
+                  <tr><th>Vet</th><th>Consultation Count</th><th>Farmer</th><th>Payment Count</th></tr>
+                </thead>
+                <tbody>
+                  {Math.max(paymentInsights?.demand_forecast?.top_vets?.length || 0, paymentInsights?.demand_forecast?.frequent_farmers?.length || 0) === 0 ? (
+                    <tr><td colSpan="4" className="text-center py-4 text-muted">No payment demand data available.</td></tr>
+                  ) : (
+                    Array.from({
+                      length: Math.max(paymentInsights?.demand_forecast?.top_vets?.length || 0, paymentInsights?.demand_forecast?.frequent_farmers?.length || 0)
+                    }).map((_, idx) => (
+                      <tr key={`forecast-${idx}`}>
+                        <td>{paymentInsights?.demand_forecast?.top_vets?.[idx]?.vet_name || "-"}</td>
+                        <td>{paymentInsights?.demand_forecast?.top_vets?.[idx]?.consultation_count || "-"}</td>
+                        <td>{paymentInsights?.demand_forecast?.frequent_farmers?.[idx]?.farmer_name || "-"}</td>
+                        <td>{paymentInsights?.demand_forecast?.frequent_farmers?.[idx]?.payment_count || "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div className="col-12">
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-white fw-bold">Prediction Logs</div>

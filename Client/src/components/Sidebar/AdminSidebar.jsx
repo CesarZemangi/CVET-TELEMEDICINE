@@ -53,8 +53,25 @@ export default function AdminSidebar() {
             <NavLink to="/admindashboard/cases" className={linkClass}>Cases</NavLink>
             <NavLink to="/admindashboard/consultations" className={linkClass}>Consultations</NavLink>
             <NavLink to="/admindashboard/appointments" className={linkClass}>Appointments</NavLink>
+            <NavLink to="/admindashboard/payments" className={linkClass}>Payments</NavLink>
             <NavLink to="/admindashboard/vet-performance" className={linkClass}>Vet Performance</NavLink>
             <NavLink to="/admindashboard/media" className={linkClass}>Media Uploads</NavLink>
+          </div>
+        )}
+      </li>
+
+      {/* Communication */}
+      <li>
+        <div className={sectionHeaderClass} onClick={() => toggleSection("communication")}>
+          <span><i className="bi bi-chat-dots me-3"></i> Communication</span>
+          <small>{openSection === "communication" ? "â–¾" : "â–¸"}</small>
+        </div>
+        {openSection === "communication" && (
+          <div className={dropdownContainerClass}>
+            <NavLink to="/admindashboard/communication/messages" className={linkClass}>Messages</NavLink>
+            <NavLink to="/admindashboard/communication/email" className={linkClass}>Email</NavLink>
+            <NavLink to="/admindashboard/communication/notifications" className={linkClass}>Notifications</NavLink>
+            <NavLink to="/admindashboard/communication/feedback" className={linkClass}>Feedback</NavLink>
           </div>
         )}
       </li>

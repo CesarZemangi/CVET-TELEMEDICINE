@@ -29,6 +29,15 @@ export const animalValidation = [
   validateRequest
 ];
 
+export const animalUpdateValidation = [
+  body('tag_number').optional().notEmpty().trim(),
+  body('species').optional().notEmpty().trim(),
+  body('breed').optional().isString(),
+  body('age').optional().isInt({ min: 0 }),
+  body('health_status').optional().isIn(['healthy', 'sick', 'under treatment']),
+  validateRequest
+];
+
 export const caseValidation = [
   body('animal_id').isInt(),
   body('vet_id').isInt(),
@@ -38,9 +47,21 @@ export const caseValidation = [
   validateRequest
 ];
 
+export const caseUpdateValidation = [
+  body('animal_id').optional().isInt(),
+  body('vet_id').optional().isInt(),
+  body('title').optional().notEmpty().trim().isLength({ max: 255 }),
+  body('description').optional().notEmpty().trim(),
+  body('symptoms').optional().isString(),
+  body('priority').optional().isIn(['low', 'medium', 'high', 'critical']),
+  body('status').optional().isIn(['open', 'closed']),
+  body('health_status').optional().isIn(['healthy', 'not healthy', 'sick', 'under treatment']),
+  validateRequest
+];
+
 export const appointmentValidation = [
   body('case_id').isInt(),
-  body('vet_id').isInt(),
+  body('vet_id').optional().isInt(),
   body('appointment_date').isISO8601(),
   body('appointment_time').notEmpty().matches(/^([01]\d|2[0-3]):?([0-5]\d)$/),
   validateRequest
@@ -50,6 +71,12 @@ export const feedbackValidation = [
   body('case_id').isInt(),
   body('rating').isInt({ min: 1, max: 5 }),
   body('comments').notEmpty().trim(),
+  validateRequest
+];
+
+export const feedbackUpdateValidation = [
+  body('rating').optional().isInt({ min: 1, max: 5 }),
+  body('comments').optional().notEmpty().trim(),
   validateRequest
 ];
 

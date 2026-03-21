@@ -36,7 +36,45 @@ export default function AdminMedia() {
   };
 
   const isPreviewable = (fileType) => {
-    return fileType.startsWith("image/") || fileType === "application/pdf";
+    return fileType?.startsWith("image/")
+      || fileType?.startsWith("video/")
+      || fileType?.startsWith("audio/")
+      || fileType === "application/pdf";
+  };
+
+  const renderPreview = () => {
+    if (!selectedMedia) return null;
+    const src = getFileUrl(selectedMedia.file_path);
+
+    if (selectedMedia.file_type?.startsWith("image/")) {
+      return (
+        <img
+          src={src}
+          alt={selectedMedia.file_name}
+          className="img-fluid rounded-3 shadow-sm mx-auto d-block"
+        />
+      );
+    }
+
+    if (selectedMedia.file_type?.startsWith("video/")) {
+      return <video src={src} controls className="w-100 rounded-3 shadow-sm" style={{ maxHeight: "480px" }} />;
+    }
+
+    if (selectedMedia.file_type?.startsWith("audio/")) {
+      return <audio src={src} controls className="w-100" />;
+    }
+
+    if (selectedMedia.file_type === "application/pdf") {
+      return (
+        <iframe
+          src={src}
+          title={selectedMedia.file_name}
+          style={{ width: "100%", height: "500px", border: "none" }}
+        ></iframe>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -131,20 +169,7 @@ export default function AdminMedia() {
         cancelLabel="Cancel"
         contentClassName="border-0 shadow-lg"
       >
-        {selectedMedia?.file_type?.startsWith("image/") && (
-          <img
-            src={getFileUrl(selectedMedia.file_path)}
-            alt={selectedMedia.file_name}
-            className="img-fluid rounded-3 shadow-sm mx-auto d-block"
-          />
-        )}
-        {selectedMedia?.file_type === "application/pdf" && (
-          <iframe
-            src={getFileUrl(selectedMedia.file_path)}
-            title={selectedMedia.file_name}
-            style={{ width: "100%", height: "500px", border: "none" }}
-          ></iframe>
-        )}
+        {renderPreview()}
       </FormModalWrapper>
     </DashboardSection>
   );

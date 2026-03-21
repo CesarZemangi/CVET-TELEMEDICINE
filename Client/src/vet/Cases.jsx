@@ -49,7 +49,7 @@ export default function VetCases() {
   }
 
   const handleViewCase = (caseData) => {
-    setSelectedCase(caseData);
+    setSelectedCase(enhanceCaseForDisplay(caseData));
     setIsModalOpen(true);
   };
 
@@ -65,6 +65,11 @@ export default function VetCases() {
       } 
     });
   };
+
+  const enhanceCaseForDisplay = (c) => ({
+    ...c,
+    animalType: c.Animal?.species || c.animal_type || c.animal || "N/A"
+  });
 
   const handleStartConsultation = (caseId) => {
     setConsultCaseId(caseId);
@@ -212,6 +217,7 @@ export default function VetCases() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         caseData={selectedCase} 
+        onRespond={handleMessageFarmer}
       />
 
       {/* Start Consultation Modal */}

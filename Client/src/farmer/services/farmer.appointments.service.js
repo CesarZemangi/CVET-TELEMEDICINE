@@ -2,8 +2,10 @@ import api from "../../services/api"
 
 const API_URL = "/farmer/appointments"
 
-export const getFarmerAppointments = async () => {
-  const response = await api.get(API_URL)
+export const getFarmerAppointments = async (opts = {}) => {
+  const params = {}
+  if (opts.includeDeleted) params.include_deleted = true
+  const response = await api.get(API_URL, { params })
   return response.data?.data || response.data || []
 }
 

@@ -9,6 +9,7 @@ import {
   getTrainingDatasetRecords,
   getDataQualitySummary,
   exportCasesCsv,
+  exportPaymentsCsv,
   uploadModelFile
 } from "../../controllers/admin/ai.controller.js";
 
@@ -27,6 +28,7 @@ router.get("/ops-logs", getAiOpsLogs);
 router.get("/dataset-records", getTrainingDatasetRecords);
 router.get("/data-quality", getDataQualitySummary);
 router.get("/export-cases-csv", exportCasesCsv);
+router.get("/export-payments-csv", exportPaymentsCsv);
 router.post("/model/upload", upload.single("model"), uploadModelFile);
 
 export default router;

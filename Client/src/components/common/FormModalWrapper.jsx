@@ -21,7 +21,7 @@ export default function FormModalWrapper({
       onClick={onClose}
     >
       <div
-        className="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+        className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable w-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className={`modal-content ${contentClassName}`}>

@@ -95,3 +95,22 @@ export const getFeedbackByFarmer = async (req, res) => {
     error(res, err.message);
   }
 };
+
+export const updateFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const farmer_id = req.user.id;
+    const feedback = await Feedback.findOne({ where: { id, farmer_id } });
+    if (!feedback) return res.status(404).json({ error: "Feedback not found" });
+
+    const updates = {};
+    if (req.body.rating !== undefined) updates.rating = req.body.rating;
+    if (req.body.comments !== undefined) updates.comments = req.body.comments;
+    if (Object.keys(updates).length === 0) return res.status(400).json({ error: "No fields to update" });
+
+    await feedback.update(updates);
+    success(res, feedback, "Feedback updated");
+  } catch (err) {
+    error(res, err.message);
+  }
+};

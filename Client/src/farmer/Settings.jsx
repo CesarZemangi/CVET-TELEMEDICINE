@@ -5,6 +5,7 @@ export default function Settings() {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [formData, setFormData] = useState({
     name: user.name || '',
+    email: user.email || '',
     phone: user.phone || '',
     sms_opt_in: user.sms_opt_in ?? true
   });
@@ -20,8 +21,14 @@ export default function Settings() {
     setLoading(true);
     setMessage('');
     try {
-      const res = await api.put('/auth/profile', formData);
+      if (!formData.phone) {
+        setMessage('Mobile number is required');
+        setLoading(false);
+        return;
+      }
+      const res = await api.put('/user/profile', formData);
       localStorage.setItem('user', JSON.stringify({ ...user, ...res.data.user }));
+      window.dispatchEvent(new Event("user-updated"));
       setMessage('Profile updated successfully!');
     } catch (err) {
       setMessage('Failed to update: ' + (err.response?.data?.message || err.message));

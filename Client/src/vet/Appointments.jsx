@@ -16,6 +16,7 @@ export default function Appointments() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiResult, setAiResult] = useState(null);
+  const [archiving, setArchiving] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -67,6 +68,20 @@ export default function Appointments() {
     setAiSymptoms(String(appointment?.Case?.symptoms || ""));
     setAiError("");
     setAiResult(null);
+  };
+
+  const handleArchive = async (appointmentId) => {
+    if (!appointmentId) return;
+    if (!window.confirm("Archive this appointment?")) return;
+    try {
+      setArchiving(true);
+      await appointmentService.archiveAppointment(appointmentId);
+      fetchAppointments();
+    } catch (err) {
+      alert("Failed to archive appointment: " + (err.response?.data?.error || err.message));
+    } finally {
+      setArchiving(false);
+    }
   };
 
   const closeModal = () => {
@@ -193,7 +208,7 @@ export default function Appointments() {
   const canReject = (status) => status === "pending";
   const canComplete = (status) => status === "approved";
   const canCancel = (status) => status !== "cancelled" && status !== "completed";
-  const canReschedule = (status) => status === "pending" || status === "approved";
+  const canReschedule = (status) => ["pending", "approved"].includes(status);
 
   const handleJoinSession = async (appointmentId) => {
     try {
@@ -254,6 +269,9 @@ export default function Appointments() {
                             <i className="bi bi-paw me-2"></i> {appt.Case.Animal.tag_number} ({appt.Case.Animal.species})
                           </p>
                         )}
+                        <p className="text-muted small mb-0">
+                          <i className="bi bi-credit-card me-2"></i> Payment: {appt.Payment?.payment_status || "not submitted"}
+                        </p>
                       </div>
                     </div>
                     <span className={`badge ${getStatusBadgeColor(appt.status)} text-white px-3 py-2`}>
@@ -268,6 +286,7 @@ export default function Appointments() {
                     <button
                       className="btn btn-primary btn-sm px-3"
                       onClick={() => handleJoinSession(appt.id)}
+                      disabled={appt.status !== "approved"}
                     >
                       <i className="bi bi-video me-2"></i> Join Session
                     </button>
@@ -340,6 +359,30 @@ export default function Appointments() {
                 <button type="button" className="btn-close" onClick={closeModal}></button>
               </div>
               <div className="modal-body">
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <div className="fw-bold">{selectedAppt?.Case?.title || "Appointment Details"}</div>
+                    <div className="small text-muted">Case #{selectedAppt?.case_id}</div>
+                    {selectedAppt?.Case?.Animal && (
+                      <div className="small text-muted">
+                        {selectedAppt.Case.Animal.tag_number} ({selectedAppt.Case.Animal.species})
+                      </div>
+                    )}
+                  </div>
+                  <div className="d-flex gap-2 align-items-center">
+                    <span className={`badge ${getStatusBadgeColor(selectedAppt?.status)}`}>
+                      {selectedAppt?.status}
+                    </span>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      disabled={archiving}
+                      onClick={() => handleArchive(selectedAppt?.id)}
+                    >
+                      {archiving ? "Archiving..." : "Archive"}
+                    </button>
+                  </div>
+                </div>
+
                 {modalAction === 'approve' && (
                   <p>Are you sure you want to approve this appointment?</p>
                 )}
@@ -517,3 +560,16 @@ export default function Appointments() {
     </div>
   );
 }
+  const handleArchive = async (appointmentId) => {
+    if (!appointmentId) return;
+    if (!window.confirm("Archive this appointment?")) return;
+    try {
+      setArchiving(true);
+      await appointmentService.archiveAppointment(appointmentId);
+      fetchAppointments();
+    } catch (err) {
+      alert("Failed to archive appointment: " + (err.response?.data?.error || err.message));
+    } finally {
+      setArchiving(false);
+    }
+  };

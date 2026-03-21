@@ -7,6 +7,7 @@ import { fn, col, literal, Op } from "sequelize";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { getIO } from "../../services/socket.service.js";
 import { logAction } from "../../utils/dbLogger.js";
+import Feedback from "../../models/feedback.model.js";
 
 export const getOverview = async (req, res) => {
   try {
@@ -134,6 +135,60 @@ export const getOverview = async (req, res) => {
   }
 };
 
+export const getEmailLogs = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || "50", 10);
+    const logs = await EmailLog.findAll({
+      order: [['created_at', 'DESC']],
+      limit,
+      attributes: ['id', 'to', 'subject', 'status', 'error_message', 'created_at']
+    });
+    const totals = {
+      total_sent: await EmailLog.count({ where: { status: 'sent' } }),
+      total_failed: await EmailLog.count({ where: { status: 'failed' } }),
+      total: await EmailLog.count()
+    };
+    res.json({ data: logs, totals });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const createEmailLog = async (req, res) => {
+  try {
+    const { to, subject, message } = req.body;
+    if (!to || !subject || !message) {
+      return res.status(400).json({ error: "to, subject, and message are required" });
+    }
+    const log = await EmailLog.create({
+      to,
+      subject,
+      body: message,
+      status: 'sent',
+      created_at: new Date()
+    });
+    res.status(201).json({ message: "Email recorded", data: log });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const getAllFeedback = async (_req, res) => {
+  try {
+    const feedback = await Feedback.findAll({
+      include: [
+        { model: Case, attributes: ['id', 'title'], paranoid: false },
+        { model: User, as: 'farmer', attributes: ['id', 'name', 'email'], paranoid: false },
+        { model: Vet, as: 'vet', attributes: ['id'], include: [{ model: User, attributes: ['id', 'name', 'email'], paranoid: false }], paranoid: false }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+    res.json({ data: feedback });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const getUsers = async (req, res) => {
   try {
     const data = await User.findAll({
@@ -150,14 +205,25 @@ export const getUsers = async (req, res) => {
 export const updateUserStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const user = await User.findByPk(req.params.id);
+    if (!["active", "inactive"].includes(status)) {
+      return res.status(400).json({ error: "Status must be 'active' or 'inactive'" });
+    }
+    const user = await User.findByPk(req.params.id, { paranoid: false });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     await user.update({ status });
 
     await SystemLog.create({
       user_id: req.user.id,
-      action: `Admin ${req.user.name} changed status of user ${user.name} (ID: ${user.id}) to ${status}`
+      action_type: "update",
+      module: "users",
+      entity_id: user.id,
+      action: `Admin ${req.user.name} changed status of user ${user.name} (ID: ${user.id}) to ${status}`,
+      old_value: null,
+      new_value: { status },
+      ip_address: req.ip,
+      created_by: req.user.id,
+      updated_by: req.user.id
     });
 
     res.json({ message: `User status updated to ${status}` });

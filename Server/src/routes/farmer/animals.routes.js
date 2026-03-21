@@ -1,6 +1,6 @@
 import express from "express"
 import { authenticate } from "../../middleware/auth.middleware.js"
-import { animalValidation } from "../../middleware/validation.middleware.js"
+import { animalValidation, animalUpdateValidation } from "../../middleware/validation.middleware.js"
 import {
   getAnimals,
   createAnimal,
@@ -15,7 +15,7 @@ const router = express.Router()
 router.get("/", getAnimals)
 router.post("/", animalValidation, createAnimal)
 router.get("/:id/medical-history", getAnimalMedicalHistory)
-router.put("/:id", animalValidation, updateAnimal)
+router.put("/:id", animalUpdateValidation, updateAnimal)
 router.delete("/:id", deleteAnimal)
 
 export default router

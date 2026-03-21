@@ -8,7 +8,8 @@ import {
   rescheduleAppointment,
   cancelAppointment,
   getCasesForAppointments,
-  joinSession
+  joinSession,
+  archiveAppointment
 } from "../../controllers/vet/appointments.controller.js"
 
 const router = express.Router()
@@ -21,5 +22,6 @@ router.put("/:id/reject", auth, rejectAppointment)
 router.put("/:id/complete", auth, completeAppointment)
 router.put("/:id/cancel", auth, cancelAppointment)
 router.put("/:id/reschedule", auth, rescheduleAppointment)
+router.delete("/:id", auth, archiveAppointment)
 
 export default router

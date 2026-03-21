@@ -7,6 +7,7 @@ import vetRoutes from "./vet/index.js"
 import adminRoutes from "./admin.routes.js"
 import communicationRoutes from "./communication.routes.js"
 import animalRoutes from "./animals.routes.js"
+import paymentRoutes from "./payment.routes.js"
 
 const router = express.Router()
 
@@ -17,5 +18,6 @@ router.use("/vet", vetRoutes)
 router.use("/admin", adminRoutes)
 router.use("/communication", communicationRoutes)
 router.use("/animals", animalRoutes)
+router.use("/payments", paymentRoutes)
 
 export default router

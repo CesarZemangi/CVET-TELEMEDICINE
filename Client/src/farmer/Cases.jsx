@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCases, addCase } from "./services/farmer.cases.service";
+import { getCases, addCase, deleteCase, restoreCase, deleteCasePermanent } from "./services/farmer.cases.service";
 import api from "../services/api";
 import { predictDiagnosis } from "../services/aiPrediction.service";
 import CaseDetailsModal from "../components/dashboard/CaseDetailsModal";
@@ -9,6 +9,7 @@ import FormModalWrapper from "../components/common/FormModalWrapper";
 export default function Cases() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
+  const [showArchived, setShowArchived] = useState(false);
   const [animals, setAnimals] = useState([]);
   const [vets, setVets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ export default function Cases() {
   const fetchCases = async () => {
     try {
       setLoading(true);
-      const data = await getCases();
+      const data = await getCases({ includeDeleted: showArchived });
       const casesArray = data?.data || data?.rows || (Array.isArray(data) ? data : []);
       setCases(casesArray);
     } catch (err) {
@@ -113,7 +114,7 @@ export default function Cases() {
     fetchCases();
     fetchAnimals();
     fetchVets();
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     fetchVetReviews(selectedVet?.id);
@@ -165,6 +166,38 @@ export default function Cases() {
     }
   };
 
+  const handleArchiveCase = async (c) => {
+    if (!c?.id) return;
+    if (!window.confirm("Archive this case? You can restore it later from the archived view.")) return;
+    try {
+      await deleteCase(c.id);
+      fetchCases();
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Failed to archive case");
+    }
+  };
+
+  const handleRestoreCase = async (c) => {
+    if (!c?.id) return;
+    try {
+      await restoreCase(c.id);
+      fetchCases();
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Failed to restore case");
+    }
+  };
+
+  const handlePermanentDelete = async (c) => {
+    if (!c?.id) return;
+    if (!window.confirm("This will permanently delete the case and its records. Continue?")) return;
+    try {
+      await deleteCasePermanent(c.id);
+      fetchCases();
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Failed to delete case permanently");
+    }
+  };
+
   const handlePredict = async () => {
     const symptomsText = String(formData.symptoms || formData.description || "").trim();
     if (!symptomsText) {
@@ -186,6 +219,25 @@ export default function Cases() {
     }
   };
 
+  const handleMarkHealthy = async (c) => {
+    if (!c?.id) return;
+    if (!window.confirm("Mark this case as resolved/animal healthy?")) return;
+    try {
+      // 1. Close the case
+      await api.put(`/farmer/cases/${c.id}`, { id: c.id, status: "closed", health_status: "healthy" });
+      
+      // 2. Update the animal status to healthy
+      if (c.animal_id) {
+        await api.put(`/farmer/animals/${c.animal_id}`, { health_status: "healthy" });
+      }
+      
+      fetchCases();
+      alert("Case closed and animal marked as healthy!");
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || "Failed to update case status");
+    }
+  };
+
   return (
     <div className="container-fluid px-4 py-4">
 
@@ -195,6 +247,18 @@ export default function Cases() {
           <small className="text-muted">
             Report animal health issues and select a veterinarian for care
           </small>
+          <div className="form-check form-switch mt-2">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="toggle-archived"
+              checked={showArchived}
+              onChange={() => setShowArchived((prev) => !prev)}
+            />
+            <label className="form-check-label small" htmlFor="toggle-archived">
+              Show archived (soft-deleted) cases
+            </label>
+          </div>
         </div>
         <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
           <i className="bi bi-plus-circle me-2"></i>
@@ -239,9 +303,14 @@ export default function Cases() {
                         </span>
                       </td>
                       <td>
-                        <span className={`badge ${c.status === 'open' ? 'bg-warning text-dark' : 'bg-success'}`}>
-                          {c.status}
-                        </span>
+                        <div className="d-flex flex-column gap-1">
+                          <span className={`badge ${c.status === 'open' ? 'bg-warning text-dark' : 'bg-success'}`}>
+                            {c.status}
+                          </span>
+                          {c.is_deleted && (
+                            <span className="badge bg-secondary">Archived</span>
+                          )}
+                        </div>
                       </td>
                       <td className="text-end pe-4">
                         {c.vet_id && (
@@ -252,6 +321,41 @@ export default function Cases() {
                             <i className="bi bi-chat-dots me-1"></i>
                             Message Vet
                           </button>
+                        )}
+                        {c.status === "open" && (
+                          <button
+                            className="btn btn-sm btn-outline-success me-2"
+                            onClick={() => handleMarkHealthy(c)}
+                          >
+                            <i className="bi bi-check2-circle me-1"></i>
+                            Mark Healthy
+                          </button>
+                        )}
+                        {!c.is_deleted ? (
+                          <button 
+                            className="btn btn-sm btn-outline-danger me-2"
+                            onClick={() => handleArchiveCase(c)}
+                          >
+                            <i className="bi bi-archive me-1"></i>
+                            Archive
+                          </button>
+                        ) : (
+                          <>
+                            <button 
+                              className="btn btn-sm btn-outline-secondary me-2"
+                              onClick={() => handleRestoreCase(c)}
+                            >
+                              <i className="bi bi-arrow-counterclockwise me-1"></i>
+                              Restore
+                            </button>
+                            <button 
+                              className="btn btn-sm btn-outline-danger me-2"
+                              onClick={() => handlePermanentDelete(c)}
+                            >
+                              <i className="bi bi-trash me-1"></i>
+                              Delete
+                            </button>
+                          </>
                         )}
                         <button 
                           className="btn btn-sm btn-outline-primary"
@@ -276,6 +380,7 @@ export default function Cases() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         caseData={selectedCase} 
+        onRespond={handleMessageVet}
       />
 
       {/* Report Case Modal */}

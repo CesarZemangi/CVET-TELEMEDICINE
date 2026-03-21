@@ -3,9 +3,11 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "db:stabilize-vet-ratings": "node scripts/stabilizeVetRatings.js",
     "db:ensure-password-reset": "node scripts/ensurePasswordResetTable.js",
-    "ml:export-cases": "node scripts/exportCasesDataset.js"
+    "ml:export-cases": "node scripts/exportCasesDataset.js",
+    "ml:export-payments": "node scripts/exportPaymentsDataset.js"
   },
   "name": "server",
   "version": "1.0.0",

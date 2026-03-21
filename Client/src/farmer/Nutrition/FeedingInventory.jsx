@@ -83,7 +83,16 @@ export default function FeedingInventory() {
   const handleAddFeed = async (e) => {
     e.preventDefault()
     try {
-      await addFeedInventory(formData)
+      const payload = {
+        ...formData,
+        quantity: parseFloat(formData.quantity || 0),
+        low_stock_threshold: parseFloat(formData.low_stock_threshold || 10)
+      }
+      if (Number.isNaN(payload.quantity)) {
+        alert("Quantity must be a number")
+        return
+      }
+      await addFeedInventory(payload)
       setShowModal(false)
       setFormData({
         feed_name: "",
@@ -97,7 +106,8 @@ export default function FeedingInventory() {
       })
       fetchInventory()
     } catch (err) {
-      alert("Failed to add feed: " + (err.response?.data?.error || err.response?.data?.message || err.message))
+      const serverMsg = err.response?.data?.error || err.response?.data?.message
+      alert("Failed to add feed: " + (serverMsg || err.message))
     }
   }
 

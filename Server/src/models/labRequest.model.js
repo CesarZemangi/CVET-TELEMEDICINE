@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
 
 const LabRequest = sequelize.define('LabRequest', {
-  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, field: 'lab_request_id' },
   case_id: { type: DataTypes.INTEGER, allowNull: false },
   vet_id: { type: DataTypes.INTEGER, allowNull: false },
   test_type: { type: DataTypes.STRING, allowNull: false },

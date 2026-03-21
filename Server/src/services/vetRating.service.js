@@ -133,3 +133,42 @@ export const getVetReviewsByVetId = async (vetId) => {
     created_at: row.created_at || null
   }));
 };
+
+export const getSubmittedVetReviewsByActorId = async (actorId) => {
+  const numericActorId = Number(actorId);
+  if (!Number.isFinite(numericActorId)) {
+    return [];
+  }
+
+  const reviewRows = await sequelize.query(
+    `
+      SELECT
+        vr.id,
+        vr.vet_id,
+        vr.farmer_id,
+        vr.rating_value,
+        vr.comment,
+        vr.created_at,
+        u.name AS vet_name
+      FROM vet_ratings vr
+      LEFT JOIN vets v ON v.id = vr.vet_id
+      LEFT JOIN users u ON u.id = v.user_id
+      WHERE vr.farmer_id = :actorId
+      ORDER BY vr.created_at DESC
+    `,
+    {
+      replacements: { actorId: numericActorId },
+      type: QueryTypes.SELECT
+    }
+  );
+
+  return reviewRows.map((row) => ({
+    id: Number(row.id),
+    vet_id: Number(row.vet_id),
+    farmer_id: Number(row.farmer_id),
+    vet_name: row.vet_name || "Unknown Vet",
+    rating: toNumberOrNull(row.rating_value),
+    comment: row.comment || "",
+    created_at: row.created_at || null
+  }));
+};

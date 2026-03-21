@@ -34,6 +34,11 @@ export default function VetSidebar() {
         </NavLink>
       </li>
       <li>
+        <NavLink to="/vetdashboard/payments" className={linkClass}>
+          <i className="bi bi-cash-coin me-3"></i> Payments
+        </NavLink>
+      </li>
+      <li>
         <NavLink to="/vetdashboard/cases" className={linkClass}>
           <i className="bi bi-folder2-open me-3"></i> Cases
         </NavLink>

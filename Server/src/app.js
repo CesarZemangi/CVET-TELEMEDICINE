@@ -28,6 +28,7 @@ import adminAppointmentRoutes from "./routes/admin/appointments.routes.js";
 import communicationRoutes from "./routes/communication.routes.js";
 import reminderRoutes from "./routes/reminder.routes.js";
 import mlRoutes from "./routes/ml.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 import { predictDisease } from "./controllers/ml.controller.js";
 import path from "path";
 
@@ -68,7 +69,23 @@ app.use(cors({
 }));
 
 // 2. Standard Middleware
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+// Request debugger (dev only) to see incoming payloads before route handlers
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, res, next) => {
+    console.log("--- 🕵️ Incoming Request Scan ---");
+    console.log(`Method: ${req.method} | URL: ${req.originalUrl}`);
+    console.log(`Content-Type: ${req.headers["content-type"]}`);
+    console.log("Raw Body Keys:", Object.keys(req.body || {}));
+    if (req.headers["content-type"]?.includes("multipart/form-data")) {
+      console.log("📎 File Upload Detected");
+    }
+    console.log("--------------------------------");
+    next();
+  });
+}
 app.use("/uploads", express.static(path.join(process.cwd(), "dist", "uploads")));
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/storage", express.static("storage"));
@@ -83,6 +100,7 @@ app.use("/api/v1/reminders", reminderRoutes);
 app.use("/api/v1/ml", mlRoutes);
 app.post("/api/v1/predict", authenticate, predictDisease);
 app.use("/api/v1/communication", authenticate, communicationRoutes);
+app.use("/api/v1/payments", authenticate, paymentRoutes);
 
 app.use("/api/v1/farmer/dashboard", authenticate, authorizeRoles("farmer"), farmerDashboardRoutes);
 // Farmer
@@ -122,5 +140,24 @@ app.use((req, res) => {
 
 // Global error handler
 app.use(errorHandler);
+
+// Global Error Logger (runs after other handlers)
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  console.error("======= 🛑 INTERNAL SERVER ERROR =======");
+  console.error(`Method: ${req.method} | URL: ${req.originalUrl}`);
+  console.error("Content-Type:", req.headers["content-type"]);
+  console.error("Body Received:", JSON.stringify(req.body, null, 2));
+  console.error("Params:", req.params);
+  console.error("Error Message:", err?.message);
+  console.error("=========================================");
+
+  res.status(400).json({
+    success: false,
+    message: "The server rejected this request.",
+    dev_details: err?.message,
+    received_body: req.body
+  });
+});
 
 export default app;

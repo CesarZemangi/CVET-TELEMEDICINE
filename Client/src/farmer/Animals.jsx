@@ -9,6 +9,7 @@ export default function Animals() {
   const [livestockCount, setLivestockCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+  const [editingAnimal, setEditingAnimal] = useState(null);
 
   const fetchAnimals = async () => {
     try {
@@ -29,15 +30,48 @@ export default function Animals() {
     fetchAnimals();
   }, []);
 
-  const handleAddAnimal = async (e) => {
+  const handleOpenAddModal = () => {
+    setEditingAnimal(null);
+    setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+    setShowModal(true);
+  };
+
+  const handleOpenEditModal = (animal) => {
+    setEditingAnimal(animal);
+    setFormData({
+      tag_number: animal.tag_number || "",
+      species: animal.species || "",
+      breed: animal.breed || "",
+      age: animal.age || "",
+      health_status: animal.health_status || "healthy"
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/farmer/animals", formData);
+      if (editingAnimal) {
+        await api.put(`/farmer/animals/${editingAnimal.id}`, formData);
+      } else {
+        await api.post("/farmer/animals", formData);
+      }
       setShowModal(false);
       setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
-      fetchAnimals(); // Refresh list immediately
+      fetchAnimals();
     } catch (err) {
-      alert("Failed to add animal: " + (err.response?.data?.message || err.message));
+      alert(`Failed to ${editingAnimal ? 'update' : 'add'} animal: ` + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleDeleteAnimal = async (id) => {
+    if (window.confirm("Are you sure you want to delete this animal?")) {
+      try {
+        await api.delete(`/farmer/animals/${id}`);
+        fetchAnimals();
+      } catch (err) {
+        alert("Failed to delete animal: " + (err.response?.data?.message || err.message));
+      }
     }
   };
 
@@ -48,7 +82,7 @@ export default function Animals() {
           <h4 className="fw-bold mb-0">Livestock Inventory ({livestockCount})</h4>
           <p className="text-muted small">Manage and monitor your farm animals</p>
         </div>
-        <button className="btn btn-primary-custom" onClick={() => setShowModal(true)}>
+        <button className="btn btn-primary-custom" onClick={handleOpenAddModal}>
           <i className="bi bi-plus-lg me-2"></i> Register Animal
         </button>
       </div>
@@ -63,11 +97,19 @@ export default function Animals() {
             <div key={animal.id} className="col-md-4 col-lg-3">
               <div className="card h-100 shadow-sm border-0">
                 <div className="card-body">
-                  <div className="d-flex align-items-center mb-3">
-                    <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
-                      <i className="bi bi-tag-fill text-primary"></i>
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div className="d-flex align-items-center">
+                      <div className="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                        <i className="bi bi-tag-fill text-primary"></i>
+                      </div>
+                      <h6 className="fw-bold mb-0">{animal.tag_number}</h6>
                     </div>
-                    <h6 className="fw-bold mb-0">{animal.tag_number}</h6>
+                    <button 
+                      className="btn btn-sm btn-outline-danger border-0" 
+                      onClick={() => handleDeleteAnimal(animal.id)}
+                    >
+                      <i className="bi bi-trash"></i>
+                    </button>
                   </div>
                   
                   <div className="mb-3">
@@ -85,7 +127,10 @@ export default function Animals() {
                     <span className={`status-badge ${animal.health_status === 'healthy' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}`}>
                       {animal.health_status || 'Active'}
                     </span>
-                    <button className="btn btn-sm btn-outline-primary border-0">
+                    <button 
+                      className="btn btn-sm btn-outline-primary border-0"
+                      onClick={() => handleOpenEditModal(animal)}
+                    >
                       Details <i className="bi bi-chevron-right ms-1"></i>
                     </button>
                   </div>
@@ -98,19 +143,19 @@ export default function Animals() {
             <div className="bg-white p-5 rounded-4 shadow-sm">
                <i className="bi bi-patch-question fs-1 text-muted opacity-25"></i>
                <p className="mt-3 text-muted">No animals found in your livestock record.</p>
-               <button className="btn btn-primary-custom mt-2" onClick={() => setShowModal(true)}>Add Your First Animal</button>
+               <button className="btn btn-primary-custom mt-2" onClick={handleOpenAddModal}>Add Your First Animal</button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Basic Add Animal Modal */}
+      {/* Basic Add/Edit Animal Modal */}
       <FormModalWrapper
         show={showModal}
-        title="Register New Animal"
+        title={editingAnimal ? "Edit Animal" : "Register New Animal"}
         onClose={() => setShowModal(false)}
-        onSubmit={handleAddAnimal}
-        submitLabel="Save Animal"
+        onSubmit={handleSubmit}
+        submitLabel={editingAnimal ? "Update Animal" : "Save Animal"}
       >
         <div className="mb-3">
           <label className="form-label small fw-bold">Tag Number</label>

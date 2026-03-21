@@ -1,7 +1,8 @@
 import { verifyToken } from "../utils/jwt.js";
+import User from "../models/user.model.js";
 
 // This allows: import { authenticate } from ...
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   
   if (!authHeader) {
@@ -12,7 +13,17 @@ export const authenticate = (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    req.user = decoded; 
+
+    // fetch current user to enforce active status and existence
+    const user = await User.findByPk(decoded.id, { paranoid: false });
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+    if (user.status && user.status !== "active") {
+      return res.status(401).json({ error: "Account is deactivated" });
+    }
+
+    req.user = { ...decoded, status: user.status };
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });

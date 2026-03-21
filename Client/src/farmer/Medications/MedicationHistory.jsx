@@ -25,10 +25,12 @@ export default function MedicationHistory() {
     fetchMedications();
   }, []);
 
+  const isLabResultEntry = (item) => String(item?.medication_name || "").startsWith("Lab Result:");
+
   return (
     <DashboardSection title="Medication History">
       <p className="text-muted mb-4">
-        A complete record of medications administered to your animals by veterinarians.
+        A complete record of medications and lab result records linked to your animals.
       </p>
 
       {loading ? (
@@ -65,7 +67,12 @@ export default function MedicationHistory() {
                           <br />
                           <small className="text-muted">{med.Animal?.species}</small>
                         </td>
-                        <td className="fw-bold text-brown">{med.medication_name}</td>
+                        <td className="fw-bold text-brown">
+                          {med.medication_name}
+                          {isLabResultEntry(med) && (
+                            <span className="badge bg-info-subtle text-info-emphasis border ms-2">Lab Result</span>
+                          )}
+                        </td>
                         <td>{med.dosage}</td>
                         <td>
                           {med.end_date ? new Date(med.end_date).toLocaleDateString() : "-"}

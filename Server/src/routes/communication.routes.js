@@ -9,7 +9,6 @@ import {
   getChatlogs,
   getConversations,
   getContacts,
-  adminBroadcastNotification,
   adminDirectNotification,
   adminViewAllChatlogs,
   adminGetChatThread
@@ -31,8 +30,7 @@ router.get("/messages", authenticate, getAllMessages);
 router.post("/messages", authenticate, messageLimiter, sendMessage);
 // router.put("/notifications/:id/read", authenticate, markAsRead); // Old redundant route
 
-// Admin routes
-router.post("/admin/broadcast", authenticate, adminOnly, adminBroadcastNotification);
+// Admin routes (direct only; broadcast removed)
 router.post("/admin/notify", authenticate, adminOnly, adminDirectNotification);
 router.get("/admin/chatlogs", authenticate, adminOnly, adminViewAllChatlogs);
 router.get("/admin/chatlogs/thread", authenticate, adminOnly, adminGetChatThread);

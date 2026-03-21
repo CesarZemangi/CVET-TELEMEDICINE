@@ -1,13 +1,25 @@
-import { Appointment, Case, User, Vet, Animal } from "../../models/associations.js";
+import { Appointment, Case, User, Vet, Animal, Payment } from "../../models/associations.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { v4 as uuidv4 } from 'uuid';
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
 import { sendSMS } from "../../services/sms.service.js";
+import { getPaymentAttributes } from "../../utils/paymentSchema.js";
 
 export const getVetAppointments = async (req, res) => {
   try {
     const { page, size } = req.query;
     const { limit, offset } = getPagination(page, size);
+    const paymentAttributes = await getPaymentAttributes([
+      "id",
+      "amount",
+      "payment_method",
+      "payment_provider",
+      "payment_status",
+      "transaction_reference",
+      "payment_reference_number",
+      "proof_of_payment_url",
+      "verified_at"
+    ]);
 
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });
     if (!vet) {
@@ -28,6 +40,11 @@ export const getVetAppointments = async (req, res) => {
           model: User,
           as: 'farmer',
           attributes: ['id', 'name', 'phone', 'email']
+        },
+        {
+          model: Payment,
+          attributes: paymentAttributes,
+          required: false
         }
       ],
       limit,
@@ -209,7 +226,7 @@ export const rescheduleAppointment = async (req, res) => {
       return res.status(404).json({ error: "Appointment not found" });
     }
 
-    if (appointment.status !== 'pending' && appointment.status !== 'approved') {
+    if (!['pending', 'approved'].includes(appointment.status)) {
       return res.status(400).json({ 
         error: `Cannot reschedule appointment with status: ${appointment.status}` 
       });
@@ -248,6 +265,26 @@ export const rescheduleAppointment = async (req, res) => {
   }
 };
 
+export const archiveAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vet = await Vet.findOne({ where: { user_id: req.user.id } });
+    if (!vet) return res.status(404).json({ error: "Vet record not found" });
+
+    const appt = await Appointment.findOne({
+      where: { id, vet_id: vet.id }
+    });
+    if (!appt) return res.status(404).json({ error: "Appointment not found" });
+
+    await appt.destroy(); // paranoid: soft delete
+    await logAction(req.user.id, `Vet archived appointment #${id}`);
+    res.json({ message: "Appointment archived" });
+  } catch (error) {
+    console.error("Error archiving appointment:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const cancelAppointment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -259,7 +296,14 @@ export const cancelAppointment = async (req, res) => {
     }
 
     const appointment = await Appointment.findOne({
-      where: { id, vet_id: vet.id }
+      where: { id, vet_id: vet.id },
+      include: [
+        {
+          model: Payment,
+          attributes: ['id', 'payment_status', 'transaction_reference'],
+          required: false
+        }
+      ]
     });
 
     if (!appointment) {
@@ -298,6 +342,9 @@ export const cancelAppointment = async (req, res) => {
 
 export const joinSession = async (req, res) => {
   try {
+    if (req.user?.role === "admin") {
+      return res.status(403).json({ error: "Admins cannot join consultation sessions" });
+    }
     const { id } = req.params;
     const vet = await Vet.findOne({ where: { user_id: req.user.id } });
 
@@ -315,6 +362,10 @@ export const joinSession = async (req, res) => {
 
     if (appointment.status !== 'approved') {
       return res.status(400).json({ error: "Only approved appointments can be joined" });
+    }
+
+    if (!appointment.Payment || appointment.Payment.payment_status !== 'paid') {
+      return res.status(403).json({ error: "Payment has not been verified for this appointment yet" });
     }
 
     // Restrict by date and time

@@ -56,17 +56,25 @@ export const createAnimal = async (req, res) => {
 export const updateAnimal = async (req, res) => {
   try {
     const { tag_number, species, breed, age, health_status } = req.body
+    const updateData = { updated_by: req.user.id }
 
-    await Animal.update({
-      tag_number,
-      species,
-      breed,
-      age,
-      health_status,
-      updated_by: req.user.id
-    }, {
+    if (tag_number !== undefined) updateData.tag_number = tag_number
+    if (species !== undefined) updateData.species = species
+    if (breed !== undefined) updateData.breed = breed
+    if (age !== undefined) updateData.age = age
+    if (health_status !== undefined) updateData.health_status = health_status
+
+    await Animal.update(updateData, {
       where: { id: req.params.id, farmer_id: req.user.id }
     })
+
+    // If the animal is now healthy, close any open cases tied to it
+    if (health_status === 'healthy') {
+      await Case.update(
+        { status: 'closed', closed_at: new Date(), updated_by: req.user.id },
+        { where: { animal_id: req.params.id, farmer_id: req.user.id, status: 'open' } }
+      )
+    }
 
     await logAction(req.user.id, `Farmer updated animal #${req.params.id}`)
 

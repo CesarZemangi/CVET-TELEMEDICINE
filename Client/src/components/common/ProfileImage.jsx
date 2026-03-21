@@ -12,12 +12,18 @@ export default function ProfileImage({ src, role, name = "", size = "40px", clas
   };
 
   const defaultAvatar = getDefaultAvatar();
-  const initialImagePath = (src && src !== "") ? getFileUrl(src) : defaultAvatar;
+  const buildSrc = (value) => {
+    if (!value) return defaultAvatar;
+    const separator = String(value).includes("?") ? "&" : "?";
+    return `${getFileUrl(value)}${separator}v=${encodeURIComponent(String(value))}`;
+  };
+
+  const initialImagePath = buildSrc(src);
   const [imagePath, setImagePath] = useState(initialImagePath);
   const [failedDefault, setFailedDefault] = useState(false);
 
   useEffect(() => {
-    setImagePath((src && src !== "") ? getFileUrl(src) : defaultAvatar);
+    setImagePath(buildSrc(src));
     setFailedDefault(false);
   }, [src, role, defaultAvatar]);
 

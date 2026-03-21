@@ -12,11 +12,13 @@ import {
   getVetStats,
   getCases,
   getConsultations,
-  broadcastNotification,
   sendDirectNotification,
   getAllChatLogs,
   getThreadMessages,
-  getAllMedia
+  getAllMedia,
+  getEmailLogs,
+  getAllFeedback,
+  createEmailLog
 } from "../controllers/admin/admin.controller.js";
 import {
   getOverviewAnalytics,
@@ -44,11 +46,13 @@ router.get("/cases", getCases);
 router.get("/consultations", getConsultations);
 router.get("/logs", getSystemLogs);
 router.get("/profile", getProfile);
-router.post("/notifications/broadcast", broadcastNotification);
 router.post("/notifications/direct", sendDirectNotification);
 router.get("/chat-logs/thread", getThreadMessages);
 router.get("/chat-logs", getAllChatLogs);
 router.get("/media", getAllMedia);
+router.get("/emails", getEmailLogs);
+router.post("/emails", createEmailLog);
+router.get("/feedback", getAllFeedback);
 
 // Analytics
 router.get("/analytics/overview", getOverviewAnalytics);

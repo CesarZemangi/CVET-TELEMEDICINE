@@ -6,6 +6,8 @@ import Case from "../../models/case.model.js";
 import Vet from "../../models/vet.model.js";
 import User from "../../models/user.model.js";
 import SystemLog from "../../models/systemLog.model.js";
+import Payment from "../../models/payment.model.js";
+import { getPaymentAttributes } from "../../utils/paymentSchema.js";
 
 const toCsvValue = (value) => {
   if (value === null || value === undefined) return "";
@@ -141,6 +143,43 @@ export const exportCasesCsv = async (req, res) => {
     });
 
     const fileName = `cases_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.send(lines.join("\n"));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const exportPaymentsCsv = async (req, res) => {
+  try {
+    const headers = await getPaymentAttributes([
+      "id",
+      "farmer_id",
+      "vet_id",
+      "appointment_id",
+      "amount",
+      "payment_method",
+      "payment_provider",
+      "payment_status",
+      "payment_reference_number",
+      "transaction_reference",
+      "created_at",
+      "updated_at",
+      "verified_at"
+    ]);
+    const rows = await Payment.findAll({
+      attributes: headers,
+      order: [["updated_at", "DESC"]]
+    });
+
+    const lines = [headers.join(",")];
+    rows.forEach((row) => {
+      const data = row.toJSON();
+      lines.push(headers.map((key) => toCsvValue(data[key])).join(","));
+    });
+
+    const fileName = `payments_export_${new Date().toISOString().slice(0, 10)}.csv`;
     res.setHeader("Content-Type", "text/csv");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(lines.join("\n"));

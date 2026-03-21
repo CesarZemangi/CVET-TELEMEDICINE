@@ -11,10 +11,12 @@ export default function LabRequests() {
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [newRequest, setNewRequest] = useState({ case_id: "", test_type: "" });
+  const [createError, setCreateError] = useState("");
   
   const [showResultModal, setShowResultModal] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState(null);
   const [resultText, setResultText] = useState("");
+  const [resultError, setResultError] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -50,6 +52,11 @@ export default function LabRequests() {
 
   const handleCreateRequest = async (e) => {
     e.preventDefault();
+    if (!newRequest.case_id || !newRequest.test_type.trim()) {
+      setCreateError("Select a case and enter a test type.");
+      return;
+    }
+    setCreateError("");
     try {
       await createLabRequest(newRequest);
       setShowAddModal(false);
@@ -62,6 +69,11 @@ export default function LabRequests() {
 
   const handleUploadResult = async (e) => {
     e.preventDefault();
+    if (!activeRequestId || !resultText.trim()) {
+      setResultError("Provide result text before uploading.");
+      return;
+    }
+    setResultError("");
     try {
       await uploadLabResult({
         lab_request_id: activeRequestId,
@@ -129,8 +141,8 @@ export default function LabRequests() {
             {loading ? (
               <tr><td colSpan="5" className="text-center py-4"><div className="spinner-border spinner-border-sm text-primary"></div></td></tr>
             ) : filteredRequests.length > 0 ? filteredRequests.map(req => (
-              <tr key={req.id}>
-                <td className="fw-bold">#LR-{req.id}</td>
+              <tr key={req.id || req.lab_request_id}>
+                <td className="fw-bold">#LR-{req.id || req.lab_request_id}</td>
                 <td>{req.Case?.title || `Case #${req.case_id}`}</td>
                 <td>{req.test_type}</td>
                 <td>
@@ -141,7 +153,7 @@ export default function LabRequests() {
                     <button 
                       className="btn btn-sm btn-success"
                       onClick={() => {
-                        setActiveRequestId(req.id);
+                        setActiveRequestId(req.id || req.lab_request_id);
                         setShowResultModal(true);
                       }}
                     >
@@ -184,6 +196,9 @@ export default function LabRequests() {
                     {cases.length === 0 && (
                       <small className="text-danger">No assigned cases available.</small>
                     )}
+                    {createError && !newRequest.case_id && (
+                      <small className="text-danger d-block mt-1">{createError}</small>
+                    )}
                   </div>
                   <div className="mb-3">
                     <label className="form-label small fw-bold">Test Type</label>
@@ -195,6 +210,9 @@ export default function LabRequests() {
                       value={newRequest.test_type}
                       onChange={e => setNewRequest({...newRequest, test_type: e.target.value})}
                     />
+                    {createError && !newRequest.test_type.trim() && (
+                      <small className="text-danger d-block mt-1">{createError}</small>
+                    )}
                   </div>
       </FormModalWrapper>
 
@@ -212,10 +230,12 @@ export default function LabRequests() {
                       className="form-control" 
                       rows="5" 
                       placeholder="Enter the lab findings and observations" 
-                      required 
                       value={resultText}
                       onChange={e => setResultText(e.target.value)}
                     ></textarea>
+                    {resultError && (
+                      <small className="text-danger d-block mt-1">{resultError}</small>
+                    )}
                   </div>
       </FormModalWrapper>
     </DashboardSection>

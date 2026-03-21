@@ -44,38 +44,22 @@ export const sendMessage = async (req, res) => {
         }
       }
     } else {
-      // No case_id - allow general messaging between assigned parties
-      // Farmer can message any vet they're working with
-      // Vet can message any farmer they're working with
+      // Allow general messaging between active farmers and vets (and admin to anyone)
       if (req.user.role === 'farmer') {
-        const hasConnection = await Case.findOne({
-          include: [{
-            model: Vet,
-            as: 'vet',
-            where: { user_id: receiver_id }
-          }],
-          where: { farmer_id: sender_id }
-        });
-        if (!hasConnection) {
+        const isVet = await User.findOne({ where: { id: receiver_id, role: 'vet', status: 'active' } });
+        if (!isVet) {
           return res.status(403).json({ 
-            error: "You have no assigned cases with this vet. Please select a case to message this vet." 
+            error: "You can only message active veterinarians." 
           });
         }
       } else if (req.user.role === 'vet') {
-        const hasConnection = await Case.findOne({
-          include: [{
-            model: Vet,
-            as: 'vet',
-            where: { user_id: sender_id }
-          }],
-          where: { farmer_id: receiver_id }
-        });
-        if (!hasConnection) {
+        const isFarmer = await User.findOne({ where: { id: receiver_id, role: 'farmer', status: 'active' } });
+        if (!isFarmer) {
           return res.status(403).json({ 
-            error: "You have no assigned cases with this farmer. Please select a case to message this farmer." 
+            error: "You can only message active farmers." 
           });
         }
-      }
+      } // admins can message any active user by design
     }
 
     const newMessage = await Message.create({
@@ -98,7 +82,7 @@ export const sendMessage = async (req, res) => {
 
     // Real-time updates
     const io = getIO();
-    const sender = await User.findByPk(sender_id, { attributes: ['id', 'name', 'profile_pic'] });
+    const sender = await User.findByPk(sender_id, { attributes: ['id', 'name', 'profile_image'] });
     const msgData = { ...newMessage.toJSON(), sender };
 
     io.to(`user_${receiver_id}`).emit('receive_message', msgData);
@@ -312,21 +296,35 @@ export const markAsRead = async (req, res) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const { page, size } = req.query;
-    const { limit, offset } = getPagination(page, size);
+    const page = parseInt(req.query.page || "1", 10);
+    const perPage = parseInt(req.query.perPage || "10", 10);
+    const search = req.query.search || "";
+    const { limit, offset } = getPagination(page, perPage);
+
+    const where = {
+      receiver_id: req.user.id
+    };
+    if (search) {
+      where.title = { [Op.like]: `%${search}%` };
+    }
 
     const data = await Notification.findAndCountAll({
-      where: { receiver_id: req.user.id },
+      where,
       include: [
-        { model: User, as: 'sender', attributes: ['id', 'name', 'profile_pic'] }
+        { model: User, as: 'sender', attributes: ['id', 'name', 'email'] },
+        { model: User, as: 'receiver', attributes: ['id', 'name', 'email'] }
       ],
       limit,
       offset,
       order: [['created_at', 'DESC']]
     });
 
-    const response = getPagingData(data, page, limit);
-    res.json(response);
+    res.json({
+      total: data.count,
+      notifications: data.rows,
+      currentPage: page,
+      perPage
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -338,47 +336,6 @@ export const clearAllNotifications = async (req, res) => {
       where: { receiver_id: req.user.id }
     });
     res.json({ message: "All notifications cleared" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const adminBroadcastNotification = async (req, res) => {
-  try {
-    const { title, message, role } = req.body;
-    
-    if (!message || !title) {
-      return res.status(400).json({ error: "Title and message are required" });
-    }
-    
-    const where = {};
-    if (role && role !== 'all') {
-      where.role = role;
-    }
-    
-    const users = await User.findAll({ where, attributes: ['id'] });
-    
-    if (users.length === 0) {
-      return res.status(404).json({ error: "No users found for this role" });
-    }
-    
-    const notifications = users.map(u => ({
-      receiver_id: u.id,
-      sender_id: req.user.id,
-      title,
-      message,
-      type: 'broadcast',
-      is_read: false
-    }));
-
-    const createdNotifications = await Notification.bulkCreate(notifications, { individualHooks: true });
-    
-    const io = getIO();
-    users.forEach(u => {
-      io.to(`user_${u.id}`).emit('receive_notification', { title, message, type: 'broadcast' });
-    });
-    
-    res.json({ message: `Broadcast sent to ${createdNotifications.length} users`, data: createdNotifications });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

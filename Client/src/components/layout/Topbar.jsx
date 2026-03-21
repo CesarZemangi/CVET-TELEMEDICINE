@@ -11,6 +11,7 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const fileInputRef = useRef(null);
   const profileMenuRef = useRef(null);
@@ -43,7 +44,19 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
       }
     };
 
+    const fetchUnreadMessages = async () => {
+      try {
+        const res = await api.get('/communication/conversations');
+        const data = res.data?.data || [];
+        const totalUnread = data.reduce((sum, convo) => sum + (Number(convo.unread_count) || 0), 0);
+        setUnreadMessages(totalUnread);
+      } catch (err) {
+        console.error("Message unread error", err);
+      }
+    };
+
     fetchNotifs();
+    fetchUnreadMessages();
 
     // Socket setup
     if (!socket.connected) {
@@ -59,9 +72,19 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
       setUnreadCount(count);
     });
 
+    socket.on("receive_message", () => {
+      setUnreadMessages(prev => prev + 1);
+    });
+
+    socket.on("update_unread_count", ({ count }) => {
+      setUnreadMessages(count);
+    });
+
     return () => {
       socket.off("receive_notification");
       socket.off("update_notification_count");
+      socket.off("receive_message");
+      socket.off("update_unread_count");
     };
   }, []);
 
@@ -236,6 +259,11 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
           >
             <i className="bi bi-chat-dots fs-5 text-muted"></i>
             <span className="small d-none d-lg-inline text-muted">Messages</span>
+            {unreadMessages > 0 && (
+              <span className="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.5rem', marginLeft: '12px', marginTop: '4px' }}>
+                {unreadMessages}
+              </span>
+            )}
           </div>
         </div>
 

@@ -112,7 +112,10 @@ export const getReminderAnalytics = async (req, res) => {
 
 export const getVetPerformance = async (req, res) => {
     try {
+        const { vet_id } = req.query;
+        const vetWhere = vet_id ? { id: vet_id } : {};
         const vets = await Vet.findAll({
+            where: vetWhere,
             attributes: ['id', 'specialization'],
             paranoid: false,
             include: [{
@@ -124,7 +127,8 @@ export const getVetPerformance = async (req, res) => {
         });
 
         const performanceMetrics = await Promise.all(vets.map(async (vet) => {
-            const vetUserId = vet.User.id;
+            const vetUserId = vet.User?.id;
+            if (!vetUserId) return null;
 
             // Total cases assigned
             const totalAssigned = await Case.count({ where: { vet_id: vet.id }, paranoid: false });
@@ -243,8 +247,10 @@ export const getVetPerformance = async (req, res) => {
             };
         }));
 
+        const filteredMetrics = performanceMetrics.filter(Boolean);
+
         // Sort by closure rate descending
-        const sortedMetrics = performanceMetrics.sort((a, b) => b.caseClosureRate - a.caseClosureRate);
+        const sortedMetrics = filteredMetrics.sort((a, b) => b.caseClosureRate - a.caseClosureRate);
 
         // Calculate system-wide averages
         const systemMetrics = {

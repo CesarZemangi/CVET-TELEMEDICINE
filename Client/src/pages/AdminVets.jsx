@@ -1,25 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import FormModalWrapper from '../components/common/FormModalWrapper';
 
 export default function AdminVets() {
   const [vets, setVets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [selectedVet, setSelectedVet] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [ratingForm, setRatingForm] = useState({
+    rating_value: 5,
+    comment: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchVets = async () => {
-      try {
-        const res = await api.get('/admin/vets');
-        setVets(res.data);
-      } catch (err) {
-        console.error("Error fetching vets:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchVets();
   }, []);
+
+  const fetchVets = async () => {
+    try {
+      const res = await api.get('/admin/vets');
+      setVets(res.data);
+    } catch (err) {
+      console.error("Error fetching vets:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRateModal = (vet) => {
+    setSelectedVet(vet);
+    setRatingForm({ rating_value: 5, comment: '' });
+    setShowRateModal(true);
+  };
+
+  const handleSubmitRating = async (event) => {
+    event.preventDefault();
+    if (!selectedVet) return;
+
+    try {
+      setSubmitting(true);
+      await api.post(`/vets/${selectedVet.id}/reviews`, ratingForm);
+      setShowRateModal(false);
+      setSelectedVet(null);
+      setRatingForm({ rating_value: 5, comment: '' });
+    } catch (error) {
+      alert(error.response?.data?.message || error.response?.data?.error || 'Failed to submit rating');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="container-fluid py-4">
@@ -68,6 +100,12 @@ export default function AdminVets() {
                         >
                           Contact
                         </button>
+                        <button
+                          className="btn btn-sm btn-outline-success"
+                          onClick={() => openRateModal(v)}
+                        >
+                          Rate
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -79,6 +117,46 @@ export default function AdminVets() {
           </div>
         </div>
       </div>
+
+      <FormModalWrapper
+        show={showRateModal}
+        title={`Rate ${selectedVet?.name || 'Veterinarian'}`}
+        onClose={() => {
+          setShowRateModal(false);
+          setSelectedVet(null);
+        }}
+        onSubmit={handleSubmitRating}
+        submitLabel={submitting ? 'Saving...' : 'Save Rating'}
+      >
+        <div className="mb-3">
+          <label className="form-label fw-bold small">Rating</label>
+          <div className="d-flex gap-3 flex-wrap">
+            {[1, 2, 3, 4, 5].map((value) => (
+              <label key={value} className="form-check-label d-flex align-items-center gap-2">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  name="rating_value"
+                  checked={Number(ratingForm.rating_value) === value}
+                  onChange={() => setRatingForm((current) => ({ ...current, rating_value: value }))}
+                />
+                <span>{value}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="mb-3">
+          <label className="form-label fw-bold small">Comment</label>
+          <textarea
+            className="form-control"
+            rows="4"
+            value={ratingForm.comment}
+            onChange={(event) => setRatingForm((current) => ({ ...current, comment: event.target.value }))}
+            placeholder="Write your comment about this veterinarian."
+            required
+          />
+        </div>
+      </FormModalWrapper>
     </div>
   );
 }

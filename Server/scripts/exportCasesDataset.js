@@ -27,7 +27,7 @@ const run = async () => {
         p.duration
       FROM cases c
       LEFT JOIN lab_requests lq ON lq.case_id = c.id
-      LEFT JOIN lab_results lr ON lr.lab_request_id = lq.id
+      LEFT JOIN lab_results lr ON lr.lab_request_id = lq.lab_request_id
       LEFT JOIN prescriptions p ON p.case_id = c.id
       ORDER BY c.id ASC
     `);

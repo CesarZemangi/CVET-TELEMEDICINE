@@ -27,6 +27,7 @@ import Animals from "./farmer/Animals"
 import Cases from "./farmer/Cases"
 import Consultations from "./farmer/Consultations"
 import FarmerAppointments from "./farmer/Appointments"
+import FarmerPayments from "./farmer/Payments"
 import Settings from "./farmer/Settings"
 
 /* Farmer Diagnostics */
@@ -74,6 +75,7 @@ import Supplements from "./farmer/Nutrition/Supplements"
 /* Vet Core */
 import IncomingCases from "./vet/Cases"
 import Appointments from "./vet/Appointments"
+import VetPayments from "./vet/Payments"
 import VetConsultations from "./vet/Consultations"
 import VetSettings from "./vet/Settings"
 
@@ -117,6 +119,7 @@ import AdminLogs from "./pages/AdminLogs"
 import AdminCases from "./pages/AdminCases"
 import AdminConsultations from "./pages/AdminConsultations"
 import AdminAppointments from "./pages/AdminAppointments"
+import AdminPayments from "./pages/AdminPayments"
 import AdminAnalytics from "./pages/AdminAnalytics"
 import AdminVetPerformance from "./pages/AdminVetPerformance"
 import AdminReminders from "./pages/AdminReminders"
@@ -126,6 +129,8 @@ import AdminSettings from "./pages/AdminSettings"
 import AdminMedia from "./pages/AdminMedia"
 import AdminAiMonitoring from "./pages/AdminAiMonitoring"
 import AdminUserProfile from "./pages/AdminUserProfile"
+import AdminEmail from "./pages/AdminEmail"
+import AdminFeedback from "./pages/AdminFeedback"
 
 function RequireAuth({ role, children, allowAdmin = false }) {
 const [isAuthenticated, setIsAuthenticated] = React.useState(null)
@@ -204,6 +209,8 @@ return (
     <Route path="cases" element={<Cases />} />
     <Route path="consultations" element={<Consultations />} />
     <Route path="appointments" element={<FarmerAppointments />} />
+    <Route path="payments" element={<FarmerPayments />} />
+    <Route path="payments/:appointmentId" element={<FarmerPayments />} />
     <Route path="settings" element={<Settings />} />
 
     <Route path="diagnostics/lab-requests" element={<LabRequests />} />
@@ -255,6 +262,7 @@ return (
     <Route index element={<VetDashboard />} />
     <Route path="cases" element={<IncomingCases />} />
     <Route path="appointments" element={<Appointments />} />
+    <Route path="payments" element={<VetPayments />} />
     <Route path="consultations" element={<VetConsultations />} />
     <Route path="settings" element={<VetSettings />} />
 
@@ -301,6 +309,7 @@ return (
     <Route path="cases" element={<AdminCases />} />
     <Route path="consultations" element={<AdminConsultations />} />
     <Route path="appointments" element={<AdminAppointments />} />
+    <Route path="payments" element={<AdminPayments />} />
     <Route path="logs" element={<AdminLogs />} />
     <Route path="settings" element={<AdminSettings />} />
     
@@ -311,6 +320,8 @@ return (
     <Route path="media" element={<AdminMedia />} />
     <Route path="communication/messages" element={<AdminCommunication />} />
     <Route path="communication/notifications" element={<AdminNotifications />} />
+    <Route path="communication/email" element={<AdminEmail />} />
+    <Route path="communication/feedback" element={<AdminFeedback />} />
   </Route>
 
   <Route path="*" element={<Navigate to="/" replace />} />

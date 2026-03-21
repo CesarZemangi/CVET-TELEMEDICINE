@@ -73,10 +73,10 @@ export default function LabRequests() {
             <div className="spinner-border text-brown" role="status"></div>
           </div>
         ) : filteredRequests.length > 0 ? filteredRequests.map(req => (
-          <div key={req.id} className="col-md-6 mb-3">
+          <div key={req.id || req.lab_request_id} className="col-md-6 mb-3">
             <div className="card shadow-sm border-0">
               <div className="card-body">
-                <h6 className="card-title fw-bold">#{req.id} — {req.test_type}</h6>
+                <h6 className="card-title fw-bold">#{req.id || req.lab_request_id} — {req.test_type}</h6>
                 <p className="small mb-1">Case: {req.Case?.title}</p>
                 <p className="small mb-1">Animal: {req.Case?.Animal?.species} ({req.Case?.Animal?.tag_number})</p>
                 <p className={`card-text ${getStatusClass(req.status)}`}>{req.status?.toUpperCase()}</p>

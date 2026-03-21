@@ -18,6 +18,13 @@ export const getLabResults = async () => {
 }
 
 export const uploadLabResult = async (data) => {
-  const response = await api.post(`${API_URL}/lab-results`, data)
+  const response = await api.post(`${API_URL}/lab-results`, data, {
+    headers: { "Content-Type": "multipart/form-data" }
+  })
+  return response.data
+}
+
+export const deleteLabResult = async (id) => {
+  const response = await api.delete(`${API_URL}/lab-results/${id}`)
   return response.data
 }

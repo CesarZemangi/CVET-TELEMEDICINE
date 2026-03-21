@@ -7,11 +7,13 @@ import sequelize from "../../config/db.js";
 
 export const getCases = async (req, res) => {
   try {
-    const { page, size } = req.query;
+    const { page, size, include_deleted } = req.query;
     const { limit, offset } = getPagination(page, size);
+    const paranoid = include_deleted === "true" ? false : true;
 
     const data = await Case.findAndCountAll({
       where: { farmer_id: req.user.id },
+      paranoid,
       include: [
         { 
           model: Vet, 
@@ -50,6 +52,7 @@ export const getCases = async (req, res) => {
     // Flatten vet info for frontend and attach latest AI prediction
     const rows = data.rows.map(c => {
       const caseJson = c.toJSON();
+      caseJson.is_deleted = Boolean(caseJson.deleted_at);
       if (caseJson.vet) {
         caseJson.vet = {
           id: caseJson.vet.id,
@@ -243,7 +246,19 @@ export const uploadMedia = async (req, res) => {
 export const updateCase = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, symptoms, priority } = req.body;
+    const {
+      title,
+      description,
+      symptoms,
+      priority,
+      status,
+      health_status,
+      healthStatus,
+      vet_id,
+      vetId,
+      animal_id,
+      animalId
+    } = req.body;
 
     const singleCase = await Case.findOne({
       where: { id, farmer_id: req.user.id }
@@ -253,21 +268,51 @@ export const updateCase = async (req, res) => {
       return res.status(404).json({ error: "Case not found or access denied" });
     }
 
-    if (singleCase.status !== 'open') {
-      return res.status(403).json({ error: "Cannot update a closed or processed case" });
-    }
-
-    await Case.update({
+    const updates = {
       title: title || singleCase.title,
       description: description || singleCase.description,
       symptoms: symptoms || singleCase.symptoms,
       priority: priority || singleCase.priority,
       updated_by: req.user.id
-    }, {
+    };
+
+    const normalizedHealth = health_status ?? healthStatus;
+    if (status === "closed" && normalizedHealth === undefined) {
+      return res.status(400).json({
+        error: "Validation Failed",
+        detail: "health_status is required when closing a case"
+      });
+    }
+    if (normalizedHealth) {
+      updates.health_status = normalizedHealth;
+    }
+    const normalizedVetId = vet_id ?? vetId;
+    const normalizedAnimalId = animal_id ?? animalId;
+    if (normalizedVetId !== undefined) updates.vet_id = normalizedVetId;
+    if (normalizedAnimalId !== undefined) updates.animal_id = normalizedAnimalId;
+
+    if (status) {
+      const allowedStatuses = ["open", "closed"];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      updates.status = status;
+      if (status === "closed" && !singleCase.closed_at) {
+        updates.closed_at = new Date();
+      }
+      if (status === "open") {
+        updates.closed_at = null;
+      }
+    } else if (singleCase.status !== "open") {
+      // Prevent editing other fields on closed cases unless reopening explicitly
+      return res.status(403).json({ error: "Cannot edit a closed case without changing status" });
+    }
+
+    await Case.update(updates, {
       where: { id, farmer_id: req.user.id }
     });
 
-    await logAction(req.user.id, `Farmer updated case #${id}`);
+    await logAction(req.user.id, `Farmer updated case #${id}${status ? ` (status: ${status})` : ""}`);
 
     res.json({ message: "Case updated successfully" });
   } catch (err) {
@@ -297,6 +342,59 @@ export const deleteCase = async (req, res) => {
     await logAction(req.user.id, `Farmer deleted case #${id}`);
 
     res.json({ message: "Case deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const restoreCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const singleCase = await Case.findOne({
+      where: { id, farmer_id: req.user.id },
+      paranoid: false
+    });
+
+    if (!singleCase) {
+      return res.status(404).json({ error: "Case not found or access denied" });
+    }
+
+    if (!singleCase.deleted_at) {
+      return res.status(400).json({ error: "Case is not archived and cannot be restored" });
+    }
+
+    await singleCase.restore();
+    await singleCase.update({ updated_by: req.user.id });
+    await logAction(req.user.id, `Farmer restored case #${id}`);
+    res.json({ message: "Case restored successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteCasePermanent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const singleCase = await Case.findOne({
+      where: { id, farmer_id: req.user.id },
+      paranoid: false
+    });
+
+    if (!singleCase) {
+      return res.status(404).json({ error: "Case not found or access denied" });
+    }
+
+    if (!singleCase.deleted_at) {
+      return res.status(400).json({ error: "Case must be archived before permanent deletion" });
+    }
+
+    await Case.destroy({
+      where: { id, farmer_id: req.user.id },
+      force: true
+    });
+
+    await logAction(req.user.id, `Farmer permanently deleted case #${id}`);
+    res.json({ message: "Case permanently deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

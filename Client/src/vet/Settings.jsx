@@ -20,6 +20,11 @@ export default function VetSettings() {
     setLoading(true);
     setMessage('');
     try {
+      if (!formData.phone) {
+        setMessage('Mobile number is required');
+        setLoading(false);
+        return;
+      }
       const res = await api.put('/auth/profile', formData);
       localStorage.setItem('user', JSON.stringify({ ...user, ...res.data.user }));
       setMessage('Profile updated successfully!');

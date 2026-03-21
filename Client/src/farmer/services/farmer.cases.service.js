@@ -2,8 +2,10 @@ import api from "../../services/api"
 
 const API_URL = "/farmer/cases"
 
-export const getCases = async () => {
-  const response = await api.get(API_URL)
+export const getCases = async (opts = {}) => {
+  const params = {};
+  if (opts.includeDeleted) params.include_deleted = true;
+  const response = await api.get(API_URL, { params })
   return response.data
 }
 
@@ -24,5 +26,15 @@ export const updateCase = async (id, caseData) => {
 
 export const deleteCase = async (id) => {
   const response = await api.delete(`${API_URL}/${id}`)
+  return response.data
+}
+
+export const restoreCase = async (id) => {
+  const response = await api.post(`${API_URL}/${id}/restore`)
+  return response.data
+}
+
+export const deleteCasePermanent = async (id) => {
+  const response = await api.delete(`${API_URL}/${id}/permanent`)
   return response.data
 }

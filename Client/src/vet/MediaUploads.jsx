@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { getAllVetMedia, deleteMedia, getCasesForMedia } from "./services/vet.media.service";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
-import { Trash2, Download, FileText, Image as ImageIcon, Video } from "lucide-react";
+import { Trash2, Download, Eye } from "lucide-react";
 import { getFileUrl } from "../utils";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 
 export default function MediaUploads() {
   const [media, setMedia] = useState([]);
@@ -12,6 +13,7 @@ export default function MediaUploads() {
   const [selectedCaseId, setSelectedCaseId] = useState("");
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -89,6 +91,36 @@ export default function MediaUploads() {
     const shortDesc = c?.description ? String(c.description).trim().slice(0, 50) : "";
     const descriptionPart = shortDesc ? ` - ${shortDesc}${shortDesc.length === 50 ? "..." : ""}` : "";
     return `#${c.id} ${c.title || "Untitled Case"}${descriptionPart}`;
+  };
+
+  const renderPreview = (item) => {
+    if (!item) return null;
+    const src = getFileUrl(item.file_path);
+
+    if (item.file_type?.startsWith("image/")) {
+      return <img src={src} alt={item.file_name} className="img-fluid rounded-3 shadow-sm mx-auto d-block" />;
+    }
+
+    if (item.file_type?.startsWith("video/")) {
+      return <video src={src} controls className="w-100 rounded-3 shadow-sm" style={{ maxHeight: "480px" }} />;
+    }
+
+    if (item.file_type?.startsWith("audio/")) {
+      return <audio src={src} controls className="w-100" />;
+    }
+
+    if (item.file_type === "application/pdf") {
+      return <iframe src={src} title={item.file_name} style={{ width: "100%", height: "500px", border: "none" }} />;
+    }
+
+    return (
+      <div className="text-center py-4">
+        <p className="text-muted mb-3">Preview is not available for this file type.</p>
+        <a href={src} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+          Open File
+        </a>
+      </div>
+    );
   };
 
   return (
@@ -171,6 +203,13 @@ export default function MediaUploads() {
                       <td>{(m.file_size / 1024 / 1024).toFixed(2)} MB</td>
                       <td>{new Date(m.created_at).toLocaleDateString()}</td>
                       <td className="text-end">
+                        <button
+                          className="btn btn-sm btn-outline-secondary me-2"
+                          onClick={() => setSelectedMedia(m)}
+                          title="Preview"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                         <a
                           href={getFileUrl(m.file_path)}
                           target="_blank"
@@ -198,6 +237,20 @@ export default function MediaUploads() {
           )}
         </div>
       </div>
+
+      <FormModalWrapper
+        show={!!selectedMedia}
+        title={selectedMedia?.file_name || "Preview"}
+        onClose={() => setSelectedMedia(null)}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setSelectedMedia(null);
+        }}
+        submitLabel="Close"
+        cancelLabel="Cancel"
+      >
+        {renderPreview(selectedMedia)}
+      </FormModalWrapper>
     </DashboardSection>
   );
 }

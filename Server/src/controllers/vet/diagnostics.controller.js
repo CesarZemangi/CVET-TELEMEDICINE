@@ -2,6 +2,8 @@ import { LabRequest, LabResult, Case, Vet, Animal } from "../../models/associati
 import { success, error } from "../../utils/response.js";
 import { logAction } from "../../utils/dbLogger.js";
 import { getCasesByVet } from "../../services/case.service.js";
+import sequelize from "../../config/db.js";
+import { syncLabResultToMedicationHistory } from "../../services/labResultHistory.service.js";
 
 export const getLabRequests = async (req, res) => {
   try {
@@ -60,29 +62,78 @@ export const createLabRequest = async (req, res) => {
 };
 
 export const uploadLabResult = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
-    const { lab_request_id, result } = req.body;
+    const body = (req && req.body && typeof req.body === "object") ? req.body : {};
+    const lab_request_id = body.lab_request_id || body.id;
+    const { result } = body;
 
     if (!lab_request_id || !result) {
-      return res.status(400).json({ error: "lab_request_id and result are required" });
+      return res.status(400).json({ error: "lab_request_id (id) and result are required" });
     }
 
-    const labResult = await LabResult.create({
-      lab_request_id,
-      result,
-      created_by: req.user.id,
-      updated_by: req.user.id
+    const labRequest = await LabRequest.findByPk(lab_request_id, {
+      include: [{
+        model: Case,
+        attributes: ["id", "title", "animal_id"]
+      }],
+      transaction
     });
+
+    if (!labRequest) {
+      await transaction.rollback();
+      return res.status(404).json({ error: "Lab request not found" });
+    }
+
+    const vet = await Vet.findOne({ where: { user_id: req.user.id }, transaction });
+    if (!vet || Number(labRequest.vet_id) !== Number(vet.id)) {
+      await transaction.rollback();
+      return res.status(403).json({ error: "Not authorized to update this lab request" });
+    }
+
+    const existingResult = await LabResult.findOne({
+      where: { lab_request_id },
+      transaction
+    });
+
+    let labResult = existingResult;
+    if (existingResult) {
+      await existingResult.update({
+        result: result || existingResult.result,
+        file_url: existingResult.file_url || null,
+        uploaded_at: new Date(),
+        updated_by: req.user.id
+      }, { transaction });
+    } else {
+      labResult = await LabResult.create({
+        lab_request_id,
+        result: result || "",
+        file_url: null,
+        uploaded_at: new Date(),
+        created_by: req.user.id,
+        updated_by: req.user.id
+      }, { transaction });
+    }
 
     await LabRequest.update(
       { status: 'completed', updated_by: req.user.id },
-      { where: { id: lab_request_id } }
+      { where: { id: lab_request_id }, transaction }
     );
 
-    await logAction(req.user.id, `Vet uploaded lab result for request #${lab_request_id}`);
+    await syncLabResultToMedicationHistory({
+      labRequest,
+      result,
+      actorUserId: req.user.id,
+      actorLabel: "Veterinarian",
+      transaction
+    });
 
-    success(res, labResult, "Lab result uploaded successfully");
+    await logAction(req.user.id, `Vet uploaded lab result for request #${lab_request_id}`);
+    await transaction.commit();
+
+    success(res, labResult, "Lab result uploaded successfully and recorded in medication history");
   } catch (err) {
+    if (transaction) await transaction.rollback();
     error(res, err.message);
   }
 };

@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
-import { Send, Users, MessageSquare, Bell, CheckCircle, AlertCircle } from "lucide-react";
+import { Send, Users, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
 import ChatInterface from "../components/common/ChatInterface";
 
 export default function AdminCommunication() {
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState("broadcast");
-  const [broadcast, setBroadcast] = useState({ title: "", message: "", role: "all" });
+  const [activeTab, setActiveTab] = useState("direct");
   const [direct, setDirect] = useState({ user_id: "", title: "", message: "" });
   const [users, setUsers] = useState([]);
   const [status, setStatus] = useState({ type: "", message: "" });
@@ -27,22 +26,10 @@ export default function AdminCommunication() {
 
   useEffect(() => {
     const tab = (searchParams.get("tab") || "").toLowerCase();
-    if (["broadcast", "direct", "chats"].includes(tab)) {
+    if (["direct", "chats"].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
-
-  const handleBroadcast = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post("/admin/notifications/broadcast", broadcast);
-      setStatus({ type: "success", message: "✓ Broadcast sent successfully!" });
-      setBroadcast({ title: "", message: "", role: "all" });
-      setTimeout(() => setStatus({ type: "", message: "" }), 5000);
-    } catch (err) {
-      setStatus({ type: "error", message: "✗ Failed to send broadcast: " + (err.response?.data?.error || err.message) });
-    }
-  };
 
   const handleDirect = async (e) => {
     e.preventDefault();
@@ -60,25 +47,6 @@ export default function AdminCommunication() {
     <DashboardSection title="Admin Communication Control">
       <div style={{ backgroundColor: "#0f172a", minHeight: "100vh", borderRadius: "12px", padding: "2rem" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-          <button 
-            onClick={() => setActiveTab("broadcast")}
-            style={{
-              padding: "0.75rem 1.5rem",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: activeTab === "broadcast" ? "600" : "500",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              transition: "all 0.3s",
-              backgroundColor: activeTab === "broadcast" ? "#7c3aed" : "#1e293b",
-              color: activeTab === "broadcast" ? "#fff" : "#cbd5e1",
-              boxShadow: activeTab === "broadcast" ? "0 4px 12px rgba(124, 58, 237, 0.4)" : "none"
-            }}
-          >
-            <Bell size={20} /> Broadcast System
-          </button>
           <button 
             onClick={() => setActiveTab("direct")}
             style={{
@@ -137,51 +105,6 @@ export default function AdminCommunication() {
         )}
 
         <div style={{ backgroundColor: "#1e293b", borderRadius: "12px", padding: "2rem", border: "1px solid #334155" }}>
-        {activeTab === "broadcast" && (
-          <form onSubmit={handleBroadcast}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>📢 Send System Broadcast</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Title</label>
-                <input 
-                  type="text" 
-                  value={broadcast.title}
-                  onChange={e => setBroadcast({...broadcast, title: e.target.value})}
-                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
-                  placeholder="e.g. System Maintenance"
-                  required
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Message</label>
-                <textarea 
-                  value={broadcast.message}
-                  onChange={e => setBroadcast({...broadcast, message: e.target.value})}
-                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", minHeight: "150px", fontSize: "1rem", fontFamily: "inherit" }}
-                  placeholder="Broadcast details..."
-                  required
-                />
-              </div>
-              <div>
-                <label style={{ display: "block", fontSize: "0.875rem", fontWeight: "500", color: "#cbd5e1", marginBottom: "0.5rem" }}>Target Role</label>
-                <select 
-                  value={broadcast.role}
-                  onChange={e => setBroadcast({...broadcast, role: e.target.value})}
-                  style={{ width: "100%", border: "1px solid #475569", backgroundColor: "#0f172a", color: "#e2e8f0", borderRadius: "8px", padding: "0.75rem", fontSize: "1rem" }}
-                >
-                  <option value="all">All Users</option>
-                  <option value="farmer">Farmers</option>
-                  <option value="vet">Veterinarians</option>
-                  <option value="admin">Admins</option>
-                </select>
-              </div>
-              <button type="submit" style={{ backgroundColor: "#7c3aed", color: "white", padding: "0.75rem 1.5rem", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "0.5rem", transition: "all 0.3s", width: "fit-content" }} onMouseEnter={(e) => e.target.style.backgroundColor = "#6d28d9"} onMouseLeave={(e) => e.target.style.backgroundColor = "#7c3aed"}>
-                <Send size={18} /> Send Broadcast
-              </button>
-            </div>
-          </form>
-        )}
-
         {activeTab === "direct" && (
           <form onSubmit={handleDirect}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>👤 Direct Notification</h3>
@@ -228,8 +151,8 @@ export default function AdminCommunication() {
 
         {activeTab === "chats" && (
           <div>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>💬 Chat Monitoring (Read-Only)</h3>
-            <ChatInterface readOnly={true} />
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem", color: "#e2e8f0" }}>💬 Messages</h3>
+            <ChatInterface />
           </div>
         )}
         </div>

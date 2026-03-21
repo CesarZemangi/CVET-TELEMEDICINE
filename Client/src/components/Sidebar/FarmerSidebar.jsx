@@ -48,6 +48,11 @@ export default function FarmerSidebar() {
           <i className="bi bi-calendar-check me-3"></i> Appointments
         </NavLink>
       </li>
+      <li>
+        <NavLink to="/farmerdashboard/payments" className={linkClass}>
+          <i className="bi bi-credit-card me-3"></i> Payments
+        </NavLink>
+      </li>
 
       {/* Diagnostics Section */}
       <li>
