@@ -25,13 +25,14 @@ export default function Appointments() {
   const [selectedVetReviews, setSelectedVetReviews] = useState([]);
   const [loadingVetReviews, setLoadingVetReviews] = useState(false);
   const [recommendedVets, setRecommendedVets] = useState([]);
-  const [formData, setFormData] = useState({
+  const initialForm = {
     case_id: "",
     vet_id: "",
     appointment_date: "",
     appointment_time: "",
     notes: ""
-  });
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   const selectedVet = vets.find((vet) => String(vet.id) === String(formData.vet_id));
 
@@ -94,13 +95,7 @@ export default function Appointments() {
       const response = await createAppointmentRequest(formData);
       const appointmentId = response?.data?.id || response?.id;
       setShowAddModal(false);
-      setFormData({
-        case_id: "",
-        vet_id: "",
-        appointment_date: "",
-        appointment_time: "",
-        notes: ""
-      });
+      setFormData(initialForm);
       fetchData();
       if (appointmentId) {
         navigate(`/farmerdashboard/payments/${appointmentId}`);
@@ -407,7 +402,10 @@ export default function Appointments() {
       <FormModalWrapper
         show={showAddModal}
         title="Request Appointment"
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setFormData(initialForm);
+        }}
         onSubmit={handleAddAppointment}
         submitLabel="Request Appointment"
       >
@@ -418,7 +416,7 @@ export default function Appointments() {
                       required
                       disabled={cases.length === 0}
                       value={formData.case_id}
-                      onChange={e => setFormData({ ...formData, case_id: e.target.value })}
+                      onChange={e => setFormData(prev => ({ ...prev, case_id: e.target.value }))}
                     >
                       <option value="">Choose a case...</option>
                       {cases.map(c => (
@@ -491,7 +489,7 @@ export default function Appointments() {
                         required
                         value={formData.appointment_date}
                         onChange={e =>
-                          setFormData({ ...formData, appointment_date: e.target.value })
+                          setFormData(prev => ({ ...prev, appointment_date: e.target.value }))
                         }
                       />
                     </div>
@@ -503,7 +501,7 @@ export default function Appointments() {
                         required
                         value={formData.appointment_time}
                         onChange={e =>
-                          setFormData({ ...formData, appointment_time: e.target.value })
+                          setFormData(prev => ({ ...prev, appointment_time: e.target.value }))
                         }
                       />
                     </div>
@@ -515,7 +513,7 @@ export default function Appointments() {
                       className="form-control"
                       rows="3"
                       value={formData.notes}
-                      onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                       placeholder="Add any additional notes..."
                     ></textarea>
                   </div>

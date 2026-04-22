@@ -33,6 +33,11 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  // Legacy/alternate column name for profile image used by some clients
+  profile_pic: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   profile_image: {
     type: DataTypes.STRING,
     allowNull: true

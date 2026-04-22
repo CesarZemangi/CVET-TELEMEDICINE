@@ -8,12 +8,13 @@ export default function Prescriptions() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
+  const initialForm = {
     case_id: "",
     medicine: "",
     dosage: "",
     duration: ""
-  });
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   const fetchData = async () => {
     setLoading(true);
@@ -56,7 +57,7 @@ export default function Prescriptions() {
     try {
       await createPrescription(formData);
       setShowAddModal(false);
-      setFormData({ case_id: "", medicine: "", dosage: "", duration: "" });
+      setFormData(initialForm);
       fetchData();
     } catch (err) {
       alert("Failed to create prescription: " + (err.response?.data?.error || err.message));
@@ -111,7 +112,10 @@ export default function Prescriptions() {
       <FormModalWrapper
         show={showAddModal}
         title="Issue New Prescription"
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setFormData(initialForm);
+        }}
         onSubmit={handleSubmit}
         submitLabel="Save Prescription"
       >
@@ -121,7 +125,7 @@ export default function Prescriptions() {
                       className="form-select" 
                       required 
                       value={formData.case_id}
-                      onChange={e => setFormData({...formData, case_id: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, case_id: e.target.value}))}
                     >
                       <option value="">Select a case</option>
                       {cases.map(c => (
@@ -139,7 +143,7 @@ export default function Prescriptions() {
                       placeholder="e.g. Oxytetracycline" 
                       required 
                       value={formData.medicine}
-                      onChange={e => setFormData({...formData, medicine: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, medicine: e.target.value}))}
                     />
                   </div>
                   <div className="row">
@@ -151,7 +155,7 @@ export default function Prescriptions() {
                         placeholder="e.g. 10ml IM daily" 
                         required 
                         value={formData.dosage}
-                        onChange={e => setFormData({...formData, dosage: e.target.value})}
+                        onChange={e => setFormData(prev => ({...prev, dosage: e.target.value}))}
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -162,7 +166,7 @@ export default function Prescriptions() {
                         placeholder="e.g. 5 days" 
                         required 
                         value={formData.duration}
-                        onChange={e => setFormData({...formData, duration: e.target.value})}
+                        onChange={e => setFormData(prev => ({...prev, duration: e.target.value}))}
                       />
                     </div>
                   </div>

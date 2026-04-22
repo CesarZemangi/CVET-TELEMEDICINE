@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import api from "../services/api";
 import DashboardSection from "../components/dashboard/DashboardSection";
 import { Send, Users, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
@@ -7,6 +7,7 @@ import ChatInterface from "../components/common/ChatInterface";
 
 export default function AdminCommunication() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("direct");
   const [direct, setDirect] = useState({ user_id: "", title: "", message: "" });
   const [users, setUsers] = useState([]);
@@ -30,6 +31,12 @@ export default function AdminCommunication() {
       setActiveTab(tab);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (location.state?.initialPartner) {
+      setActiveTab("chats");
+    }
+  }, [location.state]);
 
   const handleDirect = async (e) => {
     e.preventDefault();
@@ -83,7 +90,7 @@ export default function AdminCommunication() {
               boxShadow: activeTab === "chats" ? "0 4px 12px rgba(124, 58, 237, 0.4)" : "none"
             }}
           >
-            <MessageSquare size={20} /> Monitor Chats
+            <MessageSquare size={20} /> Message Hub
           </button>
         </div>
 

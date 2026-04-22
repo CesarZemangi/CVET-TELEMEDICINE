@@ -1,13 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import ProfileImage from '../components/common/ProfileImage';
+import FormModalWrapper from '../components/common/FormModalWrapper';
 import api from '../services/api';
+import { useUser } from '../context/UserContext';
 
 export default function VetSettings() {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, updateUserInfo, version: userVersion } = useUser();
   const [formData, setFormData] = useState({
     name: user.name || '',
+    email: user.email || '',
     phone: user.phone || '',
     sms_opt_in: user.sms_opt_in ?? true
   });
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [photoPassword, setPhotoPassword] = useState("");
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -15,6 +25,30 @@ export default function VetSettings() {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const cacheBust = (path) => {
+    if (!path) return "";
+    return `${path}${path.includes("?") ? "&" : "?"}v=${Date.now()}`;
+  };
+
+  useEffect(() => {
+    setFormData({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      sms_opt_in: user.sms_opt_in ?? true
+    });
+  }, [user]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      setShowPhotoModal(true);
+      setPhotoError("");
+    }
+  };
 
   const handleSaveProfile = async () => {
     setLoading(true);
@@ -25,13 +59,73 @@ export default function VetSettings() {
         setLoading(false);
         return;
       }
-      const res = await api.put('/auth/profile', formData);
-      localStorage.setItem('user', JSON.stringify({ ...user, ...res.data.user }));
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('email', formData.email || user.email || '');
+      data.append('phone', formData.phone);
+      data.append('sms_opt_in', formData.sms_opt_in);
+
+      const res = await api.put('/user/profile', data);
+
+      const uploadedPath = res.data?.user?.profile_image || res.data?.profile_image || user.profile_image;
+      const updatedUser = {
+        ...user,
+        ...res.data.user,
+        profile_image: uploadedPath ? cacheBust(uploadedPath) : user.profile_image,
+        token: user.token
+      };
+      updateUserInfo(updatedUser);
+      setFormData({
+        name: updatedUser.name || '',
+        email: updatedUser.email || '',
+        phone: updatedUser.phone || '',
+        sms_opt_in: updatedUser.sms_opt_in ?? true
+      });
       setMessage('Profile updated successfully!');
     } catch (err) {
       setMessage('Failed to update: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoSubmit = async (e) => {
+    e.preventDefault();
+    const emailForAuth = formData.email || user.email;
+    if (!selectedFile) {
+      setPhotoError("Please choose a photo to upload.");
+      return;
+    }
+    if (!photoPassword.trim()) {
+      setPhotoError("Enter your password to confirm the profile photo change.");
+      return;
+    }
+    setPhotoLoading(true);
+    setPhotoError("");
+    setLoading(true);
+    try {
+      if (emailForAuth) {
+        await api.post('/auth/login', { email: emailForAuth, password: photoPassword });
+      }
+      const data = new FormData();
+      data.append('profile_image', selectedFile);
+      const res = await api.put('/user/profile', data);
+
+      const uploadedPath = res.data?.user?.profile_image || res.data?.profile_image || user.profile_image;
+      updateUserInfo({
+        ...res.data.user,
+        profile_image: uploadedPath ? cacheBust(uploadedPath) : user.profile_image
+      });
+      setMessage('Profile photo updated successfully!');
+      setSelectedFile(null);
+      setPreview(null);
+      setPhotoPassword("");
+      setShowPhotoModal(false);
+    } catch (err) {
+      setPhotoError(err.response?.data?.message || err.message || 'Failed to update photo.');
+    } finally {
+      setLoading(false);
+      setPhotoLoading(false);
     }
   };
 
@@ -53,7 +147,7 @@ export default function VetSettings() {
 
       await api.post('/auth/change-password', passwordData);
       setMessage('Password changed successfully! Please login again.');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordData(() => ({ currentPassword: '', newPassword: '', confirmPassword: '' }));
       
       setTimeout(() => {
         localStorage.removeItem('user');
@@ -68,6 +162,7 @@ export default function VetSettings() {
   };
 
   return (
+    <>
     <div className="container-fluid py-4">
       <div className="mb-4">
         <h4 className="fw-semibold mb-1">Professional Settings</h4>
@@ -85,13 +180,56 @@ export default function VetSettings() {
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body">
               <h6 className="fw-semibold mb-3">Profile Information</h6>
+              <div className="mb-4 text-center">
+                <div className="d-inline-block position-relative">
+                  {preview ? (
+                    <img
+                      src={preview}
+                      alt="Preview"
+                      className="rounded-circle border border-3 border-white shadow-sm"
+                      style={{ width: "120px", height: "120px", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <ProfileImage
+                      key={userVersion}
+                      src={user.profile_image}
+                      role={user.role}
+                      size="120px"
+                      cacheKey={userVersion}
+                    />
+                  )}
+                  <label
+                    htmlFor="vet-file-upload"
+                    className="btn btn-sm position-absolute bottom-0 end-0 rounded-circle shadow"
+                    style={{ backgroundColor: "var(--primary-brown, #6c757d)", color: "#fff" }}
+                  >
+                    <i className="bi bi-camera-fill"></i>
+                  </label>
+                  <input id="vet-file-upload" type="file" hidden onChange={handleFileChange} accept="image/*" />
+                </div>
+                <div className="mt-2">
+                  <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setShowPhotoModal(true)}>
+                    Change Profile Photo
+                  </button>
+                </div>
+              </div>
               <div className="mb-3">
                 <label className="form-label small fw-bold">Full Name</label>
                 <input
                   type="text"
                   className="form-control"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label small fw-bold">Email</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  value={formData.email}
+                  disabled
+                  readOnly
                 />
               </div>
               <div className="mb-3">
@@ -100,7 +238,7 @@ export default function VetSettings() {
                   type="text"
                   className="form-control"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="e.g. +254700000000"
                 />
               </div>
@@ -113,7 +251,7 @@ export default function VetSettings() {
                     type="checkbox" 
                     id="smsOptIn" 
                     checked={formData.sms_opt_in}
-                    onChange={(e) => setFormData({ ...formData, sms_opt_in: e.target.checked })}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, sms_opt_in: e.target.checked }))}
                   />
                   <label className="form-check-label small" htmlFor="smsOptIn">
                     Receive SMS alerts for new cases and critical messages
@@ -141,7 +279,7 @@ export default function VetSettings() {
                   type="password"
                   className="form-control"
                   value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }))}
                   placeholder="Enter your current password"
                 />
               </div>
@@ -152,7 +290,7 @@ export default function VetSettings() {
                   type="password"
                   className="form-control"
                   value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, newPassword: e.target.value }))}
                   placeholder="Enter new password"
                 />
               </div>
@@ -163,7 +301,7 @@ export default function VetSettings() {
                   type="password"
                   className="form-control"
                   value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  onChange={(e) => setPasswordData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                   placeholder="Confirm new password"
                 />
               </div>
@@ -182,5 +320,43 @@ export default function VetSettings() {
       </div>
 
     </div>
+
+    <FormModalWrapper
+      show={showPhotoModal}
+      title="Change Profile Photo"
+      onClose={() => {
+        setShowPhotoModal(false);
+        setSelectedFile(null);
+        setPreview(null);
+        setPhotoPassword("");
+        setPhotoError("");
+      }}
+      onSubmit={handlePhotoSubmit}
+      submitLabel={photoLoading ? "Saving..." : "Save Photo"}
+    >
+      <div className="mb-3">
+        <label className="form-label small fw-bold">Upload Photo</label>
+        <input type="file" className="form-control" accept="image/*" onChange={handleFileChange} required />
+        {preview && (
+          <div className="mt-3 text-center">
+            <img src={preview} alt="Preview" style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover" }} />
+          </div>
+        )}
+    </div>
+    {photoError && <div className="alert alert-danger py-2">{photoError}</div>}
+    <div className="mb-3">
+      <label className="form-label small fw-bold">Confirm Password</label>
+      <input
+        type="password"
+        className="form-control"
+        value={photoPassword}
+        onChange={(e) => setPhotoPassword(e.target.value)}
+        placeholder="Enter your account password"
+        required
+        disabled={photoLoading}
+      />
+    </div>
+  </FormModalWrapper>
+    </>
   )
 }

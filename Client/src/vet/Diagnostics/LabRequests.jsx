@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react"
-import { getLabRequests, createLabRequest, uploadLabResult, getCasesForDiagnostics } from "../services/vet.diagnostics.service";
+import { useNavigate } from "react-router-dom";
+import { getLabRequests, createLabRequest, getCasesForDiagnostics } from "../services/vet.diagnostics.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
 import FormModalWrapper from "../../components/common/FormModalWrapper";
 
 export default function LabRequests() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,10 +15,7 @@ export default function LabRequests() {
   const [newRequest, setNewRequest] = useState({ case_id: "", test_type: "" });
   const [createError, setCreateError] = useState("");
   
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [activeRequestId, setActiveRequestId] = useState(null);
-  const [resultText, setResultText] = useState("");
-  const [resultError, setResultError] = useState("");
+  // Vets only view; farmers upload results.
 
   const fetchData = async () => {
     setLoading(true);
@@ -64,26 +63,6 @@ export default function LabRequests() {
       fetchData();
     } catch (err) {
       alert("Failed to create request: " + (err.response?.data?.error || err.message));
-    }
-  };
-
-  const handleUploadResult = async (e) => {
-    e.preventDefault();
-    if (!activeRequestId || !resultText.trim()) {
-      setResultError("Provide result text before uploading.");
-      return;
-    }
-    setResultError("");
-    try {
-      await uploadLabResult({
-        lab_request_id: activeRequestId,
-        result: resultText
-      });
-      setShowResultModal(false);
-      setResultText("");
-      fetchData();
-    } catch (err) {
-      alert("Failed to upload result: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -149,16 +128,19 @@ export default function LabRequests() {
                   <span className={getStatusClass(req.status)}>{req.status}</span>
                 </td>
                 <td className="text-end">
-                  {req.status === 'pending' && (
-                    <button 
-                      className="btn btn-sm btn-success"
-                      onClick={() => {
-                        setActiveRequestId(req.id || req.lab_request_id);
-                        setShowResultModal(true);
-                      }}
+                  {req.status === "completed" ? (
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() =>
+                        navigate("/vetdashboard/diagnostics/lab-results", {
+                          state: { labRequestId: req.id || req.lab_request_id }
+                        })
+                      }
                     >
-                      Upload Result
+                      View Result
                     </button>
+                  ) : (
+                    <span className="text-muted small">Awaiting farmer upload</span>
                   )}
                 </td>
               </tr>
@@ -216,28 +198,6 @@ export default function LabRequests() {
                   </div>
       </FormModalWrapper>
 
-      {/* Upload Result Modal */}
-      <FormModalWrapper
-        show={showResultModal}
-        title="Upload Lab Result"
-        onClose={() => setShowResultModal(false)}
-        onSubmit={handleUploadResult}
-        submitLabel="Save Result"
-      >
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Result Summary</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="5" 
-                      placeholder="Enter the lab findings and observations" 
-                      value={resultText}
-                      onChange={e => setResultText(e.target.value)}
-                    ></textarea>
-                    {resultError && (
-                      <small className="text-danger d-block mt-1">{resultError}</small>
-                    )}
-                  </div>
-      </FormModalWrapper>
     </DashboardSection>
   )
 }

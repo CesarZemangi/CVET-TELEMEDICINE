@@ -6,7 +6,8 @@ import FormModalWrapper from "../../components/common/FormModalWrapper";
 const INITIAL_FORM = {
   vet_id: "",
   rating_value: 5,
-  comment: ""
+  comment: "",
+  review_id: null
 };
 
 const renderStars = (rating) => {
@@ -61,15 +62,17 @@ export default function Feedback() {
     const vetId = event.target.value;
     const existing = existingReviewByVetId.get(vetId);
 
-    setFormData({
+    setFormData(() => ({
       vet_id: vetId,
       rating_value: existing?.rating || 5,
-      comment: existing?.comment || ""
-    });
+      comment: existing?.comment || "",
+      review_id: existing?.id || null
+    }));
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (saving) return;
     if (!formData.vet_id) {
       alert("Select a vet first.");
       return;
@@ -77,12 +80,20 @@ export default function Feedback() {
 
     try {
       setSaving(true);
-      await api.post(`/vets/${formData.vet_id}/reviews`, {
+      const payload = {
         rating_value: formData.rating_value,
         comment: formData.comment
-      });
+      };
+
+      if (formData.review_id) {
+        // Update existing review
+        await api.put(`/vets/${formData.vet_id}/reviews/${formData.review_id}`, payload);
+      } else {
+        // Create new review
+        await api.post(`/vets/${formData.vet_id}/reviews`, payload);
+      }
       setShowModal(false);
-      setFormData(INITIAL_FORM);
+      setFormData(() => INITIAL_FORM);
       await fetchData();
     } catch (error) {
       alert(error.response?.data?.message || error.response?.data?.error || "Failed to submit rating.");
@@ -142,10 +153,11 @@ export default function Feedback() {
         title="Rate Veterinarian"
         onClose={() => {
           setShowModal(false);
-          setFormData(INITIAL_FORM);
+          setFormData(() => INITIAL_FORM);
         }}
         onSubmit={handleSubmit}
         submitLabel={saving ? "Saving..." : "Save Rating"}
+        submitDisabled={saving}
       >
         <div className="mb-3">
           <label className="form-label fw-bold small">Veterinarian</label>

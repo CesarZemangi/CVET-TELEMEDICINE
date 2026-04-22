@@ -9,6 +9,7 @@ const Animal = sequelize.define('Animal', {
   breed: { type: DataTypes.STRING, allowNull: true },
   age: { type: DataTypes.INTEGER, allowNull: true },
   health_status: { type: DataTypes.STRING, defaultValue: 'healthy' },
+  medical_causes: { type: DataTypes.TEXT, allowNull: true },
   created_by: { type: DataTypes.INTEGER, allowNull: false },
   updated_by: { type: DataTypes.INTEGER, allowNull: false }
 }, { 

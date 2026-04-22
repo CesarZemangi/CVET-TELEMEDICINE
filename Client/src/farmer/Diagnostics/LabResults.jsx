@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from "react"
 import { Pie, Line } from "react-chartjs-2"
 import { getLabResults, getLabRequests, uploadLabResult, deleteLabResult } from "../services/farmer.diagnostics.service"
+import { getFileUrl } from "../../utils"
 import {
   Chart as ChartJS,
   ArcElement,
@@ -10,10 +11,11 @@ import {
   LinearScale,
   Tooltip,
   Legend,
-  Title
+  Title,
+  Filler
 } from "chart.js"
 
-ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Title)
+ChartJS.register(ArcElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend, Title, Filler)
 
 export default function LabResults() {
   const [filter, setFilter] = useState("All")
@@ -23,6 +25,7 @@ export default function LabResults() {
   const [uploading, setUploading] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState(null)
   const [uploadResult, setUploadResult] = useState('')
+  const [uploadStatus, setUploadStatus] = useState('normal') // kept for UI state but not sent if column absent
   const [uploadFile, setUploadFile] = useState(null)
   const [message, setMessage] = useState('')
   const [fieldError, setFieldError] = useState('')
@@ -30,14 +33,89 @@ export default function LabResults() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [resultsData, requestsData] = await Promise.all([
+      const [resultsRes, requestsRes] = await Promise.allSettled([
         getLabResults(),
         getLabRequests()
       ]);
-      console.log("Results Data:", resultsData);
-      console.log("Requests Data:", requestsData);
-      setResults(Array.isArray(resultsData?.data) ? resultsData.data : Array.isArray(resultsData) ? resultsData : []);
-      setRequests(Array.isArray(requestsData?.data) ? requestsData.data : Array.isArray(requestsData) ? requestsData : []);
+
+      const extractList = (payload) => {
+        const seen = new Set();
+        const queue = [payload];
+        while (queue.length) {
+          const cur = queue.shift();
+          if (!cur || typeof cur !== "object") continue;
+          if (seen.has(cur)) continue;
+          seen.add(cur);
+          if (Array.isArray(cur)) return cur;
+          if (Array.isArray(cur?.data)) return cur.data;
+          if (Array.isArray(cur?.data?.data)) return cur.data.data;
+          if (Array.isArray(cur?.lab_requests)) return cur.lab_requests;
+          if (Array.isArray(cur?.data?.lab_requests)) return cur.data.lab_requests;
+          if (Array.isArray(cur?.data?.data?.lab_requests)) return cur.data.data.lab_requests;
+          if (Array.isArray(cur?.rows)) return cur.rows;
+          if (Array.isArray(cur?.data?.rows)) return cur.data.rows;
+          if (Array.isArray(cur?.lab_requests?.rows)) return cur.lab_requests.rows;
+          if (Array.isArray(cur?.data?.lab_requests?.rows)) return cur.data.lab_requests.rows;
+          for (const val of Object.values(cur)) {
+            if (Array.isArray(val)) return val;
+            if (val && typeof val === "object") queue.push(val);
+          }
+        }
+        return [];
+      };
+
+      const normalizeReq = (r) => {
+        const id = r?.lab_request_id ?? r?.id;
+        const caseRef = r?.Case || r?.case || {};
+        return {
+          id,
+          lab_request_id: id,
+          case_id: r?.case_id ?? caseRef?.id ?? caseRef?.case_id ?? null,
+          test_type: r?.test_type ?? r?.test_name ?? "",
+          status: String(r?.status || r?.lab_status || r?.labrequest_status || "pending").toLowerCase(),
+          created_at: r?.created_at ?? r?.createdAt ?? null,
+          updated_at: r?.updated_at ?? r?.updatedAt ?? null,
+          vet_id: r?.vet_id ?? r?.vetId ?? r?.vet?.id ?? null,
+          notes: r?.notes ?? r?.description ?? "",
+          created_by: r?.created_by ?? r?.createdBy ?? null,
+          updated_by: r?.updated_by ?? r?.updatedBy ?? null,
+          deleted_at: r?.deleted_at ?? r?.deletedAt ?? null,
+          Case: caseRef
+        };
+      };
+
+      const normalizeResult = (res) => {
+        const labReqId = res?.lab_request_id ?? res?.LabRequest?.lab_request_id ?? res?.LabRequest?.id ?? null;
+        const caseId = res?.case_id ?? res?.LabRequest?.case_id ?? res?.LabRequest?.Case?.id ?? null;
+        const caseTitle = res?.LabRequest?.Case?.title || (caseId ? `Case #${caseId}` : "Case");
+        const status = "normal"; // schema has no status; default to normal for charts/filters
+        return {
+          ...res,
+          id: res?.id,
+          lab_request_id: labReqId,
+          file_url: res?.file_url ? getFileUrl(res.file_url) : "",
+          result: res?.result ?? "",
+          status,
+          uploaded_at: res?.uploaded_at ?? res?.created_at ?? res?.createdAt ?? null,
+          created_by: res?.created_by ?? res?.createdBy ?? null,
+          updated_by: res?.updated_by ?? res?.updatedBy ?? null,
+          created_at: res?.created_at ?? res?.createdAt ?? null,
+          updated_at: res?.updated_at ?? res?.updatedAt ?? null,
+          LabRequest: {
+            id: labReqId,
+            lab_request_id: labReqId,
+            case_id: caseId,
+            test_type: res?.test_type ?? res?.LabRequest?.test_type ?? "Lab Test",
+            Case: res?.LabRequest?.Case ?? (caseId ? { id: caseId, title: caseTitle } : null)
+          }
+        };
+      };
+
+      const resultList = resultsRes.status === "fulfilled" ? extractList(resultsRes.value) : [];
+      const requestList = requestsRes.status === "fulfilled" ? extractList(requestsRes.value) : [];
+
+      setResults(resultList.map(normalizeResult));
+      setRequests(requestList.map(normalizeReq));
     } catch (err) {
       console.error("Error fetching lab data:", err);
       setResults([]);
@@ -52,8 +130,8 @@ export default function LabResults() {
   }, [])
 
   const handleUpload = async () => {
-    if (!selectedRequest || (!uploadResult.trim() && !uploadFile)) {
-      setFieldError("Select a lab request and add result text or upload a PDF.");
+    if (!uploadResult.trim() && !uploadFile) {
+      setFieldError("Add result text or upload a PDF.");
       return;
     }
 
@@ -62,13 +140,19 @@ export default function LabResults() {
       setMessage('');
       setFieldError('');
       const formData = new FormData();
-      formData.append("lab_request_id", selectedRequest.id || selectedRequest.lab_request_id);
+      const chosenId = selectedRequest?.id || selectedRequest?.lab_request_id;
+      if (chosenId) {
+        formData.append("lab_request_id", chosenId);
+      }
       if (uploadResult.trim()) formData.append("result", uploadResult.trim());
+      // Only append status if backend expects it; omit to avoid column errors.
+      // formData.append("status", uploadStatus);
       if (uploadFile) formData.append("lab_file", uploadFile);
 
       await uploadLabResult(formData);
       setMessage('Lab result uploaded successfully!');
       setUploadResult('');
+      setUploadStatus('normal');
       setUploadFile(null);
       setSelectedRequest(null);
       fetchData();
@@ -79,16 +163,13 @@ export default function LabResults() {
     }
   }
 
-  const abnormalKeywords = ["High", "Parasites", "Positive", "Bacterial", "Elevated", "dermatitis", "infection"]
-
   const filteredResults = results.filter(res => {
     if (filter === "All") return true
-    const isAbnormal = abnormalKeywords.some(k => res.result?.toLowerCase().includes(k.toLowerCase()))
-    return filter === "Abnormal" ? isAbnormal : !isAbnormal
+    return filter === "Abnormal" ? res.status === 'abnormal' : res.status === 'normal'
   })
 
-  const getResultClass = (result) =>
-    abnormalKeywords.some(k => result?.toLowerCase().includes(k.toLowerCase()))
+  const getResultClass = (res) =>
+    res.status === 'abnormal'
       ? "text-danger fw-bold"
       : "text-success"
 
@@ -97,8 +178,8 @@ export default function LabResults() {
     datasets: [
       {
         data: [
-          results.filter(r => !abnormalKeywords.some(k => r.result?.toLowerCase().includes(k.toLowerCase()))).length,
-          results.filter(r => abnormalKeywords.some(k => r.result?.toLowerCase().includes(k.toLowerCase()))).length
+          results.filter(r => r.status === 'normal').length,
+          results.filter(r => r.status === 'abnormal').length
         ],
         backgroundColor: ["#228B22", "#FF4500"],
         borderColor: "#fff",
@@ -112,9 +193,7 @@ export default function LabResults() {
     datasets: [
       {
         label: "Abnormal Results",
-        data: results.map(r =>
-          abnormalKeywords.some(k => r.result?.toLowerCase().includes(k.toLowerCase())) ? 1 : 0
-        ),
+        data: results.map(r => r.status === 'abnormal' ? 1 : 0),
         borderColor: "#FF4500",
         backgroundColor: "#FFA07A",
         tension: 0.3,
@@ -153,82 +232,70 @@ export default function LabResults() {
           </h6>
         </div>
         <div className="card-body">
-          {pendingRequests.length > 0 ? (
-            <>
-              <div className="mb-3">
-                <label className="form-label small fw-bold">Select Lab Request *</label>
-                <select 
-                  className="form-select"
-                  value={selectedRequest?.id || selectedRequest?.lab_request_id || ''}
-                  onChange={(e) => {
-                    const req = requests.find(r => (r.id || r.lab_request_id) === parseInt(e.target.value));
-                    setSelectedRequest(req || null);
-                  }}
-                >
-                  <option value="">Choose a pending lab request...</option>
-                  {pendingRequests.map(req => (
-                    <option key={req.id || req.lab_request_id} value={req.id || req.lab_request_id}>
-                      Case: {req.Case?.title} - {req.test_type}  
-                    </option>
-                  ))}
-                </select>
-                {fieldError && !selectedRequest && (
-                  <small className="text-danger d-block mt-1">{fieldError}</small>
-                )}
-              </div>
+          <div className="mb-3">
+            <label className="form-label small fw-bold">Link to Lab Request (optional)</label>
+            <select 
+              className="form-select"
+              value={selectedRequest?.id || selectedRequest?.lab_request_id || ''}
+              onChange={(e) => {
+                const req = requests.find(r => String(r.id || r.lab_request_id) === e.target.value);
+                setSelectedRequest(req || null);
+              }}
+            >
+              <option value="">Select a lab request (pending or completed)</option>
+              {requests.map(req => (
+                <option key={req.id || req.lab_request_id} value={req.id || req.lab_request_id}>
+                  #{req.id || req.lab_request_id} - {req.Case?.title || `Case #${req.case_id}`} - {req.test_type}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              {selectedRequest && (
-                <div className="mb-3 p-3 bg-light rounded">
-                  <p className="text-muted small mb-1">
-                    <strong>Test Type:</strong> {selectedRequest.test_type}
-                  </p>
-                  {selectedRequest.notes && (
-                    <p className="text-muted small mb-0">
-                      <strong>Vet Notes:</strong> {selectedRequest.notes}
-                    </p>
-                  )}
-                </div>
+          {selectedRequest && (
+            <div className="mb-3 p-3 bg-light rounded">
+              <p className="text-muted small mb-1">
+                <strong>Test Type:</strong> {selectedRequest.test_type}
+              </p>
+              {selectedRequest.notes && (
+                <p className="text-muted small mb-0">
+                  <strong>Vet Notes:</strong> {selectedRequest.notes}
+                </p>
               )}
-
-              <div className="mb-3">
-                <label className="form-label small fw-bold">Lab Results / Findings *</label>
-                <textarea
-                  className="form-control"
-                  rows="4"
-                  placeholder="Enter your lab test results and findings from the clinic..."
-                  value={uploadResult}
-                  onChange={(e) => setUploadResult(e.target.value)}
-                ></textarea>
-                <div className="form-text">You may also upload the PDF report below.</div>
-                {fieldError && !uploadResult.trim() && !uploadFile && (
-                  <small className="text-danger d-block mt-1">{fieldError}</small>
-                )}
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label small fw-bold">Upload PDF (optional)</label>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="form-control"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                />
-              </div>
-
-              <button 
-                className="btn btn-primary"
-                onClick={handleUpload}
-                disabled={uploading || !selectedRequest}
-              >
-                {uploading ? 'Uploading...' : 'Upload Results'}
-              </button>
-            </>
-          ) : (
-            <div className="text-center py-4 text-muted">
-              <i className="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
-              <p className="mb-0">No pending lab requests. The vet will create a lab request when needed.</p>
             </div>
           )}
+
+          <div className="mb-3">
+            <label className="form-label small fw-bold">Lab Results / Findings *</label>
+            <textarea
+              className="form-control"
+              rows="4"
+              placeholder="Enter your lab test results and findings from the clinic..."
+              value={uploadResult}
+              onChange={(e) => setUploadResult(e.target.value)}
+            ></textarea>
+            <div className="form-text">You may also upload the PDF report below.</div>
+            {fieldError && !uploadResult.trim() && !uploadFile && (
+              <small className="text-danger d-block mt-1">{fieldError}</small>
+            )}
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label small fw-bold">Upload PDF (optional)</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              className="form-control"
+              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+            />
+          </div>
+
+          <button 
+            className="btn btn-primary"
+            onClick={handleUpload}
+            disabled={uploading}
+          >
+            {uploading ? 'Uploading...' : 'Upload Results'}
+          </button>
         </div>
       </div>
 
@@ -328,4 +395,3 @@ export default function LabResults() {
     </div>
   )
 }
-

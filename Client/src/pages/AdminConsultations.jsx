@@ -32,21 +32,8 @@ export default function AdminConsultations() {
     });
   };
 
-  const handleJoinConsultation = (consultation) => {
-    const mode = String(consultation?.mode || "").toLowerCase();
+  const handleOpenConversation = (consultation) => {
     const caseId = consultation?.case_id || consultation?.Case?.id;
-
-    if (mode === "video") {
-      const roomKey = consultation?.id || caseId;
-      if (!roomKey) {
-        alert("Unable to open video session: consultation reference missing.");
-        return;
-      }
-      const url = `https://meet.jit.si/cvet-consult-${encodeURIComponent(roomKey)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
     navigate("/admindashboard/communication/messages?tab=chats", {
       state: {
         focusCaseId: caseId || null
@@ -103,7 +90,7 @@ export default function AdminConsultations() {
                     <td>{new Date(c.created_at).toLocaleDateString()}</td>
                     <td className="text-end pe-4">
                       <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleViewConsultation(c)}>View</button>
-                      <button className="btn btn-sm btn-primary" onClick={() => handleJoinConsultation(c)}>Join</button>
+                      <button className="btn btn-sm btn-primary" onClick={() => handleOpenConversation(c)}>Open Conversation</button>
                     </td>
                   </tr>
                 )) : (

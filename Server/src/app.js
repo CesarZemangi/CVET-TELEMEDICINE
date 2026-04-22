@@ -62,6 +62,9 @@ app.use((req, res, next) => {
 
 // 1. Security Middleware
 app.use(helmet());
+// Allow media to be fetched from other origins (front-end dev server vs API host) to avoid CORP blocks
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
+
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

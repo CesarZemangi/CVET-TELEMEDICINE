@@ -5,6 +5,7 @@ const LabResult = sequelize.define('LabResult', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   lab_request_id: { type: DataTypes.INTEGER, allowNull: false },
   result: { type: DataTypes.TEXT, allowNull: false },
+  status: { type: DataTypes.ENUM('normal', 'abnormal'), defaultValue: 'normal' },
   file_url: { type: DataTypes.STRING, allowNull: true },
   uploaded_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   created_by: { type: DataTypes.INTEGER, allowNull: false },

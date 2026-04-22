@@ -141,7 +141,16 @@ export const getEmailLogs = async (req, res) => {
     const logs = await EmailLog.findAll({
       order: [['created_at', 'DESC']],
       limit,
-      attributes: ['id', 'to', 'subject', 'status', 'error_message', 'created_at']
+      attributes: [
+        'id',
+        ['email', 'to'],
+        'subject',
+        'message',
+        'status',
+        'error_message',
+        'sent_at',
+        'created_at'
+      ]
     });
     const totals = {
       total_sent: await EmailLog.count({ where: { status: 'sent' } }),
@@ -161,9 +170,9 @@ export const createEmailLog = async (req, res) => {
       return res.status(400).json({ error: "to, subject, and message are required" });
     }
     const log = await EmailLog.create({
-      to,
+      email: to,
       subject,
-      body: message,
+      message,
       status: 'sent',
       created_at: new Date()
     });

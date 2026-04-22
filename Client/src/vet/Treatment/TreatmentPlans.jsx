@@ -9,12 +9,13 @@ export default function TreatmentPlans() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
+  const initialForm = {
     case_id: "",
     plan_details: "",
     start_date: "",
     end_date: ""
-  });
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   const fetchData = async () => {
     setLoading(true);
@@ -57,7 +58,7 @@ export default function TreatmentPlans() {
     try {
       await createTreatmentPlan(formData);
       setShowAddModal(false);
-      setFormData({ case_id: "", plan_details: "", start_date: "", end_date: "" });
+      setFormData(initialForm);
       fetchData();
     } catch (err) {
       alert("Failed to create treatment plan: " + (err.response?.data?.error || err.message));
@@ -116,7 +117,10 @@ export default function TreatmentPlans() {
       <FormModalWrapper
         show={showAddModal}
         title="Create Treatment Plan"
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setFormData(initialForm);
+        }}
         onSubmit={handleSubmit}
         submitLabel="Save Plan"
       >
@@ -126,7 +130,7 @@ export default function TreatmentPlans() {
                       className="form-select" 
                       required 
                       value={formData.case_id}
-                      onChange={e => setFormData({...formData, case_id: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, case_id: e.target.value}))}
                     >
                       <option value="">Select a case</option>
                       {cases.map(c => (
@@ -144,7 +148,7 @@ export default function TreatmentPlans() {
                       placeholder="Enter structured treatment steps and care instructions" 
                       required 
                       value={formData.plan_details}
-                      onChange={e => setFormData({...formData, plan_details: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, plan_details: e.target.value}))}
                     ></textarea>
                   </div>
                   <div className="row">
@@ -154,7 +158,7 @@ export default function TreatmentPlans() {
                         type="date" 
                         className="form-control" 
                         value={formData.start_date}
-                        onChange={e => setFormData({...formData, start_date: e.target.value})}
+                        onChange={e => setFormData(prev => ({...prev, start_date: e.target.value}))}
                       />
                     </div>
                     <div className="col-md-6 mb-3">
@@ -163,7 +167,7 @@ export default function TreatmentPlans() {
                         type="date" 
                         className="form-control" 
                         value={formData.end_date}
-                        onChange={e => setFormData({...formData, end_date: e.target.value})}
+                        onChange={e => setFormData(prev => ({...prev, end_date: e.target.value}))}
                       />
                     </div>
                   </div>

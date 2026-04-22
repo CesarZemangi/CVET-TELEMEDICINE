@@ -20,6 +20,9 @@ export default function ChatInterface({ readOnly = false }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const getUserIdFromToken = (token) => {
     if (!token) return null;
     try {
@@ -43,8 +46,23 @@ export default function ChatInterface({ readOnly = false }) {
       return true;
     });
   };
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = useCallback(
+    (force = false) => {
+      if (!messagesEndRef.current) return;
+      if (force || shouldAutoScroll) {
+        messagesEndRef.current.scrollIntoView({ behavior: "auto", block: "end" });
+      }
+    },
+    [shouldAutoScroll]
+  );
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom < 120;
+    setShouldAutoScroll(nearBottom);
+    setShowJumpToLatest(!nearBottom);
   };
 
   const fetchConversations = useCallback(async () => {
@@ -66,6 +84,7 @@ export default function ChatInterface({ readOnly = false }) {
       if (conv.isNew) {
         setMessages([]);
         setSelectedConv(conv);
+        setShouldAutoScroll(true);
         return;
       }
       
@@ -88,6 +107,7 @@ export default function ChatInterface({ readOnly = false }) {
       if (Array.isArray(data)) {
         const sorted = dedupeMessages([...data]).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         setMessages(sorted);
+        setShouldAutoScroll(true);
       } else {
         console.error("Invalid messages format:", data);
         setMessages([]);
@@ -171,7 +191,7 @@ export default function ChatInterface({ readOnly = false }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   const fetchContacts = async () => {
     try {
@@ -237,6 +257,7 @@ export default function ChatInterface({ readOnly = false }) {
       };
       setSelectedConv(tempConv);
       setMessages([]);
+      setShouldAutoScroll(true);
     }
     setShowNewChatModal(false);
   };
@@ -380,14 +401,18 @@ export default function ChatInterface({ readOnly = false }) {
                   </h3>
                   <p className="chat-header-status">
                     {readOnly
-                      ? "Monitoring Conversation"
+                      ? "Viewing conversation"
                       : `Online - ${selectedConv.partner.role}${user?.sms_opt_in && user?.phone ? " | SMS backup enabled" : ""}`}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="chat-messages">
+            <div 
+              className="chat-messages"
+              ref={messagesContainerRef}
+              onScroll={handleMessagesScroll}
+            >
               {messages.length > 0 ? messages.map((msg, idx) => {
                 const initiatorId = messages[0]?.sender_id;
                 const isMine = readOnly 
@@ -414,6 +439,18 @@ export default function ChatInterface({ readOnly = false }) {
               )}
               <div ref={messagesEndRef} />
             </div>
+            {showJumpToLatest && (
+              <button
+                className="chat-jump-btn"
+                onClick={() => {
+                  setShouldAutoScroll(true);
+                  setShowJumpToLatest(false);
+                  scrollToBottom(true);
+                }}
+              >
+                Jump to latest
+              </button>
+            )}
 
             {!readOnly && (
               <div className="chat-input-area">

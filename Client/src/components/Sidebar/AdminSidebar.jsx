@@ -31,7 +31,7 @@ export default function AdminSidebar() {
       <li>
         <div className={sectionHeaderClass} onClick={() => toggleSection("userMgmt")}>
           <span><i className="bi bi-people me-3"></i> User Management</span>
-          <small>{openSection === "userMgmt" ? "▾" : "▸"}</small>
+
         </div>
         {openSection === "userMgmt" && (
           <div className={dropdownContainerClass}>
@@ -46,7 +46,7 @@ export default function AdminSidebar() {
       <li>
         <div className={sectionHeaderClass} onClick={() => toggleSection("operations")}>
           <span><i className="bi bi-gear me-3"></i> Operations</span>
-          <small>{openSection === "operations" ? "▾" : "▸"}</small>
+
         </div>
         {openSection === "operations" && (
           <div className={dropdownContainerClass}>
@@ -64,7 +64,7 @@ export default function AdminSidebar() {
       <li>
         <div className={sectionHeaderClass} onClick={() => toggleSection("communication")}>
           <span><i className="bi bi-chat-dots me-3"></i> Communication</span>
-          <small>{openSection === "communication" ? "â–¾" : "â–¸"}</small>
+
         </div>
         {openSection === "communication" && (
           <div className={dropdownContainerClass}>

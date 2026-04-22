@@ -64,7 +64,7 @@ export default function Appointments() {
   const openModal = (action, appointment) => {
     setSelectedAppt(appointment);
     setModalAction(action);
-    setFormData({ reason: "", summary: "", date: "", time: "" });
+    setFormData(() => ({ reason: "", summary: "", date: "", time: "" }));
     setAiSymptoms(String(appointment?.Case?.symptoms || ""));
     setAiError("");
     setAiResult(null);
@@ -87,7 +87,7 @@ export default function Appointments() {
   const closeModal = () => {
     setModalAction(null);
     setSelectedAppt(null);
-    setFormData({ reason: "", summary: "", date: "", time: "" });
+    setFormData(() => ({ reason: "", summary: "", date: "", time: "" }));
     setAiSymptoms("");
     setAiError("");
     setAiResult(null);
@@ -394,7 +394,7 @@ export default function Appointments() {
                       className="form-control"
                       rows="3"
                       value={formData.reason}
-                      onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
                       placeholder="Enter reason for rejection..."
                     />
                   </div>
@@ -407,7 +407,7 @@ export default function Appointments() {
                       className="form-control"
                       rows="3"
                       value={formData.summary}
-                      onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, summary: e.target.value }))}
                       placeholder="Enter appointment summary, diagnosis, treatment given..."
                     />
                     <div className="mt-3">
@@ -458,7 +458,7 @@ export default function Appointments() {
                       className="form-control"
                       rows="3"
                       value={formData.reason}
-                      onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
                       placeholder="Enter reason for cancellation..."
                     />
                   </div>
@@ -472,7 +472,7 @@ export default function Appointments() {
                         type="date"
                         className="form-control"
                         value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
@@ -482,7 +482,7 @@ export default function Appointments() {
                         type="time"
                         className="form-control"
                         value={formData.time}
-                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, time: e.target.value }))}
                       />
                     </div>
                     <div>
@@ -491,7 +491,7 @@ export default function Appointments() {
                         className="form-control"
                         rows="2"
                         value={formData.reason}
-                        onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, reason: e.target.value }))}
                         placeholder="Enter reason for rescheduling..."
                       />
                     </div>

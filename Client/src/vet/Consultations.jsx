@@ -55,7 +55,7 @@ export default function VetConsultations() {
     try {
       await createConsultation(formData);
       setShowModal(false);
-      setFormData({ case_id: "", mode: "chat", notes: "" });
+      setFormData(() => ({ case_id: "", mode: "chat", notes: "" }));
       setAiError("");
       setAiResult(null);
       fetchData();
@@ -197,7 +197,7 @@ export default function VetConsultations() {
                       className="form-select" 
                       required 
                       value={formData.case_id}
-                      onChange={e => setFormData({...formData, case_id: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, case_id: e.target.value}))}
                     >
                       <option value="">Select a case</option>
                       {cases.map(c => (
@@ -211,11 +211,11 @@ export default function VetConsultations() {
                     <label className="form-label small fw-bold">Consultation Mode</label>
                     <div className="d-flex gap-3">
                       <div className="form-check">
-                        <input className="form-check-input" type="radio" name="mode" id="chat" value="chat" checked={formData.mode === 'chat'} onChange={e => setFormData({...formData, mode: e.target.value})} />
+                        <input className="form-check-input" type="radio" name="mode" id="chat" value="chat" checked={formData.mode === 'chat'} onChange={e => setFormData(prev => ({...prev, mode: e.target.value}))} />
                         <label className="form-check-label" htmlFor="chat">Chat</label>
                       </div>
                       <div className="form-check">
-                        <input className="form-check-input" type="radio" name="mode" id="video" value="video" checked={formData.mode === 'video'} onChange={e => setFormData({...formData, mode: e.target.value})} />
+                        <input className="form-check-input" type="radio" name="mode" id="video" value="video" checked={formData.mode === 'video'} onChange={e => setFormData(prev => ({...prev, mode: e.target.value}))} />
                         <label className="form-check-label" htmlFor="video">Video</label>
                       </div>
                     </div>
@@ -226,7 +226,7 @@ export default function VetConsultations() {
                       className="form-control" 
                       rows="3" 
                       value={formData.notes}
-                      onChange={e => setFormData({...formData, notes: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, notes: e.target.value}))}
                       placeholder="Enter preliminary observations..."
                     ></textarea>
                     <small className="text-muted">Use notes as symptoms for AI advisory prediction.</small>

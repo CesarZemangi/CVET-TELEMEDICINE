@@ -20,28 +20,60 @@ export const getMe = async (req, res) => {
 export const updateMe = async (req, res) => {
   try {
     const { name, email, phone, sms_opt_in } = req.body;
-    let updateData = {};
 
-    if (name !== undefined) updateData.name = name;
-    if (email !== undefined) updateData.email = email;
-    if (phone !== undefined) updateData.phone = phone;
+    const user = await User.findByPk(req.user.id, {
+      attributes: ['id', 'name', 'email', 'role', 'phone', 'sms_opt_in', 'profile_image', 'profile_pic']
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updateData = {};
+    const nameStr = name !== undefined ? String(name).trim() : undefined;
+    const emailStr = email !== undefined ? String(email).trim() : undefined;
+    const phoneStr = phone !== undefined ? String(phone).trim() : undefined;
+
+    // Only update fields that are present and non-empty to avoid DB constraint issues (e.g., duplicate blank emails)
+    if (nameStr && nameStr.length > 0) {
+      updateData.name = nameStr;
+    }
+
+    if (emailStr && emailStr.length > 0 && emailStr !== user.email) {
+      updateData.email = emailStr;
+    }
+
+    if (phoneStr && phoneStr.length > 0) {
+      updateData.phone = phoneStr;
+    }
+
     if (sms_opt_in !== undefined) {
       updateData.sms_opt_in = sms_opt_in === true || sms_opt_in === "true" || sms_opt_in === 1 || sms_opt_in === "1";
     }
 
     if (req.file) {
-      updateData.profile_image = `/uploads/profile-images/${req.file.filename}`;
+      const imagePath = `/uploads/profile-images/${req.file.filename}`;
+      // Support both legacy and current column names
+      updateData.profile_image = imagePath;
+      updateData.profile_pic = imagePath;
     }
 
-    await User.update(updateData, { where: { id: req.user.id } });
-    
-    const updatedUser = await User.findByPk(req.user.id, {
-      attributes: ['id', 'name', 'email', 'role', 'phone', 'sms_opt_in', 'profile_image']
-    });
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No changes provided" });
+    }
 
-    res.json({ message: "Profile updated", user: updatedUser });
+    await user.update(updateData);
+    await user.reload({ attributes: ['id', 'name', 'email', 'role', 'phone', 'sms_opt_in', 'profile_image', 'profile_pic'] });
+
+    // Normalize legacy column so clients consistently receive profile_image
+    if (!user.profile_image && user.profile_pic) {
+      user.profile_image = user.profile_pic;
+    }
+
+    res.json({ message: "Profile updated", user });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("updateMe failed:", err);
+    return res.status(500).json({ error: err.message || "Failed to update profile" });
   }
 }
 

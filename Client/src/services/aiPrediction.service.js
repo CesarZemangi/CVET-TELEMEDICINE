@@ -23,7 +23,7 @@ export const predictDiagnosis = async (input) => {
   try {
     const response = await api.post("/predict", payload);
     return response.data?.data || response.data || null;
-  } catch (primaryError) {
+  } catch {
     const fallback = await api.post("/ml/predict", payload);
     return fallback.data?.data || fallback.data || null;
   }

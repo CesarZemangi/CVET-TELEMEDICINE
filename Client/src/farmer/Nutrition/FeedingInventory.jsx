@@ -94,7 +94,7 @@ export default function FeedingInventory() {
       }
       await addFeedInventory(payload)
       setShowModal(false)
-      setFormData({
+      setFormData(() => ({
         feed_name: "",
         quantity: "",
         unit: "kg",
@@ -103,7 +103,7 @@ export default function FeedingInventory() {
         location: "",
         expiry_date: "",
         notes: ""
-      })
+      }))
       fetchInventory()
     } catch (err) {
       const serverMsg = err.response?.data?.error || err.response?.data?.message
@@ -277,7 +277,7 @@ export default function FeedingInventory() {
             className="form-control"
             required
             value={formData.feed_name}
-            onChange={(e) => setFormData({ ...formData, feed_name: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, feed_name: e.target.value }))}
             placeholder="e.g. Maize Bran, Silage"
           />
         </div>
@@ -291,7 +291,7 @@ export default function FeedingInventory() {
               className="form-control"
               required
               value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, quantity: e.target.value }))}
               placeholder="0.00"
             />
           </div>
@@ -303,7 +303,7 @@ export default function FeedingInventory() {
               className="form-control"
               required
               value={formData.low_stock_threshold}
-              onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, low_stock_threshold: e.target.value }))}
               placeholder="10.00"
             />
           </div>
@@ -314,7 +314,7 @@ export default function FeedingInventory() {
           <select
             className="form-select"
             value={formData.unit}
-            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, unit: e.target.value }))}
           >
             <option value="kg">kg</option>
             <option value="tons">tons</option>
@@ -329,7 +329,7 @@ export default function FeedingInventory() {
             <select
               className="form-select"
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
             >
               <option value="active">active</option>
               <option value="inactive">inactive</option>
@@ -341,7 +341,7 @@ export default function FeedingInventory() {
               type="text"
               className="form-control"
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
               placeholder="e.g. Store Room A"
             />
           </div>
@@ -353,7 +353,7 @@ export default function FeedingInventory() {
             type="date"
             className="form-control"
             value={formData.expiry_date}
-            onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, expiry_date: e.target.value }))}
           />
         </div>
 
@@ -363,7 +363,7 @@ export default function FeedingInventory() {
             className="form-control"
             rows="3"
             value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
             placeholder="Optional storage or handling notes"
           ></textarea>
         </div>

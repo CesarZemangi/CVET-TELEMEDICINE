@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react"
 import DashboardSection from "../../components/dashboard/DashboardSection";
+import FormModalWrapper from "../../components/common/FormModalWrapper";
 import api from "../../services/api";
 import { getCases } from "../services/vet.cases.service";
 
@@ -16,6 +17,7 @@ export default function Notifications() {
     message: "",
     type: "update"
   })
+  const resetForm = () => setFormData({ case_id: "", receiver_id: "", title: "", message: "", type: "update" });
 
   const fetchData = async () => {
     setLoading(true);
@@ -61,7 +63,7 @@ export default function Notifications() {
     try {
       await api.post("/vet/notifications/send", formData);
       setShowAddModal(false);
-      setFormData({ case_id: "", receiver_id: "", title: "", message: "", type: "update" });
+      resetForm();
       fetchData();
     } catch (err) {
       alert("Failed to send notification: " + (err.response?.data?.error || err.message));
@@ -118,103 +120,91 @@ export default function Notifications() {
         </div>
       </div>
 
-      {showAddModal && (
-        <div className="modal d-block position-fixed top-0 start-0 w-100 h-100" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, overflowY: 'auto' }}>
-          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content border-0">
-              <form onSubmit={handleSubmit}>
-                <div className="modal-header border-0">
-                  <h5 className="modal-title fw-bold">New Notification</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Farmer</label>
-                    <select 
-                      className="form-select" 
-                      value={formData.receiver_id} 
-                      onChange={e => setFormData({...formData, receiver_id: e.target.value, case_id: ""})}
-                    >
-                      <option value="">Choose a farmer...</option>
-                      {farmers.map(f => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Select Case (Optional if Farmer selected)</label>
-                    <select 
-                      className="form-select" 
-                      required={!formData.receiver_id}
-                      value={formData.case_id} 
-                      onChange={e => {
-                        const cid = e.target.value;
-                        const c = cases.find(x => x.id == cid);
-                        setFormData({
-                          ...formData, 
-                          case_id: cid, 
-                          receiver_id: c ? c.farmer_id : formData.receiver_id
-                        });
-                      }}
-                    >
-                      <option value="">Choose a case...</option>
-                      {(formData.receiver_id 
-                        ? cases.filter(c => c.farmer_id == formData.receiver_id) 
-                        : cases
-                      ).map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.title} ({c.Animal?.tag_number})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Title</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      required 
-                      placeholder="e.g. Lab results ready"
-                      value={formData.title}
-                      onChange={e => setFormData({...formData, title: e.target.value})}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Message</label>
-                    <textarea 
-                      className="form-control" 
-                      rows="3"
-                      required
-                      placeholder="Enter the notification message..."
-                      value={formData.message}
-                      onChange={e => setFormData({...formData, message: e.target.value})}
-                    ></textarea>
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold">Type</label>
-                    <select 
-                      className="form-select" 
-                      value={formData.type}
-                      onChange={e => setFormData({...formData, type: e.target.value})}
-                    >
-                      <option value="update">Update</option>
-                      <option value="reminder">Reminder</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-footer border-0">
-                  <button type="button" className="btn btn-light" onClick={() => {
-                    setShowAddModal(false);
-                    setFormData({ case_id: "", receiver_id: "", title: "", message: "", type: "update" });
-                  }}>Cancel</button>
-                  <button type="submit" className="btn btn-primary px-4">Send</button>
-                </div>
-              </form>
-            </div>
-          </div>
+      <FormModalWrapper
+        show={showAddModal}
+        title="New Notification"
+        onClose={() => {
+          setShowAddModal(false);
+          resetForm();
+        }}
+        onSubmit={handleSubmit}
+        submitLabel="Send"
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Select Farmer</label>
+          <select 
+            className="form-select" 
+            value={formData.receiver_id} 
+            onChange={e => setFormData(prev => ({...prev, receiver_id: e.target.value, case_id: ""}))}
+          >
+            <option value="">Choose a farmer...</option>
+            {farmers.map(f => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
         </div>
-      )}
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Select Case (Optional if Farmer selected)</label>
+          <select 
+            className="form-select" 
+            required={!formData.receiver_id}
+            value={formData.case_id} 
+            onChange={e => {
+              const cid = e.target.value;
+              const c = cases.find(x => x.id == cid);
+              setFormData(prev => ({
+                ...prev, 
+                case_id: cid, 
+                receiver_id: c ? c.farmer_id : prev.receiver_id
+              }));
+            }}
+          >
+            <option value="">Choose a case...</option>
+            {(formData.receiver_id 
+              ? cases.filter(c => c.farmer_id == formData.receiver_id) 
+              : cases
+            ).map(c => (
+              <option key={c.id} value={c.id}>
+                {c.title} ({c.Animal?.tag_number})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Title</label>
+          <input 
+            type="text" 
+            className="form-control" 
+            required 
+            placeholder="e.g. Lab results ready"
+            value={formData.title}
+            onChange={e => setFormData(prev => ({...prev, title: e.target.value}))}
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Message</label>
+          <textarea 
+            className="form-control" 
+            rows="3"
+            required
+            placeholder="Enter the notification message..."
+            value={formData.message}
+            onChange={e => setFormData(prev => ({...prev, message: e.target.value}))}
+          ></textarea>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Type</label>
+          <select 
+            className="form-select" 
+            value={formData.type}
+            onChange={e => setFormData(prev => ({...prev, type: e.target.value}))}
+          >
+            <option value="update">Update</option>
+            <option value="reminder">Reminder</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </FormModalWrapper>
     </DashboardSection>
   )
 }

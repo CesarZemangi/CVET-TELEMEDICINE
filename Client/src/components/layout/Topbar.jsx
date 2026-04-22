@@ -3,29 +3,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ProfileImage from "../common/ProfileImage";
 import api from "../../services/api";
 import socket from "../../services/socket";
+import { useUser } from "../../context/UserContext";
 
 export default function Topbar({ isMobile = false, onMenuClick = null }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
+  const { user, setUser, version: userVersion, refreshFromStorage } = useUser();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const fileInputRef = useRef(null);
   const profileMenuRef = useRef(null);
-  const syncUserFromStorage = () => {
-    try {
-      const latest = JSON.parse(localStorage.getItem("user") || "{}");
-      setUser(latest);
-    } catch {
-      setUser({});
-    }
+
+  const getSectionRole = () => {
+    const path = location.pathname;
+    if (path.includes("/admindashboard")) return "admin";
+    if (path.includes("/vetdashboard")) return "vet";
+    if (path.includes("/farmerdashboard")) return "farmer";
+    return user?.role?.toLowerCase() || "farmer";
   };
 
   const getSettingsRoute = () => {
-    const role = user?.role?.toLowerCase();
+    const role = getSectionRole();
     if (role === "admin") return "/admindashboard/settings";
     if (role === "vet") return "/vetdashboard/settings";
     return "/farmerdashboard/settings";
@@ -35,9 +35,10 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
     const fetchNotifs = async () => {
       try {
         const res = await api.get('/communication/notifications');
-        const notifList = res.data.data || res.data || [];
+        const raw = res.data?.data ?? res.data ?? [];
+        const notifList = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : [];
         setNotifications(notifList);
-        const count = notifList.filter(n => !n.is_read).length;
+        const count = notifList.filter((n) => !n?.is_read).length;
         setUnreadCount(count);
       } catch (err) {
         console.error("Notif error", err);
@@ -94,9 +95,9 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
         setShowProfileMenu(false);
       }
     };
-    const onUserUpdated = () => syncUserFromStorage();
-    const onFocus = () => syncUserFromStorage();
-    const onStorage = () => syncUserFromStorage();
+    const onUserUpdated = () => refreshFromStorage();
+    const onFocus = () => refreshFromStorage();
+    const onStorage = () => refreshFromStorage();
     document.addEventListener("click", onClickOutside);
     window.addEventListener("user-updated", onUserUpdated);
     window.addEventListener("focus", onFocus);
@@ -108,34 +109,6 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
       window.removeEventListener("storage", onStorage);
     };
   }, []);
-
-  const handleProfileImageChoose = (e) => {
-    e.stopPropagation();
-    fileInputRef.current?.click();
-  };
-
-  const handleProfileImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("profile_image", file);
-
-    try {
-      const res = await api.put("/user/profile", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
-      const updatedUser = { ...user, ...(res.data?.user || {}) };
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.dispatchEvent(new Event("user-updated"));
-      setShowProfileMenu(false);
-    } catch (err) {
-      console.error("Profile image upload failed:", err);
-      alert(err.response?.data?.error || "Failed to update profile picture");
-    } finally {
-      e.target.value = "";
-    }
-  };
 
   const handleMarkRead = async (id, e) => {
     if (e) e.stopPropagation();
@@ -162,7 +135,7 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
   const handleNotificationClick = (e) => {
     if (e) e.stopPropagation();
     setShowNotifications(false);
-    const role = user?.role?.toLowerCase();
+    const role = getSectionRole();
     if (role === 'admin') navigate('/admindashboard/communication/notifications');
     else if (role === 'vet') navigate('/vetdashboard/communication/notifications');
     else if (role === 'farmer') navigate('/farmerdashboard/communication/notifications');
@@ -250,7 +223,7 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
             className="position-relative cursor-pointer p-2 rounded-circle hover-bg-light d-flex align-items-center gap-2"
             onClick={(e) => {
               e.stopPropagation();
-              const role = user?.role?.toLowerCase();
+              const role = getSectionRole();
               if (role === 'admin') navigate('/admindashboard/communication/messages');
               else if (role === 'vet') navigate('/vetdashboard/communication/messages');
               else if (role === 'farmer') navigate('/farmerdashboard/communication/messages');
@@ -275,7 +248,7 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
               {user?.name || "User Name"}
             </h6>
             <small className="text-primary fw-semibold" style={{ fontSize: '0.75rem' }}>
-              {user?.role?.toUpperCase() || "PORTAL"}
+              {(getSectionRole() || user?.role || "PORTAL").toUpperCase()}
             </small>
           </div>
           <button
@@ -288,33 +261,24 @@ export default function Topbar({ isMobile = false, onMenuClick = null }) {
             title="Profile options"
           >
             <ProfileImage
-              src={user?.profile_image}
+              key={userVersion}
+              src={
+                user?.profile_image
+                  ? `${user.profile_image}${user.profile_image.includes("?") ? "&" : "?"}t=${userVersion}`
+                  : null
+              }
               role={user?.role}
               name={user?.name}
               size="45px"
               className="shadow-sm border-primary border-opacity-25"
+              cacheKey={userVersion}
             />
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="d-none"
-            onChange={handleProfileImageUpload}
-          />
           {showProfileMenu && (
             <div
               className="position-absolute end-0 mt-2 bg-white border rounded-3 shadow-sm overflow-hidden"
               style={{ top: "100%", minWidth: "220px", zIndex: 1200 }}
             >
-              <button
-                type="button"
-                className="dropdown-item py-2"
-                onClick={handleProfileImageChoose}
-              >
-                <i className="bi bi-camera me-2"></i>
-                Change Profile Picture
-              </button>
               <button
                 type="button"
                 className="dropdown-item py-2"

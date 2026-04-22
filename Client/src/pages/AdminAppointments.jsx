@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../services/api";
 import Badge from "../components/ui/Badge";
+import "../styles/adminFarmers.css";
 
 export default function AdminAppointments() {
   const [appointments, setAppointments] = useState([]);
@@ -42,75 +43,61 @@ export default function AdminAppointments() {
   };
 
   return (
-    <div className="container-fluid px-4 py-4">
-      <div className="mb-4">
-        <h4 className="fw-semibold mb-1">Appointments Management</h4>
-        <small className="text-muted">Monitor and manage all veterinary appointments</small>
-      </div>
-
-      <div className="row g-3 mb-4">
-        <div className="col-md-6">
-          <div className="input-group">
-            <span className="input-group-text bg-white border-end-0">
-              <i className="bi bi-search"></i>
-            </span>
-            <input 
-              type="text" 
-              className="form-control border-start-0"
-              placeholder="Search by farmer, vet, or case..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="col-md-6">
-          <div className="row g-2">
-            <div className="col-auto">
-              <div className="card border-0 shadow-sm text-center" style={{ padding: '10px 15px', minWidth: '110px' }}>
-                <small className="text-muted d-block">Total</small>
-                <h5 className="fw-bold mb-0">{appointmentStats.total}</h5>
-              </div>
-            </div>
-            <div className="col-auto">
-              <div className="card border-0 shadow-sm text-center" style={{ padding: '10px 15px', minWidth: '110px' }}>
-                <small className="text-muted d-block">Pending</small>
-                <h5 className="fw-bold mb-0 text-warning">{appointmentStats.pending}</h5>
-              </div>
-            </div>
-            <div className="col-auto">
-              <div className="card border-0 shadow-sm text-center" style={{ padding: '10px 15px', minWidth: '110px' }}>
-                <small className="text-muted d-block">Approved</small>
-                <h5 className="fw-bold mb-0 text-success">{appointmentStats.approved}</h5>
-              </div>
-            </div>
-            <div className="col-auto">
-              <div className="card border-0 shadow-sm text-center" style={{ padding: '10px 15px', minWidth: '110px' }}>
-                <small className="text-muted d-block">Completed</small>
-                <h5 className="fw-bold mb-0 text-info">{appointmentStats.completed}</h5>
-              </div>
-            </div>
+    <div className="container-fluid px-4 py-4 af-page">
+      <div className="af-hero">
+        <div>
+          <p className="af-kicker">Scheduling • Live</p>
+          <h1 className="af-title">Appointments Management</h1>
+          <p className="af-subtitle">Monitor and manage all veterinary appointments.</p>
+          <div className="af-pills">
+            <span className="af-pill">Total • {appointmentStats.total}</span>
+            <span className="af-pill af-pill-amber">Pending • {appointmentStats.pending}</span>
+            <span className="af-pill af-pill-emerald">Approved • {appointmentStats.approved}</span>
+            <span className="af-pill">Completed • {appointmentStats.completed}</span>
           </div>
         </div>
       </div>
 
-      <div className="mb-3 d-flex gap-2 flex-wrap">
-        {["All", "Pending", "Approved", "Rejected", "Completed", "Cancelled"].map(status => (
-          <button
-            key={status}
-            className={`btn btn-sm ${
-              filter === status 
-                ? "btn-primary" 
-                : "btn-outline-secondary"
-            }`}
-            onClick={() => setFilter(status)}
-          >
-            {status}
-          </button>
-        ))}
+      <div className="af-card mb-3">
+        <div className="af-card-header">
+          <h3>Filters</h3>
+        </div>
+        <div className="p-3 row g-3 align-items-center">
+          <div className="col-md-6">
+            <div className="input-group">
+              <span className="input-group-text bg-white border-end-0">
+                <i className="bi bi-search"></i>
+              </span>
+              <input 
+                type="text" 
+                className="form-control border-start-0"
+                placeholder="Search by farmer, vet, or case..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="col-md-6">
+            <div className="d-flex gap-2 flex-wrap">
+              {["All", "Pending", "Approved", "Rejected", "Completed", "Cancelled"].map(status => (
+                <button
+                  key={status}
+                  className={`af-btn-soft ${filter === status ? "af-btn" : ""}`}
+                  onClick={() => setFilter(status)}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="card border-0 shadow-sm">
-        <div className="card-body p-0">
+      <div className="af-card">
+        <div className="af-card-header">
+          <h3>Appointments</h3>
+        </div>
+        <div className="p-0">
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status"></div>

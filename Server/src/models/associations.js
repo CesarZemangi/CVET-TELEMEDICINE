@@ -82,7 +82,8 @@ MedicationHistory.belongsTo(Case, { foreignKey: 'case_id' });
 MedicationHistory.belongsTo(Vet, { as: 'vet', foreignKey: 'vet_id' });
 
 // Feed Inventory Associations
-FeedInventory.belongsTo(User, { as: 'farmer', foreignKey: 'farmer_id' });
+// Feed inventory rows point to farmers table (farmer_id).
+FeedInventory.belongsTo(Farmer, { as: 'farmer', foreignKey: 'farmer_id' });
 
 // Reminder Associations
 Reminder.belongsTo(User, { as: 'creator', foreignKey: 'created_by' });

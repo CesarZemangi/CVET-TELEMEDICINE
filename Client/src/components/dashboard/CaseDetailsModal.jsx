@@ -71,13 +71,13 @@ const CaseDetailsModal = ({ isOpen, onClose, caseData, onRespond }) => {
           </div>
           <div className="modal-footer border-0 p-4 pt-0">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Close</button>
-            {caseData.status === 'open' && (
-               <button 
-                 className="btn btn-primary px-4"
-                 onClick={() => onRespond && onRespond(caseData)}
-               >
-                 Respond to Case
-               </button>
+            {caseData.status === 'open' && typeof onRespond === 'function' && (
+              <button
+                className="btn btn-primary px-4"
+                onClick={() => onRespond(caseData)}
+              >
+                Respond to Case
+              </button>
             )}
           </div>
         </div>

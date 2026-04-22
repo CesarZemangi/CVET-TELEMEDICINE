@@ -1,13 +1,21 @@
-import { FeedInventory } from "../../models/associations.js";
+import { FeedInventory, Farmer } from "../../models/associations.js";
 import { getPagination, getPagingData } from "../../utils/pagination.utils.js";
+
+const getFarmerIdFromUser = async (userId) => {
+  const farmer = await Farmer.findOne({ where: { user_id: userId } });
+  return farmer?.id;
+};
 
 export const getFeedInventory = async (req, res) => {
   try {
+    const farmerId = await getFarmerIdFromUser(req.user.id);
+    if (!farmerId) return res.status(404).json({ error: "Farmer profile not found for user" });
+
     const { page, size } = req.query;
     const { limit, offset } = getPagination(page, size);
 
     const data = await FeedInventory.findAndCountAll({
-      where: { farmer_id: req.user.id },
+      where: { farmer_id: farmerId },
       limit,
       offset,
       order: [['created_at', 'DESC']]
@@ -22,10 +30,13 @@ export const getFeedInventory = async (req, res) => {
 
 export const addFeedInventory = async (req, res) => {
   try {
+    const farmerId = await getFarmerIdFromUser(req.user.id);
+    if (!farmerId) return res.status(404).json({ error: "Farmer profile not found for user" });
+
     const { feed_name, quantity, unit, low_stock_threshold } = req.body;
     
     const feed = await FeedInventory.create({
-      farmer_id: req.user.id,
+      farmer_id: farmerId,
       feed_name,
       quantity,
       unit: unit || "kg",
@@ -45,6 +56,9 @@ export const addFeedInventory = async (req, res) => {
 
 export const updateFeedInventory = async (req, res) => {
   try {
+    const farmerId = await getFarmerIdFromUser(req.user.id);
+    if (!farmerId) return res.status(404).json({ error: "Farmer profile not found for user" });
+
     const { feed_name, quantity, unit, low_stock_threshold } = req.body;
     const { id } = req.params;
 
@@ -55,7 +69,7 @@ export const updateFeedInventory = async (req, res) => {
       low_stock_threshold,
       updated_by: req.user.id
     }, {
-      where: { id, farmer_id: req.user.id }
+      where: { id, farmer_id: farmerId }
     });
 
     res.json({ message: "Inventory updated" });
@@ -69,9 +83,12 @@ export const updateFeedInventory = async (req, res) => {
 
 export const deleteFeedInventory = async (req, res) => {
   try {
+    const farmerId = await getFarmerIdFromUser(req.user.id);
+    if (!farmerId) return res.status(404).json({ error: "Farmer profile not found for user" });
+
     const { id } = req.params;
     await FeedInventory.destroy({
-      where: { id, farmer_id: req.user.id }
+      where: { id, farmer_id: farmerId }
     });
     res.json({ message: "Inventory deleted" });
   } catch (err) {

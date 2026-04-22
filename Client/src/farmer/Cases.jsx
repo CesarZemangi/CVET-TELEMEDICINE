@@ -22,14 +22,15 @@ export default function Cases() {
   const [selectedVetReviews, setSelectedVetReviews] = useState([]);
   const [loadingVetReviews, setLoadingVetReviews] = useState(false);
   
-  const [formData, setFormData] = useState({
+  const initialForm = {
     animal_id: "",
     vet_id: "",
     title: "",
     description: "",
     symptoms: "",
     priority: "medium"
-  });
+  };
+  const [formData, setFormData] = useState(initialForm);
 
   const selectedVet = vets.find((vet) => String(vet.id) === String(formData.vet_id));
 
@@ -147,14 +148,7 @@ export default function Cases() {
     try {
       await addCase(formData);
       setShowAddModal(false);
-      setFormData({
-        animal_id: "",
-        vet_id: "",
-        title: "",
-        description: "",
-        symptoms: "",
-        priority: "medium"
-      });
+      setFormData(initialForm);
       setAiResult(null);
       setAiError("");
       setTimeout(() => {
@@ -387,7 +381,12 @@ export default function Cases() {
       <FormModalWrapper
         show={showAddModal}
         title="Report New Health Case"
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          setFormData(initialForm);
+          setAiResult(null);
+          setAiError("");
+        }}
         onSubmit={handleAddCase}
         submitLabel="Submit Case"
       >
@@ -397,7 +396,7 @@ export default function Cases() {
             className="form-select"
             required
             value={formData.animal_id}
-            onChange={e => setFormData({...formData, animal_id: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, animal_id: e.target.value}))}
           >
             <option value="">Choose an animal...</option>
             {animals.map(animal => (
@@ -414,7 +413,7 @@ export default function Cases() {
             className="form-select"
             required
             value={formData.vet_id}
-            onChange={e => setFormData({...formData, vet_id: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, vet_id: e.target.value}))}
           >
             <option value="">Choose a vet...</option>
             {vets.map(vet => (
@@ -461,7 +460,7 @@ export default function Cases() {
             placeholder="Short summary of the issue"
             required
             value={formData.title}
-            onChange={e => setFormData({...formData, title: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, title: e.target.value}))}
           />
         </div>
 
@@ -473,7 +472,7 @@ export default function Cases() {
             placeholder="Provide more details about the problem"
             required
             value={formData.description}
-            onChange={e => setFormData({...formData, description: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, description: e.target.value}))}
           ></textarea>
         </div>
 
@@ -484,7 +483,7 @@ export default function Cases() {
             rows="3"
             placeholder="e.g. fever, reduced appetite, swollen udder"
             value={formData.symptoms}
-            onChange={e => setFormData({...formData, symptoms: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, symptoms: e.target.value}))}
           ></textarea>
           <small className="text-muted">Used for AI advisory diagnosis support.</small>
         </div>
@@ -522,7 +521,7 @@ export default function Cases() {
           <select
             className="form-select"
             value={formData.priority}
-            onChange={e => setFormData({...formData, priority: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, priority: e.target.value}))}
           >
             <option value="low">Low</option>
             <option value="medium">Medium</option>

@@ -29,7 +29,7 @@ export const getAnimals = async (req, res) => {
 
 export const createAnimal = async (req, res) => {
   try {
-    const { tag_number, species, breed, age, health_status } = req.body
+    const { tag_number, species, breed, age, health_status, medical_causes } = req.body
 
     const animal = await Animal.create({
       farmer_id: req.user.id,
@@ -38,6 +38,7 @@ export const createAnimal = async (req, res) => {
       breed,
       age,
       health_status: health_status || 'healthy',
+      medical_causes,
       created_by: req.user.id,
       updated_by: req.user.id
     })
@@ -47,7 +48,13 @@ export const createAnimal = async (req, res) => {
     success(res, animal, "Animal added")
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
-      return error(res, "Animal already exists", 400)
+      // Return the existing animal details to show the user what is duplicated
+      const existing = await Animal.findOne({ where: { tag_number } });
+      return res.status(400).json({
+        status: "error",
+        message: "Animal already exists",
+        data: existing
+      });
     }
     error(res, err.message)
   }
@@ -55,7 +62,7 @@ export const createAnimal = async (req, res) => {
 
 export const updateAnimal = async (req, res) => {
   try {
-    const { tag_number, species, breed, age, health_status } = req.body
+    const { tag_number, species, breed, age, health_status, medical_causes } = req.body
     const updateData = { updated_by: req.user.id }
 
     if (tag_number !== undefined) updateData.tag_number = tag_number
@@ -63,6 +70,7 @@ export const updateAnimal = async (req, res) => {
     if (breed !== undefined) updateData.breed = breed
     if (age !== undefined) updateData.age = age
     if (health_status !== undefined) updateData.health_status = health_status
+    if (medical_causes !== undefined) updateData.medical_causes = medical_causes
 
     await Animal.update(updateData, {
       where: { id: req.params.id, farmer_id: req.user.id }

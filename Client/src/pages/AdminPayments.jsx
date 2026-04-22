@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { downloadPaymentReceipt, getAdminPayments, rejectPayment, verifyPayment } from "../services/payment";
+import "../styles/adminFarmers.css";
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState([]);
@@ -69,85 +70,89 @@ export default function AdminPayments() {
   }
 
   return (
-    <div className="container-fluid px-4 py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container-fluid px-4 py-4 af-page">
+      <div className="af-hero">
         <div>
-          <h4 className="fw-semibold mb-1">Payments</h4>
-          <small className="text-muted">Review all farmer transaction records and verify them.</small>
-        </div>
-        <select
-          className="form-select"
-          style={{ maxWidth: 220 }}
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-        >
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="rejected">Rejected</option>
-        </select>
-      </div>
-
-      <div className="row g-3 mb-4">
-        <div className="col-md-3"><div className="card border-0 shadow-sm"><div className="card-body"><div className="small text-muted text-uppercase">All Transactions</div><div className="fs-4 fw-bold" style={{ color: "var(--text-dark)" }}>{summary.total}</div></div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm"><div className="card-body"><div className="small text-muted text-uppercase">Paid</div><div className="fs-4 fw-bold" style={{ color: "var(--primary-green)" }}>{summary.paid}</div></div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm"><div className="card-body"><div className="small text-muted text-uppercase">Pending</div><div className="fs-4 fw-bold" style={{ color: "#b8860b" }}>{summary.pending}</div></div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm"><div className="card-body"><div className="small text-muted text-uppercase">Rejected</div><div className="fs-4 fw-bold" style={{ color: "#e74c3c" }}>{summary.rejected}</div></div></div></div>
-      </div>
-
-      <div className="card border-0 shadow-sm">
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table align-middle table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="ps-4">Farmer</th>
-                  <th>Vet</th>
-                  <th>Amount</th>
-                  <th>Method</th>
-                  <th>Provider</th>
-                  <th>Reference</th>
-                  <th>Submitted</th>
-                  <th>Status</th>
-                  <th className="text-end pe-4">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="9" className="text-center py-4"><div className="spinner-border text-primary"></div></td></tr>
-                ) : payments.length === 0 ? (
-                  <tr><td colSpan="9" className="text-center py-4 text-muted">No payments found.</td></tr>
-                ) : (
-                  payments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="ps-4">{payment.farmer?.name || "Farmer"}</td>
-                      <td>{payment.vet?.User?.name || "Vet"}</td>
-                      <td>USD {Number(payment.amount || 0).toFixed(2)}</td>
-                      <td>{payment.payment_method}</td>
-                      <td>{payment.payment_provider || "-"}</td>
-                      <td>{payment.payment_reference_number || payment.transaction_reference}</td>
-                      <td>{payment.created_at ? new Date(payment.created_at).toLocaleString() : "-"}</td>
-                      <td>
-                        <span className={`badge ${payment.payment_status === "paid" ? "bg-success" : payment.payment_status === "pending" ? "bg-warning text-dark" : "bg-danger"}`}>
-                          {payment.payment_status}
-                        </span>
-                      </td>
-                      <td className="text-end pe-4">
-                        <div className="d-flex gap-2 justify-content-end">
-                          <button className="btn btn-sm btn-outline-primary" onClick={() => setSelectedPayment(payment)}>
-                            Review
-                          </button>
-                          <button className="btn btn-sm btn-outline-success" onClick={() => downloadPaymentReceipt(payment.id)}>
-                            Receipt
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <p className="af-kicker">Finance • Live</p>
+          <h1 className="af-title">Payment Control Room</h1>
+          <p className="af-subtitle">Verify receipts, trace providers, and clear pending payouts.</p>
+          <div className="af-pills">
+            <span className="af-pill">Total • {summary.total}</span>
+            <span className="af-pill af-pill-emerald">Paid • {summary.paid}</span>
+            <span className="af-pill af-pill-amber">Pending • {summary.pending}</span>
+            <span className="af-pill" style={{ background: "rgba(248,113,113,0.16)", color: "#fecdd3" }}>Rejected • {summary.rejected}</span>
           </div>
+        </div>
+        <div className="af-filter">
+          <label className="af-label">Status</label>
+          <select
+            className="form-select"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="af-card">
+        <div className="af-card-header">
+          <h3>Transactions</h3>
+          <span className="af-meta">Animated updates on fetch</span>
+        </div>
+        <div className="af-table-wrapper">
+          <table className="af-table">
+            <thead>
+              <tr>
+                <th>Farmer</th>
+                <th>Vet</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Provider</th>
+                <th>Reference</th>
+                <th>Submitted</th>
+                <th>Status</th>
+                <th className="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="9" className="text-center py-4"><div className="spinner-border text-primary"></div></td></tr>
+              ) : payments.length === 0 ? (
+                <tr><td colSpan="9" className="text-center py-4 text-muted">No payments found.</td></tr>
+              ) : (
+                payments.map((payment) => (
+                  <tr key={payment.id} className="af-row">
+                    <td className="af-cell-strong">{payment.farmer?.name || "Farmer"}</td>
+                    <td>{payment.vet?.User?.name || "Vet"}</td>
+                    <td>USD {Number(payment.amount || 0).toFixed(2)}</td>
+                    <td>{payment.payment_method}</td>
+                    <td>{payment.payment_provider || "-"}</td>
+                    <td>{payment.payment_reference_number || payment.transaction_reference}</td>
+                    <td>{payment.created_at ? new Date(payment.created_at).toLocaleString() : "-"}</td>
+                    <td>
+                      <span className={`af-badge ${payment.payment_status === "paid" ? "" : payment.payment_status === "pending" ? "af-badge-amber" : "af-badge-alert"}`}>
+                        {payment.payment_status}
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      <div className="d-flex gap-2 justify-content-end">
+                        <button className="af-btn-ghost" onClick={() => setSelectedPayment(payment)}>
+                          Review
+                        </button>
+                        <button className="af-btn-soft" onClick={() => downloadPaymentReceipt(payment.id)}>
+                          Receipt
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

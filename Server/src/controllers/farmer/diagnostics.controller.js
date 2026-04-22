@@ -89,7 +89,7 @@ export const farmerUploadLabResult = async (req, res) => {
   try {
     const body = (req && req.body && typeof req.body === "object") ? req.body : {};
     const lab_request_id = body.lab_request_id || body.id;
-    const { result } = body;
+    const { result, status } = body;
     const uploadedFile =
       req.file ||
       (req.files?.file && req.files.file[0]) ||
@@ -125,6 +125,7 @@ export const farmerUploadLabResult = async (req, res) => {
     if (existingResult) {
       await existingResult.update({
         result: result || existingResult.result,
+        status: status || existingResult.status || 'normal',
         file_url: fileUrl || existingResult.file_url || null,
         uploaded_at: new Date(),
         updated_by: userId
@@ -133,6 +134,7 @@ export const farmerUploadLabResult = async (req, res) => {
       labResult = await LabResult.create({
         lab_request_id,
         result: result || "",
+        status: status || 'normal',
         file_url: fileUrl,
         uploaded_at: new Date(),
         created_by: userId,

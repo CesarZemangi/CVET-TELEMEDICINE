@@ -8,7 +8,7 @@ export default function Animals() {
   const [loading, setLoading] = useState(true);
   const [livestockCount, setLivestockCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+  const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy", medical_causes: "" });
   const [editingAnimal, setEditingAnimal] = useState(null);
 
   const fetchAnimals = async () => {
@@ -32,19 +32,20 @@ export default function Animals() {
 
   const handleOpenAddModal = () => {
     setEditingAnimal(null);
-    setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+    setFormData(() => ({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy", medical_causes: "" }));
     setShowModal(true);
   };
 
   const handleOpenEditModal = (animal) => {
     setEditingAnimal(animal);
-    setFormData({
+    setFormData(() => ({
       tag_number: animal.tag_number || "",
       species: animal.species || "",
       breed: animal.breed || "",
       age: animal.age || "",
-      health_status: animal.health_status || "healthy"
-    });
+      health_status: animal.health_status || "healthy",
+      medical_causes: animal.medical_causes || ""
+    }));
     setShowModal(true);
   };
 
@@ -57,7 +58,7 @@ export default function Animals() {
         await api.post("/farmer/animals", formData);
       }
       setShowModal(false);
-      setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+      setFormData(() => ({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy", medical_causes: "" }));
       fetchAnimals();
     } catch (err) {
       alert(`Failed to ${editingAnimal ? 'update' : 'add'} animal: ` + (err.response?.data?.message || err.message));
@@ -131,7 +132,7 @@ export default function Animals() {
                       className="btn btn-sm btn-outline-primary border-0"
                       onClick={() => handleOpenEditModal(animal)}
                     >
-                      Details <i className="bi bi-chevron-right ms-1"></i>
+                      Details / Edit <i className="bi bi-pencil-square ms-1"></i>
                     </button>
                   </div>
                 </div>
@@ -159,31 +160,41 @@ export default function Animals() {
       >
         <div className="mb-3">
           <label className="form-label small fw-bold">Tag Number</label>
-          <input type="text" className="form-control" placeholder="e.g. TAG-001" required value={formData.tag_number} onChange={e => setFormData({...formData, tag_number: e.target.value})} />
+          <input type="text" className="form-control" placeholder="e.g. TAG-001" required value={formData.tag_number} onChange={e => setFormData(prev => ({...prev, tag_number: e.target.value}))} />
         </div>
         <div className="row">
           <div className="col-md-6 mb-3">
             <label className="form-label small fw-bold">Species</label>
-            <input type="text" className="form-control" placeholder="e.g. Cow" required value={formData.species} onChange={e => setFormData({...formData, species: e.target.value})} />
+            <input type="text" className="form-control" placeholder="e.g. Cow" required value={formData.species} onChange={e => setFormData(prev => ({...prev, species: e.target.value}))} />
           </div>
           <div className="col-md-6 mb-3">
             <label className="form-label small fw-bold">Breed</label>
-            <input type="text" className="form-control" placeholder="e.g. Holstein" required value={formData.breed} onChange={e => setFormData({...formData, breed: e.target.value})} />
+            <input type="text" className="form-control" placeholder="e.g. Holstein" required value={formData.breed} onChange={e => setFormData(prev => ({...prev, breed: e.target.value}))} />
           </div>
         </div>
         <div className="row">
           <div className="col-md-6 mb-3">
             <label className="form-label small fw-bold">Age (Years)</label>
-            <input type="number" className="form-control" required value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
+            <input type="number" className="form-control" required value={formData.age} onChange={e => setFormData(prev => ({...prev, age: e.target.value}))} />
           </div>
           <div className="col-md-6 mb-3">
             <label className="form-label small fw-bold">Health Status</label>
-            <select className="form-select" value={formData.health_status} onChange={e => setFormData({...formData, health_status: e.target.value})}>
+            <select className="form-select" value={formData.health_status} onChange={e => setFormData(prev => ({...prev, health_status: e.target.value}))}>
               <option value="healthy">Healthy</option>
               <option value="sick">Sick</option>
               <option value="under treatment">Under Treatment</option>
             </select>
           </div>
+        </div>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Medical Causes / History</label>
+          <textarea 
+            className="form-control" 
+            rows="3" 
+            placeholder="e.g. Previous infections, allergies, chronic conditions" 
+            value={formData.medical_causes} 
+            onChange={e => setFormData(prev => ({...prev, medical_causes: e.target.value}))}
+          ></textarea>
         </div>
       </FormModalWrapper>
     </div>

@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
+import { useLocation, useNavigate } from "react-router-dom";
 import { getLabResults } from "../services/vet.diagnostics.service";
 import DashboardSection from "../../components/dashboard/DashboardSection";
 import FormModalWrapper from "../../components/common/FormModalWrapper";
+import { Chart as ChartJS, Filler } from "chart.js";
+
+// Register filler to avoid warnings if any chart uses fill in this module.
+try { ChartJS.register(Filler); } catch {}
 
 export default function LabResults() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResult, setSelectedResult] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const focusHandledRef = useRef(false);
 
   const fetchData = async () => {
     try {
@@ -24,6 +32,24 @@ export default function LabResults() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // If navigated here with a specific lab request, open its result once data is loaded.
+    if (loading || focusHandledRef.current) return;
+    const focusId = location.state?.labRequestId;
+    if (!focusId) return;
+    const match = results.find((r) => {
+      const reqId = r?.LabRequest?.id || r?.LabRequest?.lab_request_id || r?.lab_request_id;
+      return String(reqId) === String(focusId);
+    });
+    if (match) {
+      setSelectedResult(match);
+      setShowModal(true);
+      focusHandledRef.current = true;
+      // clear state so back/forward don't keep reopening
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [loading, results, location, navigate]);
 
   const handleViewResult = (result) => {
     setSelectedResult(result);

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../services/api";
+import "../styles/adminFarmers.css";
 
 export default function AdminAiMonitoring() {
   const [summary, setSummary] = useState(null);
@@ -102,16 +103,22 @@ export default function AdminAiMonitoring() {
   }
 
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container-fluid py-4 af-page">
+      <div className="af-hero">
         <div>
-          <h4 className="fw-bold mb-1">AI Usage Dashboard</h4>
-          <small className="text-muted">Monitoring and governance only. Admin cannot run diagnosis predictions.</small>
+          <p className="af-kicker">Model Ops • Live</p>
+          <h1 className="af-title">AI Ops Observatory</h1>
+          <p className="af-subtitle">Monitor predictions, data quality, and payment-side insights; admin-only oversight.</p>
+          <div className="af-pills">
+            <span className="af-pill">Predictions • {summary?.total_predictions || 0}</span>
+            <span className="af-pill af-pill-emerald">Model • {summary?.model?.model_name || "N/A"}</span>
+            <span className="af-pill af-pill-amber">Dataset • {summary?.model?.dataset_size || 0}</span>
+          </div>
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-outline-primary" onClick={handleExportCsv}>Export Cases CSV</button>
-          <button className="btn btn-outline-secondary" onClick={handleExportPaymentsCsv}>Export Payments CSV</button>
-          <label className="btn btn-primary mb-0">
+        <div className="af-actions">
+          <button className="af-btn-ghost" onClick={handleExportCsv}>Export Cases CSV</button>
+          <button className="af-btn-soft" onClick={handleExportPaymentsCsv}>Export Payments CSV</button>
+          <label className="af-btn mb-0" style={{ cursor: "pointer" }}>
             {uploading ? "Uploading..." : "Upload Model File"}
             <input type="file" hidden onChange={handleUploadModel} />
           </label>
@@ -120,37 +127,39 @@ export default function AdminAiMonitoring() {
 
       {uploadMessage && <div className="alert alert-info py-2">{uploadMessage}</div>}
 
-      <div className="row g-3 mb-4">
-        <div className="col-md-3"><div className="card border-0 shadow-sm p-3"><div className="small text-muted">Total Predictions</div><div className="h4 mb-0">{summary?.total_predictions || 0}</div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm p-3"><div className="small text-muted">Model Name</div><div className="h6 mb-0">{summary?.model?.model_name || "N/A"}</div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm p-3"><div className="small text-muted">Model Version</div><div className="h6 mb-0">{summary?.model?.model_version || "N/A"}</div></div></div>
-        <div className="col-md-3"><div className="card border-0 shadow-sm p-3"><div className="small text-muted">Dataset Size</div><div className="h4 mb-0">{summary?.model?.dataset_size || 0}</div></div></div>
+      <div className="row g-3 mb-3">
+        <div className="col-md-3"><div className="af-card"><div className="af-card-header"><h3>Predictions</h3><span className="af-meta">Total</span></div><div className="p-3"><div className="h4 mb-0">{summary?.total_predictions || 0}</div></div></div></div>
+        <div className="col-md-3"><div className="af-card"><div className="af-card-header"><h3>Model</h3><span className="af-meta">Name</span></div><div className="p-3"><div className="h6 mb-0">{summary?.model?.model_name || "N/A"}</div></div></div></div>
+        <div className="col-md-3"><div className="af-card"><div className="af-card-header"><h3>Version</h3><span className="af-meta">Model</span></div><div className="p-3"><div className="h6 mb-0">{summary?.model?.model_version || "N/A"}</div></div></div></div>
+        <div className="col-md-3"><div className="af-card"><div className="af-card-header"><h3>Dataset</h3><span className="af-meta">Rows</span></div><div className="p-3"><div className="h4 mb-0">{summary?.model?.dataset_size || 0}</div></div></div></div>
       </div>
 
       <div className="row g-4">
         <div className="col-lg-6">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Most Predicted Diseases</div>
-            <div className="card-body">
+          <div className="af-card">
+            <div className="af-card-header"><h3>Most Predicted Diseases</h3></div>
+            <div className="af-table-wrapper">
               {(summary?.most_predicted_diseases || []).length === 0 ? (
-                <div className="text-muted">No prediction data yet.</div>
+                <div className="text-muted p-3">No prediction data yet.</div>
               ) : (
-                <ul className="list-group">
-                  {summary.most_predicted_diseases.map((row, idx) => (
-                    <li className="list-group-item d-flex justify-content-between" key={`d-${idx}`}>
-                      <span>{row.predicted_disease}</span>
-                      <strong>{row.count}</strong>
-                    </li>
-                  ))}
-                </ul>
+                <table className="af-table">
+                  <tbody>
+                    {summary.most_predicted_diseases.map((row, idx) => (
+                      <tr key={`d-${idx}`} className="af-row">
+                        <td className="af-cell-strong">{row.predicted_disease}</td>
+                        <td className="text-end">{row.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>
         </div>
         <div className="col-lg-6">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Payment AI Highlights</div>
-            <div className="card-body">
+          <div className="af-card">
+            <div className="af-card-header"><h3>Payment AI Highlights</h3></div>
+            <div className="p-3">
               <p className="mb-1">Recommended method: <strong>{paymentInsights?.payment_success?.recommended_method || "N/A"}</strong></p>
               <p className="mb-1">Recommended provider: <strong>{paymentInsights?.payment_success?.recommended_provider || "N/A"}</strong></p>
               <p className="mb-1">Busiest day: <strong>{paymentInsights?.demand_forecast?.busiest_day || "N/A"}</strong></p>
@@ -195,11 +204,11 @@ export default function AdminAiMonitoring() {
 
       <div className="row g-4 mt-1">
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Demand Forecast Leaders</div>
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead className="table-light">
+          <div className="af-card">
+            <div className="af-card-header"><h3>Demand Forecast Leaders</h3></div>
+            <div className="af-table-wrapper">
+              <table className="af-table">
+                <thead>
                   <tr><th>Vet</th><th>Consultation Count</th><th>Farmer</th><th>Payment Count</th></tr>
                 </thead>
                 <tbody>
@@ -209,7 +218,7 @@ export default function AdminAiMonitoring() {
                     Array.from({
                       length: Math.max(paymentInsights?.demand_forecast?.top_vets?.length || 0, paymentInsights?.demand_forecast?.frequent_farmers?.length || 0)
                     }).map((_, idx) => (
-                      <tr key={`forecast-${idx}`}>
+                      <tr key={`forecast-${idx}`} className="af-row">
                         <td>{paymentInsights?.demand_forecast?.top_vets?.[idx]?.vet_name || "-"}</td>
                         <td>{paymentInsights?.demand_forecast?.top_vets?.[idx]?.consultation_count || "-"}</td>
                         <td>{paymentInsights?.demand_forecast?.frequent_farmers?.[idx]?.farmer_name || "-"}</td>
@@ -224,16 +233,16 @@ export default function AdminAiMonitoring() {
         </div>
 
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Prediction Logs</div>
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead className="table-light">
+          <div className="af-card">
+            <div className="af-card-header"><h3>Prediction Logs</h3></div>
+            <div className="af-table-wrapper">
+              <table className="af-table">
+                <thead>
                   <tr><th>ID</th><th>Case</th><th>Vet</th><th>Disease</th><th>Confidence</th><th>Time</th></tr>
                 </thead>
                 <tbody>
                   {predictionLogs.map((log) => (
-                    <tr key={log.id}>
+                    <tr key={log.id} className="af-row">
                       <td>{log.id}</td>
                       <td>{log.case_id ? `#${log.case_id}` : "N/A"}</td>
                       <td>{log.vet?.User?.name || `Vet#${log.vet_id}`}</td>
@@ -249,14 +258,14 @@ export default function AdminAiMonitoring() {
         </div>
 
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">AI Ops Logs (Errors / Response Time)</div>
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead className="table-light"><tr><th>Time</th><th>Type</th><th>Action</th></tr></thead>
+          <div className="af-card">
+            <div className="af-card-header"><h3>AI Ops Logs (Errors / Response Time)</h3></div>
+            <div className="af-table-wrapper">
+              <table className="af-table">
+                <thead><tr><th>Time</th><th>Type</th><th>Action</th></tr></thead>
                 <tbody>
                   {opsLogs.map((log) => (
-                    <tr key={log.id}>
+                    <tr key={log.id} className="af-row">
                       <td>{new Date(log.created_at).toLocaleString()}</td>
                       <td>{log.action_type}</td>
                       <td>{log.action}</td>
@@ -269,14 +278,14 @@ export default function AdminAiMonitoring() {
         </div>
 
         <div className="col-12">
-          <div className="card border-0 shadow-sm">
-            <div className="card-header bg-white fw-bold">Training Dataset Records (Preview)</div>
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead className="table-light"><tr><th>ID</th><th>Title</th><th>Symptoms</th><th>Updated</th></tr></thead>
+          <div className="af-card">
+            <div className="af-card-header"><h3>Training Dataset Records (Preview)</h3></div>
+            <div className="af-table-wrapper">
+              <table className="af-table">
+                <thead><tr><th>ID</th><th>Title</th><th>Symptoms</th><th>Updated</th></tr></thead>
                 <tbody>
                   {datasetRows.map((row) => (
-                    <tr key={row.id}>
+                    <tr key={row.id} className="af-row">
                       <td>{row.id}</td>
                       <td>{row.title || "N/A"}</td>
                       <td>{row.symptoms || "N/A"}</td>

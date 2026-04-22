@@ -131,6 +131,7 @@ import AdminAiMonitoring from "./pages/AdminAiMonitoring"
 import AdminUserProfile from "./pages/AdminUserProfile"
 import AdminEmail from "./pages/AdminEmail"
 import AdminFeedback from "./pages/AdminFeedback"
+import { UserProvider } from "./context/UserContext"
 
 function RequireAuth({ role, children, allowAdmin = false }) {
 const [isAuthenticated, setIsAuthenticated] = React.useState(null)
@@ -333,6 +334,8 @@ return (
 
 ReactDOM.createRoot(document.getElementById("root")).render(
 <BrowserRouter>
-<App />
+  <UserProvider>
+    <App />
+  </UserProvider>
 </BrowserRouter>
 )

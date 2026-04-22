@@ -1,19 +1,28 @@
 import { Sequelize } from "sequelize";
 
-const sequelize = new Sequelize("cvet_db", "root", "", {
-  host: "localhost",
-  dialect: "mysql", // Sequelize uses mysql2 under the hood
-  logging: false,   // Keeps your console clean
+const {
+  DB_NAME = "cvet_db",
+  DB_USER = "root",
+  DB_PASSWORD = "",
+  DB_HOST = "127.0.0.1",
+  DB_PORT = "3306"
+} = process.env;
+
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+  host: DB_HOST,
+  port: Number(DB_PORT),
+  dialect: "mysql",
+  logging: false,
   dialectOptions: {
-    // This allows MySQL to handle '0000-00-00 00:00:00' without erroring in strict mode
+    // Allow MySQL to handle zero dates without strict errors
     dateStrings: true,
-    typeCast: true,
+    typeCast: true
   },
   define: {
     timestamps: true,
     underscored: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    createdAt: "created_at",
+    updatedAt: "updated_at"
   },
   pool: {
     max: 10,
@@ -22,13 +31,5 @@ const sequelize = new Sequelize("cvet_db", "root", "", {
     idle: 10000
   }
 });
-
-// Test connection (optional but helpful)
-try {
-  await sequelize.authenticate();
-  console.log('Database connection has been established successfully.');
-} catch (error) {
-  console.error('Unable to connect to the database:', error);
-}
 
 export default sequelize;

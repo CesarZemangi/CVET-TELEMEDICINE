@@ -35,12 +35,12 @@ export default function AdminReminders() {
     try {
       await createAdminReminder(formData);
       setShowModal(false);
-      setFormData({
+      setFormData(() => ({
         title: "",
         message: "",
         target_role: "farmer",
         schedule_date: new Date().toISOString().split('T')[0]
-      });
+      }));
       fetchReminders();
     } catch (err) {
       alert("Failed to create reminder: " + (err.response?.data?.message || err.message));
@@ -139,7 +139,7 @@ export default function AdminReminders() {
             className="form-control"
             required
             value={formData.title}
-            onChange={e => setFormData({...formData, title: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, title: e.target.value}))}
             placeholder="e.g. Vaccination Campaign"
           />
         </div>
@@ -148,7 +148,7 @@ export default function AdminReminders() {
           <select
             className="form-select"
             value={formData.target_role}
-            onChange={e => setFormData({...formData, target_role: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, target_role: e.target.value}))}
           >
             <option value="farmer">All Farmers</option>
             <option value="vet">All Veterinarians</option>
@@ -162,7 +162,7 @@ export default function AdminReminders() {
             className="form-control"
             required
             value={formData.schedule_date}
-            onChange={e => setFormData({...formData, schedule_date: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, schedule_date: e.target.value}))}
           />
         </div>
         <div className="mb-3">
@@ -172,7 +172,7 @@ export default function AdminReminders() {
             rows="4"
             required
             value={formData.message}
-            onChange={e => setFormData({...formData, message: e.target.value})}
+            onChange={e => setFormData(prev => ({...prev, message: e.target.value}))}
             placeholder="Enter the detailed announcement here..."
           ></textarea>
         </div>

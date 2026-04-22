@@ -6,6 +6,7 @@ export default function MyAnimals() {
   const [animals, setAnimals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+  const [addError, setAddError] = useState("");
 
   const fetchAnimals = async () => {
     try {
@@ -24,18 +25,28 @@ export default function MyAnimals() {
     fetchAnimals();
   }, []);
 
+  const resetForm = () => {
+    setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+    setAddError("");
+  };
+
   const handleAddAnimal = async (e) => {
     e.preventDefault();
     try {
       await api.post("/farmer/animals", formData);
-      setFormData({ tag_number: "", species: "", breed: "", age: "", health_status: "healthy" });
+      resetForm();
       // Close modal using bootstrap
       const modal = document.getElementById('addAnimalModal');
       const modalInstance = bootstrap.Modal.getInstance(modal);
       modalInstance.hide();
       fetchAnimals();
     } catch (err) {
-      alert("Failed to add animal: " + (err.response?.data?.message || err.message));
+      const message = err.response?.data?.message || "Failed to add animal";
+      const existing = err.response?.data?.data;
+      const detail = existing
+        ? `Tag ${existing.tag_number} is already registered for ${existing.species || "an animal"}${existing.id ? ` (ID #${existing.id})` : ""}.`
+        : `Tag ${formData.tag_number} already exists.`;
+      setAddError(`${message}. ${detail}`);
     }
   };
 
@@ -54,6 +65,7 @@ export default function MyAnimals() {
           className="btn btn-primary"
           data-bs-toggle="modal"
           data-bs-target="#addAnimalModal"
+          onClick={resetForm}
         >
           <i className="bi bi-plus-circle me-2"></i>
           Add Animal
@@ -121,17 +133,22 @@ export default function MyAnimals() {
 
             <form onSubmit={handleAddAnimal}>
               <div className="modal-body">
+                {addError && (
+                  <div className="alert alert-danger py-2 small">
+                    {addError}
+                  </div>
+                )}
                 <div className="mb-3">
                   <label className="form-label">Tag Number</label>
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="Enter tag number" 
-                    required 
-                    value={formData.tag_number} 
-                    onChange={e => setFormData({...formData, tag_number: e.target.value})} 
-                  />
-                </div>
+                  placeholder="Enter tag number" 
+                  required 
+                  value={formData.tag_number} 
+                  onChange={e => setFormData(prev => ({...prev, tag_number: e.target.value}))} 
+                />
+              </div>
   
                 <div className="row">
                   <div className="col-md-6 mb-3">
@@ -142,7 +159,7 @@ export default function MyAnimals() {
                       placeholder="e.g. Cow" 
                       required 
                       value={formData.species} 
-                      onChange={e => setFormData({...formData, species: e.target.value})} 
+                      onChange={e => setFormData(prev => ({...prev, species: e.target.value}))} 
                     />
                   </div>
                   <div className="col-md-6 mb-3">
@@ -153,7 +170,7 @@ export default function MyAnimals() {
                       placeholder="e.g. Holstein" 
                       required 
                       value={formData.breed} 
-                      onChange={e => setFormData({...formData, breed: e.target.value})} 
+                      onChange={e => setFormData(prev => ({...prev, breed: e.target.value}))} 
                     />
                   </div>
                 </div>
@@ -167,7 +184,7 @@ export default function MyAnimals() {
                       placeholder="Enter age" 
                       required 
                       value={formData.age} 
-                      onChange={e => setFormData({...formData, age: e.target.value})} 
+                      onChange={e => setFormData(prev => ({...prev, age: e.target.value}))} 
                     />
                   </div>
                   <div className="col-md-6 mb-3">
@@ -175,7 +192,7 @@ export default function MyAnimals() {
                     <select 
                       className="form-select" 
                       value={formData.health_status} 
-                      onChange={e => setFormData({...formData, health_status: e.target.value})}
+                      onChange={e => setFormData(prev => ({...prev, health_status: e.target.value}))}
                     >
                       <option value="healthy">Healthy</option>
                       <option value="sick">Sick</option>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import Sidebar from "./Sidebar"
 import Topbar from "./Topbar"
 import NavigationControls from "../common/NavigationControls"
+import "../../styles/adminFarmers.css"
 
 export default function AdminLayout() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
@@ -56,12 +57,12 @@ export default function AdminLayout() {
       )}
 
       <div
-        className="flex-grow-1 d-flex flex-column overflow-auto"
+        className="flex-grow-1 d-flex flex-column overflow-auto af-shell"
         style={{
           marginLeft: isMobile ? 0 : "260px",
-          backgroundColor: "var(--background-light)",
           minHeight: "100vh",
-          transition: "margin-left 0.3s ease"
+          transition: "margin-left 0.3s ease",
+          backgroundColor: "var(--background-light)"
         }}
       >
         <Topbar 
@@ -69,7 +70,7 @@ export default function AdminLayout() {
           onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
         />
 
-        <main className="p-4">
+        <main className="p-4 af-main">
           <div className="container-fluid">
             <Outlet />
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { getMedicationHistory } from "../services/vet.treatment.service"
+import { getMedicationHistory, createMedicationHistory } from "../services/vet.treatment.service"
 import { getCasesForDropdown } from "../services/vet.cases.service"
 import DashboardSection from "../../components/dashboard/DashboardSection"
 
@@ -8,6 +8,16 @@ export default function MedicationHistory() {
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCaseId, setSelectedCaseId] = useState("")
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [formData, setFormData] = useState({
+    case_id: "",
+    animal_id: "",
+    medication_name: "",
+    dosage: "",
+    start_date: new Date().toISOString().split("T")[0],
+    end_date: "",
+    notes: ""
+  })
 
   const fetchData = async () => {
     setLoading(true)
@@ -44,11 +54,11 @@ export default function MedicationHistory() {
   const handleCaseChange = (e) => {
     const caseId = e.target.value
     const selectedCase = cases.find(c => c.id === parseInt(caseId))
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       case_id: caseId,
       animal_id: selectedCase ? selectedCase.animal_id : ""
-    })
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -60,7 +70,7 @@ export default function MedicationHistory() {
     try {
       await createMedicationHistory(formData)
       setShowAddModal(false)
-      setFormData({
+      setFormData(() => ({
         case_id: "",
         animal_id: "",
         medication_name: "",
@@ -68,7 +78,7 @@ export default function MedicationHistory() {
         start_date: new Date().toISOString().split('T')[0],
         end_date: "",
         notes: ""
-      })
+      }))
       fetchData()
     } catch (err) {
       alert("Failed to add record: " + (err.response?.data?.error || err.message))

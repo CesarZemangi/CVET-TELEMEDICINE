@@ -1,28 +1,35 @@
 import React, { useState } from "react";
 import ProfileImage from "../components/common/ProfileImage";
+import FormModalWrapper from "../components/common/FormModalWrapper";
 import api from "../services/api";
+import { useUser } from "../context/UserContext";
 
 export default function ProfileSettings() {
-  // Load initial state from localStorage
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : {};
-  });
+  const { user, updateUserInfo, version: photoVersion } = useUser();
 
   const [formData, setFormData] = useState({
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || ""
   });
-  
+  const [photoPassword, setPhotoPassword] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+
+  const cacheBust = (path) => {
+    if (!path) return "";
+    return `${path}${path.includes("?") ? "&" : "?"}v=${Date.now()}`;
+  };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      setPreview(URL.createObjectURL(file)); 
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
     }
   };
 
@@ -32,27 +39,57 @@ export default function ProfileSettings() {
     data.append("name", formData.name);
     data.append("email", formData.email);
     data.append("phone", formData.phone);
-    if (selectedFile) data.append("profile_image", selectedFile);
 
     try {
-      const res = await api.put(`/user/profile`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await api.put(`/user/profile`, data);
+      
+      const uploadedPath = res.data?.user?.profile_image || res.data?.profile_image || user.profile_image;
+      updateUserInfo({
+        ...res.data.user,
+        profile_image: uploadedPath ? cacheBust(uploadedPath) : user.profile_image
       });
-      
-      const updatedUser = {
-        ...user,
-        ...res.data.user
-      };
 
-      setUser(updatedUser);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      window.dispatchEvent(new Event("user-updated"));
-      
       alert("Profile updated successfully!");
-      setPreview(null); // Clear preview once saved
     } catch (err) {
       console.error("Upload failed", err);
       alert("Error updating profile.");
+    }
+  };
+
+  const handlePhotoSubmit = async (e) => {
+    e.preventDefault();
+    const emailForAuth = formData.email || user.email;
+    if (!selectedFile) {
+      setPhotoError("Please choose a photo to upload.");
+      return;
+    }
+    if (!photoPassword.trim()) {
+      setPhotoError("Enter your password to confirm the profile photo change.");
+      return;
+    }
+    setPhotoLoading(true);
+    setPhotoError("");
+    try {
+      if (emailForAuth) {
+        await api.post("/auth/login", { email: emailForAuth, password: photoPassword });
+      }
+      const data = new FormData();
+      data.append("profile_image", selectedFile);
+      const res = await api.put(`/user/profile`, data);
+
+      const uploadedPath = res.data?.user?.profile_image || res.data?.profile_image || user.profile_image;
+      updateUserInfo({
+        ...res.data.user,
+        profile_image: uploadedPath ? cacheBust(uploadedPath) : user.profile_image
+      });
+      setPreview(null);
+      setSelectedFile(null);
+      setPhotoPassword("");
+      setShowPhotoModal(false);
+    } catch (err) {
+      setPhotoError(err.response?.data?.message || err.message || "Failed to update profile photo.");
+    } finally {
+      setPhotoLoading(false);
     }
   };
 
@@ -62,7 +99,7 @@ export default function ProfileSettings() {
         <div className="card-body p-4 text-center">
           <h4 className="fw-bold mb-4" style={{ color: "var(--primary-brown)" }}>Profile Settings</h4>
           
-          <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <div className="d-inline-block position-relative">
                 {preview ? (
@@ -73,7 +110,13 @@ export default function ProfileSettings() {
                     style={{ width: "120px", height: "120px", objectFit: "cover" }} 
                   />
                 ) : (
-                  <ProfileImage src={user.profile_image} role={user.role} size="120px" />
+                  <ProfileImage
+                    key={photoVersion}
+                    src={user.profile_image}
+                    role={user.role}
+                    size="120px"
+                    cacheKey={photoVersion}
+                  />
                 )}
                 
                 <label 
@@ -83,18 +126,23 @@ export default function ProfileSettings() {
                 >
                   <i className="bi bi-camera-fill"></i>
                 </label>
-                <input id="file-upload" type="file" hidden onChange={handleFileChange} accept="image/*" />
+                <input id="file-upload" type="file" hidden onChange={(e)=>{handleFileChange(e); setShowPhotoModal(true);}} accept="image/*" />
+              </div>
+              <div className="mt-2">
+                <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setShowPhotoModal(true)}>
+                  Change Profile Photo
+                </button>
               </div>
             </div>
 
-            <div className="row g-3 text-start">
-              <div className="col-md-12">
-                <label className="form-label small fw-bold">Full Name</label>
+              <div className="row g-3 text-start">
+                <div className="col-md-12">
+                  <label className="form-label small fw-bold">Full Name</label>
                 <input 
                    type="text" 
                    className="form-control" 
                    value={formData.name} 
-                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                   onChange={(e) => setFormData((prev) => ({...prev, name: e.target.value}))} 
                 />
               </div>
               <div className="col-md-6">
@@ -112,7 +160,7 @@ export default function ProfileSettings() {
                    type="text" 
                    className="form-control" 
                    value={formData.phone} 
-                   onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                   onChange={(e) => setFormData((prev) => ({...prev, phone: e.target.value}))} 
                 />
               </div>
               <div className="col-12 mt-4">
@@ -128,6 +176,43 @@ export default function ProfileSettings() {
           </form>
         </div>
       </div>
+
+      <FormModalWrapper
+        show={showPhotoModal}
+        title="Change Profile Photo"
+        onClose={() => {
+          setShowPhotoModal(false);
+          setSelectedFile(null);
+          setPreview(null);
+          setPhotoPassword("");
+          setPhotoError("");
+        }}
+        onSubmit={handlePhotoSubmit}
+        submitLabel={photoLoading ? "Saving..." : "Save Photo"}
+      >
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Upload Photo</label>
+          <input type="file" className="form-control" accept="image/*" onChange={handleFileChange} required />
+          {preview && (
+            <div className="mt-3 text-center">
+              <img src={preview} alt="Preview" style={{ width: 120, height: 120, borderRadius: "50%", objectFit: "cover" }} />
+            </div>
+          )}
+        </div>
+        {photoError && <div className="alert alert-danger py-2">{photoError}</div>}
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Confirm Password</label>
+          <input
+            type="password"
+            className="form-control"
+            value={photoPassword}
+            onChange={(e) => setPhotoPassword(e.target.value)}
+            placeholder="Enter your account password"
+            required
+            disabled={photoLoading}
+          />
+        </div>
+      </FormModalWrapper>
     </div>
   );
 }

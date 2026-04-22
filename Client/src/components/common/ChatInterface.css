@@ -568,6 +568,31 @@
   box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.3);
 }
 
+.chat-jump-btn {
+  position: absolute;
+  right: 20px;
+  bottom: 92px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #228B22 0%, #1E90FF 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(30, 144, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  z-index: 5;
+}
+
+.chat-jump-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(30, 144, 255, 0.45);
+}
+
+.chat-jump-btn:active {
+  transform: translateY(0);
+}
+
 .chat-input-form {
   display: flex;
   gap: 12px;
